@@ -33,7 +33,11 @@
 
   <main id="main">
     <section class="hero" id="top" aria-labelledby="hero-title">
-      <img class="hero-image" src="assets/lee-hyun-goo.png" alt="이현구 프로필 사진">
+      <picture>
+        <source srcset="assets/lee-hyun-goo.webp" type="image/webp">
+        <img class="hero-image" src="assets/lee-hyun-goo.png" alt="이현구 프로필 사진"
+             width="1920" height="1080" fetchpriority="high" decoding="async">
+      </picture>
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-copy">
         <p class="eyebrow">Educator · Marketer · Researcher</p>
