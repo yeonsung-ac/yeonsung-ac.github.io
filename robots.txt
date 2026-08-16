@@ -1,2 +1,7 @@
 User-agent: *
-Allow:/
+Allow: /
+
+User-agent: Yeti
+Allow: /
+
+Sitemap: https://yeonsung-ac.github.io/sitemap.xml
