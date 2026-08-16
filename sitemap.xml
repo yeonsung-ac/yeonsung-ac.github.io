@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- 메인 (원페이지) -->
+  <url>
+    <loc>https://yeonsung-ac.github.io/</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- 강의 -->
+  <url>
+    <loc>https://yeonsung-ac.github.io/courses/01-ai-brand-marketing/</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 프로젝트 · 웹게임 놀이터 -->
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/01-rock-paper-scissors.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/02-dice.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/03-yutnori.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/04-lotto.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/05-snake.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/06-word-garden.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/07-math-typing.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://yeonsung-ac.github.io/2026/08-around-the-world.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- 프로젝트 · 온라인 오목 -->
+  <url>
+    <loc>https://yeonsung-ac.github.io/5mok/</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>
