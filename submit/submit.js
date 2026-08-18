@@ -535,6 +535,7 @@ function start() {
     $("upload").hidden = !signedIn;
     $("listing").hidden = !signedIn;
     $("billing").hidden = !state.isProfessor;
+    $("cost").hidden = !state.isProfessor;
     $("search").hidden = !state.isProfessor;
     $("listing-title").textContent = state.isProfessor ? "전체 제출 내역" : "내 제출 내역";
 

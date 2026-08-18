@@ -74,3 +74,23 @@
 .submit-row-editing .submit-select{min-height:38px;padding:9px 14px;font-size:.82rem}
 .submit-edit-note{width:100%;margin-top:8px;padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit;font-family:inherit;font-size:.86rem}
 .submit-edit-note:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+
+/* 요금 상세 (교수 전용, 접힘) */
+.submit-cost{margin-top:64px;border:1px solid #e6c6c1;border-radius:var(--radius);background:#fdf7f6}
+.submit-cost summary{padding:18px 24px;color:#8e2f24;font:700 .88rem/1.4 Arial,sans-serif;cursor:pointer;list-style:none}
+.submit-cost summary::-webkit-details-marker{display:none}
+.submit-cost summary:before{content:"▸ ";display:inline-block;transition:transform .18s}
+.submit-cost[open] summary:before{content:"▾ "}
+.submit-cost summary:hover{color:#c0392b}
+.submit-cost-body{padding:4px 26px 28px;color:#6b4a44;font-size:.9rem;line-height:1.9}
+.submit-cost-body h3{margin:22px 0 8px;color:#8e2f24;font-size:.92rem;letter-spacing:-.02em}
+.submit-cost-body h3:first-child{margin-top:6px}
+.submit-cost-body p{margin:0 0 8px}
+.submit-cost-body ul{margin:0;padding-left:20px}
+.submit-cost-body li+li{margin-top:4px}
+.submit-cost-body b{color:#c0392b}
+.submit-cost-body table{border-collapse:collapse;margin:4px 0 8px}
+.submit-cost-body th{padding:6px 22px 6px 0;text-align:left;font-weight:600;color:#8e6058}
+.submit-cost-body td{padding:6px 0}
+.submit-cost-warn{padding:12px 16px;border-radius:10px;background:#f8e3df;color:#8e2f24;font-weight:600}
+.submit-cost-foot{margin-top:18px!important;font-size:.78rem;color:#a8695f}
