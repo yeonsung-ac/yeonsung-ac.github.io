@@ -24,13 +24,24 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { PROFESSOR_UID } from "../professor.js";
 
-const CATEGORIES = ["자유", "질문", "후기", "공지"];
+const CATEGORIES = ["자유", "질문", "후기", "과제", "공지"];
 const COLLECTION = "posts";
 const LIST_LIMIT = 200;
+
+/**
+ * 비밀글은 '과제' 분류에서만 쓸 수 있다.
+ * Firestore 는 문서 단위로만 권한을 걸 수 있어서 제목만 공개하고 본문만 가릴 수 없다.
+ * 그래서 본문을 secrets 컬렉션으로 떼어 두고, posts 에는 제목과 비밀 여부만 남긴다.
+ * 목록에는 모두 보이지만 본문은 작성자와 교수만 읽는다.
+ */
+const SECRET_COLLECTION = "secrets";
+const SECRET_CATEGORY = "과제";
 
 const $ = (id) => document.getElementById(id);
 
@@ -62,7 +73,22 @@ function start() {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const state = { user: null, posts: [], filter: "전체", keyword: "", editing: null, listLoaded: false };
+  const state = {
+    user: null,
+    isProfessor: false,
+    posts: [],
+    filter: "전체",
+    keyword: "",
+    editing: null,
+    editingBody: "",
+    listLoaded: false,
+  };
+
+  /** 이 글의 본문을 볼 수 있는 사람인가. 공개글이면 누구나. */
+  function canReadBody(post) {
+    if (!post.secret) return true;
+    return Boolean(state.user && (state.user.uid === post.authorId || state.isProfessor));
+  }
 
   /* ---------- 로그인 ---------- */
 
@@ -112,9 +138,22 @@ function start() {
       category: CATEGORIES.includes(data.category) ? data.category : "자유",
       authorId: String(data.authorId ?? ""),
       authorName: String(data.authorName ?? "이름 없음"),
+      secret: data.secret === true,
       createdAt: at(data.createdAt),
       updatedAt: at(data.updatedAt),
     };
+  }
+
+  /** 비밀글의 본문을 가져온다. 권한이 없으면 null 을 돌려준다. */
+  async function loadBody(post) {
+    if (!post.secret) return post.content;
+    if (!canReadBody(post)) return null;
+    try {
+      const snapshot = await getDoc(doc(db, SECRET_COLLECTION, post.id));
+      return snapshot.exists() ? String(snapshot.data().content ?? "") : "";
+    } catch {
+      return null;
+    }
   }
 
   async function loadPosts() {
@@ -180,9 +219,14 @@ function start() {
       tag.dataset.category = post.category;
 
       const main = make("span", "board-row-main");
+      const title = make("span", "board-row-title");
+      if (post.secret) title.append(make("span", "board-lock", "🔒 비밀글"));
+      title.append(document.createTextNode(post.title));
       main.append(
-        make("span", "board-row-title", post.title),
-        make("span", "board-row-excerpt", post.content.slice(0, 100)),
+        title,
+        make("span", "board-row-excerpt", post.secret
+          ? "본문은 작성자와 교수만 볼 수 있습니다."
+          : post.content.slice(0, 100)),
       );
 
       const meta = make("span", "board-row-meta");
@@ -213,10 +257,19 @@ function start() {
     box.hidden = !message;
   }
 
-  function fillForm(post) {
+  /** 비밀글 선택칸은 '과제' 분류에서만 보인다. 다른 분류로 바꾸면 선택도 풀린다. */
+  function syncSecretField() {
+    const on = $("field-category").value === SECRET_CATEGORY;
+    $("field-secret").parentElement.hidden = !on;
+    if (!on) $("field-secret").checked = false;
+  }
+
+  function fillForm(post, body) {
     $("field-category").value = post ? post.category : "자유";
     $("field-title").value = post ? post.title : "";
-    $("field-content").value = post ? post.content : "";
+    $("field-content").value = post ? (body ?? post.content) : "";
+    syncSecretField();
+    $("field-secret").checked = Boolean(post && post.secret);
     $("form-title").textContent = post ? "글 수정" : "새 글 쓰기";
     $("form-submit").textContent = post ? "수정 완료" : "등록하기";
     showFormError("");
@@ -226,22 +279,26 @@ function start() {
     event.preventDefault();
     if (!state.user) return;
 
-    const input = {
-      title: $("field-title").value.trim(),
-      content: $("field-content").value.trim(),
-      category: $("field-category").value,
-    };
-    if (!input.title || !input.content) {
+    const title = $("field-title").value.trim();
+    const body = $("field-content").value.trim();
+    const category = $("field-category").value;
+    const secret = category === SECRET_CATEGORY && $("field-secret").checked;
+
+    if (!title || !body) {
       showFormError("제목과 내용을 모두 입력해 주세요.");
       return;
     }
+
+    // 비밀글이면 posts 에는 본문을 남기지 않는다. 목록에 노출되는 문서이기 때문이다.
+    const input = { title, category, secret, content: secret ? "" : body };
 
     const submit = $("form-submit");
     submit.disabled = true;
     showFormError("");
 
     try {
-      let id = state.editing;
+      const editingId = state.editing;
+      let id = editingId;
       if (id) {
         await updateDoc(doc(db, COLLECTION, id), { ...input, updatedAt: serverTimestamp() });
         state.editing = null;
@@ -255,6 +312,22 @@ function start() {
         });
         id = created.id;
       }
+
+      if (secret) {
+        try {
+          await setDoc(doc(db, SECRET_COLLECTION, id), { content: body, authorId: state.user.uid });
+        } catch (error) {
+          // 새 글이었다면 본문 없는 껍데기가 남지 않게 되돌린다.
+          // 수정 중이었다면 원래 글을 지워서는 안 되므로 그대로 둔다.
+          if (!editingId) await deleteDoc(doc(db, COLLECTION, id)).catch(() => {});
+          throw error;
+        }
+      } else if (editingId) {
+        // 비밀글을 공개글로 되돌린 경우 떼어 두었던 본문을 지운다.
+        // 새 글에는 지울 본문이 애초에 없으므로 건드리지 않는다.
+        await deleteDoc(doc(db, SECRET_COLLECTION, id)).catch(() => {});
+      }
+
       await loadPosts();
       window.location.hash = `#p=${id}`;
     } catch {
@@ -300,22 +373,36 @@ function start() {
     const edited = post.updatedAt && post.createdAt
       && post.updatedAt.getTime() - post.createdAt.getTime() > 60000 ? " (수정됨)" : "";
     $("post-meta").textContent = `${post.authorName} · ${formatDate(post.createdAt)}${edited}`;
-    $("post-content").textContent = post.content;
+
+    const lock = $("post-lock");
+    lock.hidden = !post.secret;
+
+    const body = await loadBody(post);
+    const blocked = body === null;
+    const content = $("post-content");
+    content.classList.toggle("board-blocked", blocked);
+    content.textContent = blocked
+      ? "비밀글입니다. 작성자와 담당 교수만 본문을 볼 수 있습니다."
+      : body;
 
     const owner = Boolean(state.user && state.user.uid === post.authorId);
-    $("post-owner-actions").hidden = !owner;
-    if (!owner) return;
+    $("post-owner-actions").hidden = !(owner || state.isProfessor);
+    if (!(owner || state.isProfessor)) return;
 
+    // 교수는 지울 수만 있고 남의 글을 고치지는 못한다.
+    $("edit-button").hidden = !owner;
     $("edit-button").onclick = () => {
       state.editing = post.id;
-      fillForm(post);
+      fillForm(post, body);
       window.location.hash = "#edit";
     };
 
+    $("delete-button").disabled = false;
     $("delete-button").onclick = async () => {
       if (!window.confirm("이 글을 삭제할까요? 되돌릴 수 없습니다.")) return;
       $("delete-button").disabled = true;
       try {
+        if (post.secret) await deleteDoc(doc(db, SECRET_COLLECTION, post.id)).catch(() => {});
         await deleteDoc(doc(db, COLLECTION, post.id));
         await loadPosts();
         window.location.hash = "";
@@ -387,11 +474,17 @@ function start() {
     signIn();
   });
 
+  $("field-category").addEventListener("change", syncSecretField);
+  syncSecretField();
+
   $("form").addEventListener("submit", submitForm);
   window.addEventListener("hashchange", route);
 
   onAuthStateChanged(auth, (user) => {
     state.user = user;
+    state.isProfessor = Boolean(user && PROFESSOR_UID && user.uid === PROFESSOR_UID);
+    // 로그인 상태가 바뀌면 볼 수 있는 범위도 바뀌므로 목록을 다시 읽는다.
+    state.listLoaded = false;
     renderAccount();
     route();
   });

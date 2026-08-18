@@ -57,6 +57,7 @@
 .board-tag{display:inline-flex;justify-content:center;padding:6px 12px;border-radius:999px;background:#e8ecdf;color:#36402d;font:700 .66rem/1.2 Arial,sans-serif;letter-spacing:.05em}
 .board-tag[data-category="질문"]{background:#e2ebf6;color:#2c4a72}
 .board-tag[data-category="후기"]{background:#f4ecdd;color:#6c5423}
+.board-tag[data-category="과제"]{background:#e6e2f2;color:#443a6b}
 .board-tag[data-category="공지"]{background:var(--navy);color:var(--lime)}
 
 /* 폼 */
@@ -99,3 +100,16 @@
   .board-list a{padding:20px 4px}
   .board-row-title{font-size:1rem}
 }
+
+/* ---------- 비밀글 ---------- */
+.board-lock{display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:#efe4e2;color:#8e4034;font:700 .64rem/1.2 Arial,sans-serif;letter-spacing:.03em;white-space:nowrap}
+.board-row-title .board-lock{margin-right:9px;vertical-align:2px;padding:4px 9px;font-size:.58rem}
+.board-article .board-lock{margin-left:7px;vertical-align:1px}
+.board-article-body.board-blocked{margin-top:30px;padding:30px 26px;border-top:0;border:1px dashed #e0c3bd;border-radius:var(--radius);background:#fdf4f2;color:#8e4034;font-weight:600;line-height:1.85;white-space:normal}
+
+/* 비밀글 선택칸 */
+.board-check{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+.board-check:hover{border-color:#b8c0bb}
+.board-check input{flex:none;margin:2px 0 0;width:18px;height:18px;accent-color:var(--navy)}
+.board-check b{display:block;font-size:.92rem}
+.board-check em{display:block;margin-top:4px;color:var(--muted);font-size:.82rem;font-style:normal;line-height:1.7}

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="이현구 교수 수업 과제 제출함 - 수업에서 만든 파일을 제출하는 공간입니다.">
+  <title>과제 제출함 | 이현구</title>
+  <link rel="canonical" href="https://yeonsung-ac.github.io/submit/">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../board/board.css">
+  <link rel="stylesheet" href="submit.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 바로가기</a>
+
+  <header class="site-header">
+    <a class="wordmark" href="../" aria-label="홈으로 이동"><img src="../assets/yeonsung-logo.png" alt="연성대학교"></a>
+    <nav aria-label="주요 메뉴">
+      <a href="../#about">소개</a>
+      <a href="../#work">경력</a>
+      <a href="../#research">연구</a>
+      <a href="../#projects">프로젝트</a>
+      <a href="../board/">게시판</a>
+      <a class="is-current" href="./" aria-current="page">제출함</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="board-head">
+      <p class="section-label">06 / Submission</p>
+      <div class="board-head-body">
+        <h1>과제 제출함</h1>
+        <p class="board-lede">수업에서 만든 코드·문서·이미지·음원 파일을 제출하는 곳입니다.<br class="wide-only">
+          구글 계정으로 로그인하면 바로 올릴 수 있고, <b>본인이 낸 것만 보입니다.</b></p>
+        <div class="board-account" id="account">
+          <span class="board-account-state" id="account-state">로그인 상태 확인 중…</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 설정 안내 (firebase-config.js 가 비어 있을 때만) -->
+    <section class="board-wrap" id="setup-notice" hidden>
+      <div class="board-notice">
+        <h2>제출함 설정이 아직 끝나지 않았습니다</h2>
+        <p><code>submit/firebase-config.js</code> 에 Firebase 프로젝트 정보가 비어 있습니다.
+          저장소의 <code>docs/제출함-설정.md</code> 안내를 따라 값을 채우면 제출함이 바로 동작합니다.</p>
+      </div>
+    </section>
+
+    <section class="board-wrap" id="view-main" hidden>
+
+      <!-- 요금 안내. 교수 계정으로 로그인했을 때만 보인다. -->
+      <div class="submit-billing" id="billing" hidden>
+        <h2>⚠ 유료(Blaze) 요금제로 동작 중입니다</h2>
+        <p class="submit-billing-usage" id="billing-usage">보관 용량 계산 중…</p>
+        <ul>
+          <li><b>무료 할당량</b> — 저장 5GB · 일일 다운로드 1GB · 일일 업로드 2만 건</li>
+          <li><b>이 범위를 넘으면 즉시 과금됩니다.</b> 초과분은 저장 GB당 약 $0.026/월,
+            다운로드 GB당 약 $0.12 수준입니다.</li>
+          <li>오래된 과제는 학기가 끝나면 내려받아 두고 여기서 삭제하세요. 용량이 줄어듭니다.</li>
+          <li>Google Cloud 콘솔에서 <b>예산 알림</b>을 걸어두면 예상치 못한 청구를 막을 수 있습니다.</li>
+        </ul>
+        <p class="submit-billing-foot">이 안내는 교수 계정에게만 보입니다. 학생 화면에는 표시되지 않습니다.</p>
+      </div>
+
+      <!-- 로그인 안내 -->
+      <div class="submit-gate" id="gate" hidden>
+        <h2>로그인이 필요합니다</h2>
+        <p>구글 계정으로 로그인하면 과제를 제출할 수 있습니다.<br>
+          제출한 파일은 <b>본인과 담당 교수만</b> 볼 수 있습니다.</p>
+        <button class="board-button board-button-primary" id="gate-signin" type="button">구글 계정으로 로그인</button>
+      </div>
+
+      <!-- 업로드 -->
+      <section class="submit-upload" id="upload" hidden aria-labelledby="upload-title">
+        <h2 id="upload-title">파일 제출하기</h2>
+        <div class="submit-upload-row">
+          <label class="board-field submit-field-assignment">
+            <span>과제</span>
+            <select id="field-assignment"></select>
+          </label>
+          <label class="board-field submit-field-note">
+            <span>메모 (선택)</span>
+            <input id="field-note" type="text" maxlength="100" placeholder="예: 2차 수정본입니다">
+          </label>
+        </div>
+
+        <div class="submit-drop" id="drop" tabindex="0" role="button"
+             aria-label="파일 선택. 클릭하거나 파일을 끌어다 놓으세요.">
+          <p class="submit-drop-main">파일을 끌어다 놓거나 <b>클릭해서 선택</b>하세요</p>
+          <p class="submit-drop-sub" id="drop-sub">여러 개를 한 번에 올릴 수 있습니다</p>
+          <input id="field-file" type="file" multiple hidden>
+        </div>
+
+        <ul class="submit-queue" id="queue" hidden></ul>
+        <p class="board-status board-status-error" id="upload-error" hidden></p>
+        <div class="board-actions">
+          <button class="board-button board-button-primary" id="upload-button" type="button" disabled>제출하기</button>
+        </div>
+      </section>
+
+      <!-- 목록 -->
+      <section class="submit-listing" id="listing" hidden aria-labelledby="listing-title">
+        <div class="board-toolbar">
+          <h2 id="listing-title" class="submit-listing-title">내 제출 내역</h2>
+          <div class="board-toolbar-right">
+            <label class="sr-only" for="filter-assignment">과제로 거르기</label>
+            <select class="submit-select" id="filter-assignment"></select>
+            <label class="sr-only" for="search">제출자 · 파일명 검색</label>
+            <input class="board-search" id="search" type="search" placeholder="제출자 · 파일명 검색" hidden>
+          </div>
+        </div>
+        <p class="board-status" id="list-status">불러오는 중입니다…</p>
+        <ol class="board-list submit-list" id="list" hidden></ol>
+      </section>
+
+    </section>
+  </main>
+
+  <footer>
+    <div><p class="eyebrow">Let’s connect</p><h2>새로운 교육과 프로젝트를<br>함께 이야기해요.</h2></div>
+    <a href="mailto:dasahee@yeonsung.ac.kr">dasahee@yeonsung.ac.kr <span aria-hidden="true">↗</span></a>
+    <p class="copyright">© 2026 Lee Hyun Goo</p>
+  </footer>
+
+  <script type="module" src="submit.js"></script>
+</body>
+</html>

@@ -27,6 +27,7 @@
       <a href="../#research">연구</a>
       <a href="../#projects">프로젝트</a>
       <a class="is-current" href="./" aria-current="page">게시판</a>
+      <a href="../submit/">제출함</a>
     </nav>
   </header>
 
@@ -75,6 +76,10 @@
           <span>분류</span>
           <select id="field-category"></select>
         </label>
+        <label class="board-check" hidden>
+          <input id="field-secret" type="checkbox">
+          <span><b>비밀글로 올리기</b><em>제목은 목록에 보이지만 본문은 작성자와 담당 교수만 볼 수 있습니다.</em></span>
+        </label>
         <label class="board-field">
           <span>제목</span>
           <input id="field-title" type="text" maxlength="120" placeholder="제목을 입력하세요" required>
@@ -97,6 +102,7 @@
       <p class="board-status" id="post-status" hidden></p>
       <article class="board-article" id="article" hidden>
         <span class="board-tag" id="post-category"></span>
+        <span class="board-lock" id="post-lock" hidden>🔒 비밀글</span>
         <h2 id="post-title"></h2>
         <p class="board-article-meta" id="post-meta"></p>
         <div class="board-article-body" id="post-content"></div>
