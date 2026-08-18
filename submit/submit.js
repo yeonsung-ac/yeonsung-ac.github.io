@@ -1,6 +1,6 @@
 /**
  * 과제 제출함. 빌드 도구 없이 브라우저에서 Firebase 를 직접 쓴다.
- * 학생은 자기가 낸 것만 보고, 교수(PROFESSOR_UID)는 전부 본다.
+ * 학생은 자기가 낸 것만 보고, 교수(professor.js 의 이메일)는 전부 본다.
  * 파일 실물은 Storage 에, 목록에 필요한 정보는 Firestore 의 submissions 에 둔다.
  */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
@@ -33,7 +33,7 @@ import {
   uploadBytesResumable,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { ASSIGNMENTS, MAX_FILE_MB, PROFESSOR_UID } from "./settings.js";
+import { ASSIGNMENTS, MAX_FILE_MB, isProfessorUser } from "./settings.js";
 
 const COLLECTION = "submissions";
 const LIST_LIMIT = 500;
@@ -513,7 +513,7 @@ function start() {
 
   onAuthStateChanged(auth, (user) => {
     state.user = user;
-    state.isProfessor = Boolean(user && PROFESSOR_UID && user.uid === PROFESSOR_UID);
+    state.isProfessor = isProfessorUser(user);
     renderAccount();
     render();
   });

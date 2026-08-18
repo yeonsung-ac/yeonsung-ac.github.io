@@ -28,7 +28,7 @@ import {
   updateDoc,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { PROFESSOR_UID } from "../professor.js";
+import { isProfessorUser } from "../professor.js";
 
 const CATEGORIES = ["자유", "질문", "후기", "과제", "공지"];
 const COLLECTION = "posts";
@@ -482,7 +482,7 @@ function start() {
 
   onAuthStateChanged(auth, (user) => {
     state.user = user;
-    state.isProfessor = Boolean(user && PROFESSOR_UID && user.uid === PROFESSOR_UID);
+    state.isProfessor = isProfessorUser(user);
     // 로그인 상태가 바뀌면 볼 수 있는 범위도 바뀌므로 목록을 다시 읽는다.
     state.listLoaded = false;
     renderAccount();

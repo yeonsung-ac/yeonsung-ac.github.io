@@ -1,15 +1,26 @@
 /**
- * 교수 계정의 Firebase UID. 사이트 전체가 이 파일 하나를 본다.
+ * 교수 계정의 구글 이메일. 사이트 전체가 이 파일 하나를 본다.
  *
- * 이 UID 로 로그인하면
+ * 이 주소로 로그인하면
  *   - 게시판(/board/)에서 학생이 올린 비밀글을 볼 수 있고
  *   - 제출함(/submit/)에서 모든 학생의 제출물을 볼 수 있다.
  *
- * 값은 Firebase 콘솔 > Authentication > 사용자 탭의 '사용자 UID' 열에서 복사한다.
- * 비워 두면 아무도 전체를 못 볼 뿐, 나머지 기능은 정상 동작한다.
+ * 여러 개를 넣어도 된다. 학교 계정과 개인 지메일을 번갈아 쓴다면 둘 다 적어
+ * 두면 어느 쪽으로 로그인해도 교수로 인정된다.
  *
- * ⚠ firestore.rules 와 storage.rules 의 PASTE_PROFESSOR_UID_HERE 도
- *   반드시 같은 값으로 바꾸고 콘솔에 게시해야 한다. 한 곳이라도 빠지면
- *   목록은 보이는데 파일이 안 열리는 식으로 어긋난다.
+ * ⚠ firestore.rules 와 storage.rules 의 isProfessor() 안에도 같은 주소가
+ *   적혀 있다. 여기만 고치면 화면은 바뀌지만 서버가 막으므로, 규칙 두 파일도
+ *   함께 고치고 Firebase 콘솔에 다시 게시해야 한다.
  */
-export const PROFESSOR_UID = "";
+export const PROFESSOR_EMAILS = [
+  "dasahee@yeonsung.ac.kr",
+];
+
+/**
+ * 로그인한 사람이 교수인가.
+ * 구글이 확인해 준 이메일만 인정한다. emailVerified 를 빼면 다른 로그인 수단으로
+ * 교수 주소를 사칭할 여지가 생긴다.
+ */
+export function isProfessorUser(user) {
+  return Boolean(user && user.emailVerified && PROFESSOR_EMAILS.includes(user.email));
+}

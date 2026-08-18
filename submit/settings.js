@@ -14,5 +14,5 @@ export const ASSIGNMENTS = [
 /** 파일 하나의 최대 크기(MB). storage.rules 의 값과 반드시 같아야 한다. */
 export const MAX_FILE_MB = 50;
 
-/** 교수 UID 는 사이트 전체가 professor.js 하나를 본다. */
-export { PROFESSOR_UID } from "../professor.js";
+/** 교수 판별은 사이트 전체가 professor.js 하나를 본다. */
+export { PROFESSOR_EMAILS, isProfessorUser } from "../professor.js";
