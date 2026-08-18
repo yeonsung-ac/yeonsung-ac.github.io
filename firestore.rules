@@ -1,9 +1,20 @@
 rules_version = '2';
 
-// 게시판 보안 규칙.
-// 읽기는 누구나, 쓰기는 로그인한 사용자만. 수정·삭제는 본인 글만 가능하다.
+// 연성대학교 이현구 교수 홈페이지 통합 Firestore 규칙
+//
+// Firebase 프로젝트 하나를 두 사이트가 함께 쓴다.
+//   posts        - 홈페이지 게시판     (yeonsung-ac.github.io/board/)
+//   applications - 부트캠프 간편 신청  (yeonsung-ac.github.io/YouthLeap/)
+//
+// 이 파일 전체를 Firebase 콘솔 > Firestore Database > 규칙 탭에 붙여넣고 게시하세요.
+// 둘 중 하나만 넣으면 나머지 한쪽이 동작하지 않습니다.
+// YouthLeap 저장소의 firestore.rules 와 내용이 같습니다.
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---------- 홈페이지 게시판 ----------
+    // 읽기는 누구나, 쓰기는 로그인 사용자, 수정·삭제는 본인 글만.
     match /posts/{postId} {
       allow read: if true;
 
@@ -24,6 +35,24 @@ service cloud.firestore {
         && request.resource.data.title.size() <= 120
         && request.resource.data.content.size() > 0
         && request.resource.data.content.size() <= 8000;
+
+      allow delete: if request.auth != null
+        && resource.data.authorId == request.auth.uid;
+    }
+
+    // ---------- 부트캠프 간편 신청 ----------
+    // 공개 댓글형. 수정은 막아 신청 기록을 남긴 그대로 보존한다.
+    match /applications/{applicationId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 500
+        && request.resource.data.kind in ['신청', '문의'];
+
+      allow update: if false;
 
       allow delete: if request.auth != null
         && resource.data.authorId == request.auth.uid;
