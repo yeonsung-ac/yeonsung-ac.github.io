@@ -17,6 +17,22 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- 부트캠프 · 청년도약 인재양성 (모집 기간 한정) -->
+  <url>
+    <loc>https://yeonsung-ac.github.io/YouthLeap/</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 게시판 -->
+  <url>
+    <loc>https://yeonsung-ac.github.io/board/</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- 프로젝트 · 웹게임 놀이터 -->
   <url>
     <loc>https://yeonsung-ac.github.io/2026/</loc>
