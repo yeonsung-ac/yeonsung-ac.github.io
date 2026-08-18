@@ -30,18 +30,18 @@ import {
 import { firebaseConfig } from "./firebase-config.js";
 import { isProfessorUser } from "../professor.js";
 
-const CATEGORIES = ["자유", "질문", "후기", "과제", "공지"];
+const CATEGORIES = ["자유", "질문", "후기", "상담", "공지"];
 const COLLECTION = "posts";
 const LIST_LIMIT = 200;
 
 /**
- * 비밀글은 '과제' 분류에서만 쓸 수 있다.
+ * 비밀글은 '상담' 분류에서만 쓸 수 있다.
  * Firestore 는 문서 단위로만 권한을 걸 수 있어서 제목만 공개하고 본문만 가릴 수 없다.
  * 그래서 본문을 secrets 컬렉션으로 떼어 두고, posts 에는 제목과 비밀 여부만 남긴다.
  * 목록에는 모두 보이지만 본문은 작성자와 교수만 읽는다.
  */
 const SECRET_COLLECTION = "secrets";
-const SECRET_CATEGORY = "과제";
+const SECRET_CATEGORY = "상담";
 
 const $ = (id) => document.getElementById(id);
 
@@ -257,7 +257,7 @@ function start() {
     box.hidden = !message;
   }
 
-  /** 비밀글 선택칸은 '과제' 분류에서만 보인다. 다른 분류로 바꾸면 선택도 풀린다. */
+  /** 비밀글 선택칸은 '상담' 분류에서만 보인다. 다른 분류로 바꾸면 선택도 풀린다. */
   function syncSecretField() {
     const on = $("field-category").value === SECRET_CATEGORY;
     $("field-secret").parentElement.hidden = !on;

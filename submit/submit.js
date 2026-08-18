@@ -23,6 +23,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
   where,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 import {
@@ -91,6 +92,7 @@ function start() {
     filter: "전체",
     keyword: "",
     uploading: false,
+    editingId: null,
   };
 
   /* ---------- 로그인 ---------- */
@@ -366,6 +368,113 @@ function start() {
     }
   }
 
+  function isOwner(item) {
+    return Boolean(state.user && state.user.uid === item.ownerId);
+  }
+
+  function buildRow(item) {
+    const row = make("div", "submit-row");
+
+    const tag = make("span", "board-tag", item.assignment || "미분류");
+    tag.dataset.category = item.assignment;
+
+    const main = make("span", "submit-row-main");
+    const sub = state.isProfessor
+      ? [item.ownerName, item.ownerEmail, item.note].filter(Boolean).join(" · ")
+      : item.note;
+    main.append(make("span", "submit-row-name", item.fileName));
+    if (sub) main.append(make("span", "submit-row-sub", sub));
+
+    const meta = make("span", "submit-row-meta");
+    meta.append(make("b", "", formatSize(item.fileSize)), document.createTextNode(formatDate(item.createdAt)));
+
+    const actions = make("span", "submit-row-actions");
+    const get = make("button", "board-button", "내려받기");
+    get.type = "button";
+    get.addEventListener("click", () => download(item, get));
+    actions.append(get);
+
+    // 남의 제출물은 교수도 고치지 못한다. 지우는 것만 된다.
+    if (isOwner(item)) {
+      const edit = make("button", "board-button", "수정");
+      edit.type = "button";
+      edit.addEventListener("click", () => {
+        state.editingId = item.id;
+        renderList();
+      });
+      actions.append(edit);
+    }
+
+    const del = make("button", "board-button board-button-danger", "삭제");
+    del.type = "button";
+    del.addEventListener("click", () => remove(item, del));
+    actions.append(del);
+
+    row.append(tag, main, meta, actions);
+    return row;
+  }
+
+  /**
+   * 고칠 수 있는 것은 과제 분류와 메모뿐이다.
+   * 파일을 바꾸려면 지우고 다시 올려야 한다. 규칙에서도 그렇게 막아 두었다.
+   */
+  function buildEditRow(item) {
+    const row = make("div", "submit-row submit-row-editing");
+
+    const select = document.createElement("select");
+    select.className = "submit-select";
+    const names = ASSIGNMENTS.includes(item.assignment) || !item.assignment
+      ? ASSIGNMENTS
+      : [...ASSIGNMENTS, item.assignment];
+    names.forEach((name) => {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = ASSIGNMENTS.includes(name) ? name : `${name} (지워진 과제)`;
+      select.append(option);
+    });
+    select.value = item.assignment || ASSIGNMENTS[0];
+
+    const main = make("span", "submit-row-main");
+    main.append(make("span", "submit-row-name", item.fileName));
+    const note = document.createElement("input");
+    note.type = "text";
+    note.className = "submit-edit-note";
+    note.maxLength = 100;
+    note.placeholder = "메모 (선택)";
+    note.value = item.note;
+    main.append(note);
+
+    const meta = make("span", "submit-row-meta");
+    meta.append(make("b", "", formatSize(item.fileSize)), document.createTextNode(formatDate(item.createdAt)));
+
+    const actions = make("span", "submit-row-actions");
+    const save = make("button", "board-button board-button-primary", "저장");
+    save.type = "button";
+    save.addEventListener("click", () => saveEdit(item, select.value, note.value.trim(), save));
+    const cancel = make("button", "board-button", "취소");
+    cancel.type = "button";
+    cancel.addEventListener("click", () => {
+      state.editingId = null;
+      renderList();
+    });
+    actions.append(save, cancel);
+
+    row.append(select, main, meta, actions);
+    return row;
+  }
+
+  async function saveEdit(item, assignment, note, button) {
+    button.disabled = true;
+    try {
+      await updateDoc(doc(db, COLLECTION, item.id), { assignment, note });
+      state.editingId = null;
+      await refresh();
+    } catch {
+      window.alert("수정하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      button.disabled = false;
+    }
+  }
+
   function renderList() {
     const list = $("list");
     const status = $("list-status");
@@ -395,34 +504,8 @@ function start() {
     list.hidden = false;
 
     visible.forEach((item) => {
-      const row = make("div", "submit-row");
-
-      const tag = make("span", "board-tag", item.assignment || "미분류");
-      tag.dataset.category = item.assignment;
-
-      const main = make("span", "submit-row-main");
-      const sub = state.isProfessor
-        ? [item.ownerName, item.ownerEmail, item.note].filter(Boolean).join(" · ")
-        : item.note;
-      main.append(make("span", "submit-row-name", item.fileName));
-      if (sub) main.append(make("span", "submit-row-sub", sub));
-
-      const meta = make("span", "submit-row-meta");
-      meta.append(make("b", "", formatSize(item.fileSize)), document.createTextNode(formatDate(item.createdAt)));
-
-      const actions = make("span", "submit-row-actions");
-      const get = make("button", "board-button", "내려받기");
-      get.type = "button";
-      get.addEventListener("click", () => download(item, get));
-      const del = make("button", "board-button board-button-danger", "삭제");
-      del.type = "button";
-      del.addEventListener("click", () => remove(item, del));
-      actions.append(get, del);
-
-      row.append(tag, main, meta, actions);
-
       const li = document.createElement("li");
-      li.append(row);
+      li.append(item.id === state.editingId ? buildEditRow(item) : buildRow(item));
       list.append(li);
     });
   }

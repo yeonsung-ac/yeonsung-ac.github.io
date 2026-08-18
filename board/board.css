@@ -57,7 +57,7 @@
 .board-tag{display:inline-flex;justify-content:center;padding:6px 12px;border-radius:999px;background:#e8ecdf;color:#36402d;font:700 .66rem/1.2 Arial,sans-serif;letter-spacing:.05em}
 .board-tag[data-category="질문"]{background:#e2ebf6;color:#2c4a72}
 .board-tag[data-category="후기"]{background:#f4ecdd;color:#6c5423}
-.board-tag[data-category="과제"]{background:#e6e2f2;color:#443a6b}
+.board-tag[data-category="상담"]{background:#e6e2f2;color:#443a6b}
 .board-tag[data-category="공지"]{background:var(--navy);color:var(--lime)}
 
 /* 폼 */

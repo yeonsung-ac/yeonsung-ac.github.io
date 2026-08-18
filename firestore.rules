@@ -5,7 +5,7 @@ rules_version = '2';
 // Firebase 프로젝트 하나를 여러 곳이 함께 쓴다.
 //   posts        - 홈페이지 게시판     (yeonsung-ac.github.io/board/)
 //   applications - 부트캠프 간편 신청  (yeonsung-ac.github.io/YouthLeap/)
-//   secrets      - 비밀글 본문         (게시판의 과제 분류 전용)
+//   secrets      - 비밀글 본문         (게시판의 상담 분류 전용)
 //   submissions  - 과제 제출함         (yeonsung-ac.github.io/submit/)
 //
 // 이 파일 전체를 Firebase 콘솔 > Firestore Database > 규칙 탭에 붙여넣고 게시하세요.
@@ -28,14 +28,14 @@ service cloud.firestore {
     // ---------- 홈페이지 게시판 ----------
     // 읽기는 누구나, 쓰기는 로그인 사용자, 수정은 본인 글만.
     //
-    // 비밀글은 '과제' 분류에서만 쓸 수 있다. Firestore 는 문서 단위로만 권한을 걸 수 있어
+    // 비밀글은 '상담' 분류에서만 쓸 수 있다. Firestore 는 문서 단위로만 권한을 걸 수 있어
     // 한 문서 안에서 제목만 공개하고 본문만 가릴 수 없다. 그래서 비밀글의 본문은
     // 아래 secrets 컬렉션에 따로 두고, posts 에는 빈 content 만 남긴다.
     // 덕분에 목록에는 제목이 다 보이고 본문만 잠긴다.
     function bodyPlacedCorrectly(data) {
       return data.secret == false
         ? data.content.size() > 0
-        : (data.category == '과제' && data.content == '');
+        : (data.category == '상담' && data.content == '');
     }
 
     match /posts/{postId} {
@@ -50,7 +50,7 @@ service cloud.firestore {
         && request.resource.data.content.size() <= 8000
         && request.resource.data.secret is bool
         && bodyPlacedCorrectly(request.resource.data)
-        && request.resource.data.category in ['자유', '질문', '후기', '과제', '공지'];
+        && request.resource.data.category in ['자유', '질문', '후기', '상담', '공지'];
 
       allow update: if request.auth != null
         && resource.data.authorId == request.auth.uid
@@ -61,7 +61,7 @@ service cloud.firestore {
         && request.resource.data.content.size() <= 8000
         && request.resource.data.secret is bool
         && bodyPlacedCorrectly(request.resource.data)
-        && request.resource.data.category in ['자유', '질문', '후기', '과제', '공지'];
+        && request.resource.data.category in ['자유', '질문', '후기', '상담', '공지'];
 
       // 부적절한 글은 교수도 지울 수 있다.
       allow delete: if request.auth != null
@@ -132,8 +132,20 @@ service cloud.firestore {
         && request.resource.data.storagePath is string
         && request.resource.data.storagePath.matches('submissions/' + request.auth.uid + '/.*');
 
-      // 제출 기록은 고치지 못한다. 다시 내려면 새로 올린다.
-      allow update: if false;
+      // 올린 파일 자체는 바꿀 수 없다. 잘못 냈으면 지우고 다시 올린다.
+      // 다만 과제를 잘못 골랐거나 메모를 고치는 일은 흔하므로 그 둘만 허용한다.
+      // 소유자·파일명·크기·저장경로를 그대로 요구해 남의 제출물을 가로챌 수 없게 막는다.
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.storagePath == resource.data.storagePath
+        && request.resource.data.fileName == resource.data.fileName
+        && request.resource.data.fileSize == resource.data.fileSize
+        && request.resource.data.assignment is string
+        && request.resource.data.assignment.size() > 0
+        && request.resource.data.assignment.size() <= 60
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 100;
 
       allow delete: if request.auth != null
         && (resource.data.ownerId == request.auth.uid || isProfessor());
