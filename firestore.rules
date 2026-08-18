@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// 게시판 보안 규칙.
+// 읽기는 누구나, 쓰기는 로그인한 사용자만. 수정·삭제는 본인 글만 가능하다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /posts/{postId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.content.size() <= 8000
+        && request.resource.data.category in ['자유', '질문', '후기', '공지'];
+
+      allow update: if request.auth != null
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.content.size() > 0
+        && request.resource.data.content.size() <= 8000;
+
+      allow delete: if request.auth != null
+        && resource.data.authorId == request.auth.uid;
+    }
+  }
+}
