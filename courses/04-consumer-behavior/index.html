@@ -104,7 +104,8 @@
     </div>
 
     <div class="field-row" style="margin-top:20px">
-      <button id="btn-open-steam" class="act" type="button">스팀에서 열기 ↗</button>
+      <button id="btn-check-status" class="act" type="button">① 리뷰 현황만 확인 ↗</button>
+      <button id="btn-open-steam" class="act ghost" type="button">② 리뷰 받아오기 ↗</button>
       <button id="btn-precheck" class="act ghost" type="button" hidden>리뷰 현황 확인</button>
       <button id="btn-collect" class="act" type="button" hidden disabled>이 조건으로 수집</button>
     </div>
@@ -116,8 +117,15 @@
   <section class="panel">
     <p class="section-label">Step 2</p>
     <h2>복사해서 붙여넣기</h2>
-    <p class="hint">위 버튼을 누르면 새 탭에 글자가 잔뜩 뜹니다. 그게 리뷰 자료입니다.
-       그 화면에서 <b>Ctrl+A</b> 로 전체 선택, <b>Ctrl+C</b> 로 복사한 뒤 아래 칸에 붙여넣으세요.</p>
+    <p class="hint">위 두 버튼 중 무엇을 눌렀든, 새 탭에 뜬 내용을 <b>Ctrl+A</b> 로 전체 선택하고
+       <b>Ctrl+C</b> 로 복사해 아래 칸에 붙여넣으면 됩니다.
+       <b>①</b> 을 눌렀다면 한 줄짜리라 금방 끝나고 현황만 나옵니다.
+       <b>②</b> 를 눌렀다면 글자가 아주 많은데, 그게 리뷰 100건입니다.</p>
+    <div class="notice info" style="margin:0 0 16px">
+      <b>게임 고를 때</b>
+      <span>먼저 <b>①</b> 로 여러 게임의 현황만 빠르게 확인하세요. 확인한 게임은 아래 비교표에 쌓입니다.
+        분석할 게임을 정한 다음에 <b>②</b> 로 실제 리뷰를 받으면 됩니다.</span>
+    </div>
 
     <textarea id="paste-json" rows="5" placeholder="새 탭에서 복사한 내용을 여기에 붙여넣으세요"
       style="width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;resize:vertical"></textarea>
@@ -171,6 +179,11 @@
       <span>스팀 리뷰는 무작위 표본이 아닙니다. 리뷰를 남기는 사람은 아주 만족했거나 아주 실망한 쪽으로
         기울어 있습니다(자기선택 편향). 최신순으로 받으면 최근 패치의 영향이, 유용성순으로 받으면
         오래되고 많이 읽힌 리뷰가 과대 대표됩니다. 결론에 반드시 함께 적으세요.</span>
+    </div>
+    <div class="notice info" style="margin-top:12px">
+      <b>먼저 볼 것</b>
+      <span>수업 시간에 함께 본 분석 결과를 <a href="analysis/" style="text-decoration:underline"><b>여기</b></a>에
+        올려 두었습니다. 어떤 질문을 어떤 그림으로 답했는지 보고 시작하면 방향을 잡기 쉽습니다.</span>
     </div>
     <div class="notice info" style="margin-top:12px">
       <b>본문 정제</b>

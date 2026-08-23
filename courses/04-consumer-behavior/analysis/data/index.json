@@ -1,0 +1,36 @@
+{
+  "games": [
+    {
+      "file": "cyberpunk-2077.json",
+      "name": "Cyberpunk 2077",
+      "note": "2020년 출시 직후 품질 논란으로 환불 사태를 겪고, 이후 패치와 확장팩으로 평가가 회복된 사례.",
+      "appid": 1091500,
+      "sample_size": 370
+    },
+    {
+      "file": "pubg.json",
+      "name": "PUBG: BATTLEGROUNDS",
+      "note": "국내 개발 배틀로얄. 무료 전환 이후 신규 이용자와 장기 이용자의 평가가 갈린다.",
+      "appid": 578080,
+      "sample_size": 600
+    },
+    {
+      "file": "elden-ring.json",
+      "name": "ELDEN RING",
+      "note": "높은 난이도에도 만족도가 높다. 어려움이 곧 불만이 되지는 않는다는 사례.",
+      "appid": 1245620,
+      "sample_size": 199
+    },
+    {
+      "file": "counter-strike-2.json",
+      "name": "Counter-Strike 2",
+      "note": "전작을 대체하며 출시. 오래 플레이한 이용자일수록 평가가 박해지는 경향을 본다.",
+      "appid": 730,
+      "sample_size": 224
+    }
+  ],
+  "collected_at": "2026-08-23",
+  "language": "koreana",
+  "sort": "all",
+  "source": "Steam Store API - appreviews"
+}

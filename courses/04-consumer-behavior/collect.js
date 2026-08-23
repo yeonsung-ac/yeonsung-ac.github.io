@@ -136,7 +136,7 @@ function showPrecheck(d) {
 
   // 수업용 판단 도우미: 표본이 너무 적거나 한쪽으로 쏠리면 알려 준다.
   const tips = [];
-  if (d.pasted && d.pasted < 200) tips.push(`지금까지 ${fmt(d.pasted)}건입니다. 분석에는 200건 이상을 권합니다. 다음 묶음을 이어 받으세요.`);
+  if (!d.summaryOnly && d.pasted && d.pasted < 200) tips.push(`지금까지 ${fmt(d.pasted)}건입니다. 분석에는 200건 이상을 권합니다. 다음 묶음을 이어 받으세요.`);
   if (total < 200) tips.push("리뷰가 200건 미만입니다. 구간별로 나누면 표본이 부족해집니다. 다른 게임도 함께 보세요.");
   if (posRate > 0.95 || posRate < 0.05) tips.push("한쪽으로 크게 쏠려 있어 비교 분석이 단조로울 수 있습니다.");
   if (posRate >= 0.4 && posRate <= 0.7) tips.push("평가가 갈리는 게임입니다. 추천·비추천 비교 과제에 적합합니다.");
@@ -160,8 +160,11 @@ function showPrecheck(d) {
     <div class="tiles">
       <div class="tile"><p class="k">이 조건의 리뷰</p><p class="v">${fmt(total)}</p><p class="s">${langLabel(d.settings.language)} · ${typeLabel(d.settings.review_type)}</p></div>
       <div class="tile"><p class="k">전체 언어 리뷰</p><p class="v">${allTotal ? fmt(allTotal) : "-"}</p><p class="s">${share !== null ? `${langLabel(d.settings.language)} 비중 ${pct(share)}` : "조회하지 않음"}</p></div>
-      ${d.pasted
-        ? `<div class="tile"><p class="k">붙여넣어 확보한 양</p><p class="v">${fmt(d.pasted)}</p><p class="s">직접 열기 방식은 한 번에 100건까지</p></div>
+      ${d.summaryOnly
+        ? `<div class="tile"><p class="k">평가 성향</p><p class="v" style="font-size:1.05rem;color:${verdict[1]}">${verdict[0]}</p><p class="s">추천률 ${pct(posRate)}</p></div>
+           <div class="tile"><p class="k">아직 받지 않음</p><p class="v" style="font-size:1.05rem">현황만 확인</p><p class="s">이 게임으로 정하면 아래에서 받으세요</p></div>`
+        : d.pasted
+        ? `<div class="tile"><p class="k">지금까지 모은 양</p><p class="v">${fmt(d.pasted)}</p><p class="s">한 번에 100건씩 쌓입니다</p></div>
            <div class="tile"><p class="k">전체 대비 표본</p><p class="v">${pct(d.pasted / total, 2)}</p><p class="s">${sortLabel(d.settings.filter)} 기준 일부</p></div>`
         : `<div class="tile"><p class="k">이번에 가져올 양</p><p class="v">${fmt(willFetch)}</p><p class="s">${pages}회 요청 · 약 ${Math.max(1, Math.round(pages * 0.9))}초</p></div>
            <div class="tile"><p class="k">전체 대비 표본</p><p class="v">${pct(willFetch / total)}</p><p class="s">${willFetch < total ? `${sortLabel(d.settings.filter)} 기준 일부` : "전수 수집"}</p></div>`}
@@ -320,8 +323,20 @@ function analyzePasted() {
   catch { return notice("err", "JSON 을 읽지 못했습니다. 스팀 화면 전체를 복사했는지 확인하세요.", "형식 오류"); }
   try {
     const s = readSettings();
+    const q0 = parsed.query_summary || {};
     const fresh = adoptReviews(parsed.reviews || []);
-    if (!fresh.length) return notice("warn", "리뷰 본문이 들어 있지 않습니다. 스팀 화면 전체를 복사했는지 확인하세요.", "리뷰 없음");
+
+    // num_per_page=0 으로 연 '현황만' 응답. 리뷰는 없고 집계만 있다.
+    if (!fresh.length) {
+      if (!q0.total_reviews) {
+        return notice("warn", "리뷰도 집계도 들어 있지 않습니다. 스팀 화면 전체를 복사했는지 확인하세요.", "읽을 내용 없음");
+      }
+      state.lastSummary = q0;
+      showPrecheck({ name: gameName(s.appid), settings: s, sel: q0, all: {}, summaryOnly: true });
+      $("#paste-next").innerHTML = "";
+      $("#paste-json").value = "";
+      return notice("info", `${gameName(s.appid)} 현황을 확인했습니다. 다른 게임도 확인해 비교표에서 견주어 보세요.`, "현황 확인");
+    }
 
     // 이미 받은 것과 합치되 같은 리뷰는 한 번만 센다.
     const seen = new Set(state.reviews.map((r) => r.recommendationid).filter(Boolean));
@@ -418,6 +433,14 @@ function init() {
     const s = readSettings();
     if (!/^\d+$/.test(s.appid)) return notice("err", "앱 번호를 숫자로 입력하세요.", "입력 오류");
     window.open(steamUrl(s, 100), "_blank", "noopener");
+  });
+
+  // 현황만 볼 때는 리뷰를 0건 요청한다. 응답이 200바이트 남짓이라 복사가 쉽다.
+  $("#btn-check-status").addEventListener("click", () => {
+    const s = readSettings();
+    if (!/^\d+$/.test(s.appid)) return notice("err", "앱 번호를 숫자로 입력하세요.", "입력 오류");
+    window.open(steamUrl(s, 0), "_blank", "noopener");
+    $("#paste-json").focus();
   });
 
   $$(".presets button").forEach((b) => b.addEventListener("click", () => {
