@@ -57,6 +57,18 @@ function steamUrl(s, perPage = 100, cursor = "*") {
   return u.toString();
 }
 
+/** 스팀 탭을 새로 만들지 않고 같은 탭을 다시 쓴다. 탭이 열 개씩 쌓이지 않도록. */
+function openSteam(url) {
+  window.open(url, "steam-review-tab");
+}
+
+/** 다음 묶음을 이어서 연다. 붙여넣기 직후에 부르면 팝업 차단에 걸리지 않는다. */
+function openNextBatch() {
+  if (!state.nextCursor) return false;
+  openSteam(steamUrl(readSettings(), 100, state.nextCursor));
+  return true;
+}
+
 async function api(path, params = {}) {
   if (!hasProxy()) throw new Error("프록시가 설정되지 않았습니다.");
   const url = new URL(CONFIG.PROXY_BASE.replace(/\/$/, "") + path);
@@ -354,6 +366,16 @@ function analyzePasted() {
     }
     finishCollection(merged, s, `붙여넣기 ${state.pasteRounds}회`);
     renderNextStep(s, added.length, fresh.length);
+    $("#paste-json").value = "";
+
+    // 자동 이어받기: 목표에 못 미쳤고 다음 커서가 있으면 바로 다음 묶음을 띄운다.
+    const goal = Number($("#limit").value);
+    if ($("#auto-next").checked && added.length && state.nextCursor && merged.length < goal) {
+      openNextBatch();
+      notice("info", `${fmt(merged.length)} / ${fmt(goal)}건. 다음 묶음을 열었습니다. 그 탭에서 Ctrl+A, Ctrl+C 한 뒤 여기로 돌아와 Ctrl+V 하세요.`, "이어받는 중");
+    } else if (merged.length >= goal) {
+      notice("info", `목표한 ${fmt(goal)}건을 채웠습니다. 아래에서 내려받으세요.`, "수집 완료");
+    }
   } catch (err) {
     notice("err", err.message, "오류");
   }
@@ -379,7 +401,7 @@ function renderNextStep(s, added, fresh) {
       <button id="btn-reset-paste" class="act ghost" type="button">처음부터 다시</button>
     </div>`;
   $("#btn-next-batch").addEventListener("click", () => {
-    window.open(steamUrl(s, 100, state.nextCursor), "_blank", "noopener");
+    openSteam(steamUrl(s, 100, state.nextCursor));
     $("#paste-json").value = "";
     $("#paste-json").focus();
   });
@@ -409,8 +431,20 @@ function progress(ratio, text) {
   $("#progress-text").textContent = text;
 }
 
+/** 북마클릿이 스팀 창에서 보내 온 자료를 받는다. 출처를 반드시 확인한다. */
+function listenForBookmarklet() {
+  window.addEventListener("message", (e) => {
+    if (!/^https:\/\/store\.steampowered\.com$/.test(e.origin)) return;
+    const d = e.data;
+    if (!d || d.type !== "steam-reviews" || typeof d.payload !== "string") return;
+    $("#paste-json").value = d.payload;
+    analyzePasted();
+  });
+}
+
 function init() {
   initTheme();
+  listenForBookmarklet();
 
   if (!hasProxy()) {
     // 설치·가입 없이 쓰는 것이 기본이다. 자동 조회 버튼은 아예 감춘다.
@@ -426,20 +460,30 @@ function init() {
   $("#btn-precheck").addEventListener("click", runPrecheck);
   $("#btn-collect").addEventListener("click", collect);
   $("#btn-paste").addEventListener("click", analyzePasted);
+
+  // 칸을 클릭하지 않아도 Ctrl+V 만 누르면 읽는다. 권한이 필요 없는 방식이다.
+  document.addEventListener("paste", (e) => {
+    if (e.target && /^(INPUT|SELECT)$/.test(e.target.tagName)) return; // 앱 번호 칸 등은 그대로 둔다
+    const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+    if (text.trim().length < 40) return;
+    e.preventDefault();
+    $("#paste-json").value = text;
+    analyzePasted();
+  });
   $("#dl-json").addEventListener("click", () => download("json"));
   $("#dl-csv").addEventListener("click", () => download("csv"));
 
   $("#btn-open-steam").addEventListener("click", () => {
     const s = readSettings();
     if (!/^\d+$/.test(s.appid)) return notice("err", "앱 번호를 숫자로 입력하세요.", "입력 오류");
-    window.open(steamUrl(s, 100), "_blank", "noopener");
+    openSteam(steamUrl(s, 100));
   });
 
   // 현황만 볼 때는 리뷰를 0건 요청한다. 응답이 200바이트 남짓이라 복사가 쉽다.
   $("#btn-check-status").addEventListener("click", () => {
     const s = readSettings();
     if (!/^\d+$/.test(s.appid)) return notice("err", "앱 번호를 숫자로 입력하세요.", "입력 오류");
-    window.open(steamUrl(s, 0), "_blank", "noopener");
+    openSteam(steamUrl(s, 0));
     $("#paste-json").focus();
   });
 
