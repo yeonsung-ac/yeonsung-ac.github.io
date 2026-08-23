@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>스팀 리뷰 분석기 | 소비자행동론 · 이현구</title>
-<meta name="description" content="스팀 게임의 이용자 리뷰를 수집하고 소비자 반응을 분석하는 소비자행동론 수업 도구.">
+<title>스팀 리뷰 수집기 | 소비자행동론 · 이현구</title>
+<meta name="description" content="스팀 게임의 이용자 리뷰 현황을 미리 확인하고 원하는 조건으로 내려받는 소비자행동론 수업 도구.">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="스팀 리뷰 분석기 | 소비자행동론">
-<meta property="og:description" content="게임 앱 번호로 리뷰를 수집하고, 플레이타임·시점·표현을 기준으로 소비자 반응을 분석합니다.">
+<meta property="og:title" content="스팀 리뷰 수집기 | 소비자행동론">
+<meta property="og:description" content="게임을 고르기 전에 리뷰가 몇 건인지, 평가가 갈리는지 먼저 확인하고 조건에 맞게 내려받습니다.">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,18 +20,19 @@
     <button id="theme" class="theme-toggle" type="button">밝게 / 어둡게</button>
   </div>
   <p class="section-label" style="color:var(--lime)">04 / 소비자행동론</p>
-  <h1>스팀 리뷰 분석기</h1>
-  <p>게임 앱 번호를 넣으면 이용자 리뷰를 모아 옵니다. 얼마나 오래 해 본 사람이 추천하는지,
-     시간이 지나며 평가가 어떻게 변했는지, 만족한 사람과 실망한 사람이 서로 다른 말을 쓰는지를 봅니다.</p>
+  <h1>스팀 리뷰 수집기</h1>
+  <p>과제에 쓸 자료를 직접 모으는 도구입니다. 게임을 정하기 전에 리뷰가 몇 건이나 있는지,
+     평가가 한쪽으로 쏠려 있는지 먼저 확인하고, 원하는 조건으로 내려받으세요.
+     <b>분석은 여러분의 몫입니다.</b></p>
 </header>
 
 <main id="main">
 
-  <!-- ── 1. 수집 ───────────────────────────────────────── -->
+  <!-- ── 1. 게임 고르기 ─────────────────────────────────── -->
   <section class="panel">
     <p class="section-label">Step 1</p>
-    <h2>리뷰 가져오기</h2>
-    <p class="hint">앱 번호는 스팀 상점 주소에 있습니다. 예를 들어
+    <h2>게임 고르고 현황 확인하기</h2>
+    <p class="hint">앱 번호는 스팀 상점 주소에 있습니다.
        <code>store.steampowered.com/app/<b>1091500</b>/Cyberpunk_2077</code> 이면 1091500 입니다.</p>
 
     <div class="field-row">
@@ -98,11 +99,14 @@
       <button type="button" data-appid="1245620">ELDEN RING</button>
       <button type="button" data-appid="292030">The Witcher 3</button>
       <button type="button" data-appid="271590">GTA V</button>
+      <button type="button" data-appid="1172470">Apex Legends</button>
+      <button type="button" data-appid="413150">Stardew Valley</button>
     </div>
 
     <div class="field-row" style="margin-top:20px">
-      <button id="btn-precheck" class="act ghost" type="button">리뷰 상태 확인</button>
-      <button id="btn-collect" class="act" type="button" disabled>수집 시작</button>
+      <button id="btn-precheck" class="act ghost" type="button">리뷰 현황 확인</button>
+      <button id="btn-collect" class="act" type="button" disabled>이 조건으로 수집</button>
+      <button id="btn-open-steam" class="act ghost" type="button">스팀에서 직접 열기 ↗</button>
     </div>
 
     <div id="notice" class="notice info" hidden></div>
@@ -114,97 +118,67 @@
     </div>
   </section>
 
-  <!-- ── 2. 내려받기 / 불러오기 ─────────────────────────── -->
-  <section class="panel">
+  <!-- ── 게임 비교 ─────────────────────────────────────── -->
+  <section id="compare" class="panel" hidden></section>
+
+  <!-- ── 2. 내려받기 ───────────────────────────────────── -->
+  <section id="summary" class="panel" hidden>
     <p class="section-label">Step 2</p>
-    <h2>내려받기 · 불러오기</h2>
-    <p class="hint">수집한 자료를 파일로 저장하거나, 미리 준비된 샘플로 바로 분석해 볼 수 있습니다.
-       내려받는 파일에는 작성자 계정 정보(스팀 ID·닉네임·프로필 주소)가 들어가지 않습니다.</p>
-
-    <div class="field-row">
+    <h2>확보한 자료 내려받기</h2>
+    <p class="hint" id="summary-label"></p>
+    <div id="summary-tiles" class="tiles"></div>
+    <div class="field-row" style="margin-top:20px">
+      <button id="dl-csv" class="act dl" type="button" disabled>CSV 내려받기 (엑셀용)</button>
       <button id="dl-json" class="act ghost dl" type="button" disabled>JSON 내려받기</button>
-      <button id="dl-csv" class="act ghost dl" type="button" disabled>CSV 내려받기</button>
-      <div class="field">
-        <label for="sample">샘플 데이터</label>
-        <select id="sample">
-          <option value="">— 고르기 —</option>
-          <option value="cyberpunk-2077.json">Cyberpunk 2077 (100건)</option>
-          <option value="counter-strike-2.json">Counter-Strike 2 (100건)</option>
-          <option value="pubg.json">PUBG: BATTLEGROUNDS (99건)</option>
-          <option value="elden-ring.json">ELDEN RING (100건)</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="upload">JSON 파일 올리기</label>
-        <input id="upload" type="file" accept="application/json,.json">
-      </div>
     </div>
-  </section>
-
-  <!-- ── 3. 분석 ───────────────────────────────────────── -->
-  <section id="results" hidden>
-    <section class="panel">
-      <p class="section-label">Step 3</p>
-      <h2>분석 결과</h2>
-      <p class="hint" id="dataset-label"></p>
-      <div id="tiles" class="tiles"></div>
-    </section>
-
-    <div class="charts">
-      <div class="chart-card">
-        <h3>얼마나 해 본 사람이 추천하는가</h3>
-        <p class="sub">리뷰 작성 시점의 플레이타임 구간별 추천률. 관여도와 만족도의 관계를 봅니다.</p>
-        <div id="chart-playtime"></div>
-      </div>
-
-      <div class="chart-card">
-        <h3>평가는 시간에 따라 변했는가</h3>
-        <p class="sub">리뷰 작성 월별 추천률. 출시 논란과 이후 회복 같은 흐름이 드러납니다.</p>
-        <div id="chart-trend"></div>
-      </div>
-
-      <div class="chart-card">
-        <h3>실망한 사람이 더 길게 쓰는가</h3>
-        <p class="sub">추천·비추천 리뷰의 길이 중앙값. 부정 편향(negativity bias)을 확인합니다.</p>
-        <div id="chart-length"></div>
-        <p class="legend">
-          <span><i class="swatch" style="background:var(--pos)"></i>추천</span>
-          <span><i class="swatch" style="background:var(--neg)"></i>비추천</span>
-        </p>
-      </div>
-
-      <div class="chart-card">
-        <h3>서로 다른 말을 쓰는가</h3>
-        <p class="sub" id="words-sub">자주 등장한 단어 상위 12개.</p>
-        <div id="words-toggle" class="seg" role="group" aria-label="리뷰 유형 고르기" style="margin-bottom:14px">
-          <button type="button" data-mode="pos" aria-pressed="true">추천 리뷰</button>
-          <button type="button" data-mode="neg" aria-pressed="false">비추천 리뷰</button>
-        </div>
-        <div id="chart-words"></div>
-      </div>
-    </div>
-
-    <section class="panel" style="margin-top:22px">
-      <h2>원자료 보기</h2>
-      <div id="table-host"></div>
-    </section>
-  </section>
-
-  <!-- ── 수업 안내 ─────────────────────────────────────── -->
-  <section class="panel">
-    <h2>수업에서 이렇게 씁니다</h2>
-    <ol style="margin:14px 0 0;padding-left:20px;color:var(--ink-2);font-size:.92rem;line-height:1.9">
-      <li>관심 있는 게임을 하나 골라 앱 번호를 찾습니다.</li>
-      <li><b>리뷰 상태 확인</b>으로 전체 규모와 긍·부정 비율을 먼저 봅니다. 표본이 전체의 몇 %인지 확인하세요.</li>
-      <li>설정을 바꿔 가며 수집한 뒤, 네 개의 질문에 데이터로 답해 봅니다.</li>
-      <li>CSV 로 내려받아 엑셀에서 직접 추가 분석을 해 봅니다.</li>
-      <li>같은 장르의 다른 게임과 비교하면 무엇이 그 게임만의 특징인지 드러납니다.</li>
-    </ol>
     <div class="notice info" style="margin-top:18px">
+      <b>파일 안내</b>
+      <span>CSV 는 엑셀에서 바로 열립니다. 추천 여부, 유용성 투표, 플레이타임(시간), 작성일, 리뷰 길이,
+        본문이 열로 들어 있습니다. 작성자 계정 정보(스팀 ID·닉네임·프로필 주소)는 포함하지 않습니다.</span>
+    </div>
+  </section>
+
+  <!-- ── 붙여넣기 경로 ─────────────────────────────────── -->
+  <section class="panel">
+    <h2>프록시 없이 쓰는 방법</h2>
+    <details id="paste-box">
+      <summary style="cursor:pointer;color:var(--ink-2);font-weight:600;font-size:.88rem;padding:6px 0">
+        스팀에서 직접 열어 붙여넣기 — 펼쳐 보기
+      </summary>
+      <ol style="margin:12px 0 14px;padding-left:20px;color:var(--ink-2);font-size:.88rem;line-height:1.9">
+        <li>위에서 앱 번호와 조건을 고른 뒤 <b>스팀에서 직접 열기</b>를 누릅니다. 새 탭에 JSON 이 뜹니다.</li>
+        <li>그 화면을 전체 선택해 복사합니다. (Ctrl+A → Ctrl+C)</li>
+        <li>아래 칸에 붙여넣고 버튼을 누르면 현황이 나오고, 그대로 내려받을 수 있습니다.</li>
+      </ol>
+      <textarea id="paste-json" rows="5" placeholder='{"success":1,"query_summary":{ … },"reviews":[ … ]}'
+        style="width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;resize:vertical"></textarea>
+      <div class="field-row" style="margin-top:10px">
+        <button id="btn-paste" class="act ghost" type="button">붙여넣은 내용 읽기</button>
+      </div>
+      <p class="hint" style="margin-top:10px">이 방식은 한 번에 최대 100건까지만 가져올 수 있습니다.
+         더 많은 자료가 필요하면 담당 교수에게 문의하세요.</p>
+    </details>
+  </section>
+
+  <!-- ── 안내 ──────────────────────────────────────────── -->
+  <section class="panel">
+    <h2>과제 안내</h2>
+    <ol style="margin:14px 0 0;padding-left:20px;color:var(--ink-2);font-size:.92rem;line-height:1.9">
+      <li>관심 있는 게임을 <b>두 개 이상</b> 골라 현황을 확인하고, 비교표를 보며 분석할 게임을 정합니다.</li>
+      <li>왜 그 게임을 골랐는지 한 문단으로 적습니다. 리뷰 수, 추천률, 평가가 갈리는 정도를 근거로 쓰세요.</li>
+      <li>조건을 정해 수집하고 CSV 로 내려받습니다. 어떤 조건으로 받았는지 반드시 기록하세요.</li>
+      <li>엑셀이나 원하는 도구로 직접 분석합니다. 표와 그래프는 여러분이 만듭니다.</li>
+    </ol>
+    <div class="notice warn" style="margin-top:18px">
       <b>표본 주의</b>
       <span>스팀 리뷰는 무작위 표본이 아닙니다. 리뷰를 남기는 사람은 아주 만족했거나 아주 실망한 쪽으로
-        기울어 있습니다(자기선택 편향). 정렬을 최신순으로 두면 최근 패치의 영향이, 유용성순으로 두면
-        오래되고 많이 읽힌 리뷰가 과대 대표됩니다. 결론을 쓸 때 반드시 함께 적으세요.</span>
+        기울어 있습니다(자기선택 편향). 최신순으로 받으면 최근 패치의 영향이, 유용성순으로 받으면
+        오래되고 많이 읽힌 리뷰가 과대 대표됩니다. 결론에 반드시 함께 적으세요.</span>
+    </div>
+    <div class="notice info" style="margin-top:12px">
+      <b>본문 정제</b>
+      <span>리뷰 본문에는 스팀 서식 태그([b], [h1] 등), 욕설, 의미 없는 반복 문자가 섞여 있습니다.
+        어떻게 정제했는지도 과제의 평가 대상입니다.</span>
     </div>
   </section>
 </main>
@@ -215,6 +189,7 @@
      이 도구는 교육 목적으로만 사용합니다.</p>
 </footer>
 
-<script src="app.js"></script>
+<script src="common.js"></script>
+<script src="collect.js"></script>
 </body>
 </html>

@@ -227,3 +227,8 @@ footer.page-footer { padding: 30px max(24px, calc((100vw - var(--max)) / 2)); bo
 }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+
+/* 비교표의 '이 게임 선택' 버튼 */
+button.linklike{border:0;background:transparent;color:var(--series-1);font:600 .78rem/1 inherit;cursor:pointer;padding:4px 0;text-decoration:underline}
+button.linklike:hover{color:var(--ink)}
+#compare .ratio-bar{height:9px}
