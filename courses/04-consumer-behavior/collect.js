@@ -63,6 +63,9 @@ async function api(path, params = {}) {
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
   }
+  // 수업용 열쇠(=잠금 비밀번호). 프록시가 이 값을 확인한다.
+  const key = typeof gateSecret === "function" ? gateSecret() : "";
+  if (key) url.searchParams.set("key", key);
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
     let detail = "";

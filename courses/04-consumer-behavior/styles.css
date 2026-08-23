@@ -232,3 +232,22 @@ footer.page-footer { padding: 30px max(24px, calc((100vw - var(--max)) / 2)); bo
 button.linklike{border:0;background:transparent;color:var(--series-1);font:600 .78rem/1 inherit;cursor:pointer;padding:4px 0;text-decoration:underline}
 button.linklike:hover{color:var(--ink)}
 #compare .ratio-bar{height:9px}
+
+/* ── 수업용 잠금 화면 ─────────────────────────────────── */
+.gate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;background:var(--navy)}
+.gate-card{width:min(400px,100%);padding:38px 34px;border-radius:18px;background:var(--surface);
+  border:1px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.gate-kicker{margin:0;color:var(--muted);font:700 .64rem/1.4 inherit;letter-spacing:.15em;text-transform:uppercase}
+.gate-card h1{margin:12px 0 8px;font-size:1.4rem;letter-spacing:-.04em;color:var(--ink)}
+.gate-hint{margin:0 0 22px;color:var(--ink-2);font-size:.88rem;line-height:1.7}
+.gate-card input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;
+  background:var(--paper);color:var(--ink);font:inherit;font-size:1rem;letter-spacing:.1em}
+.gate-card input:focus-visible{outline:2px solid var(--series-1);outline-offset:1px}
+.gate-error{margin:10px 0 0;color:var(--neg);font-size:.82rem;font-weight:600}
+.gate-card button{width:100%;margin-top:16px;padding:12px;border:1px solid var(--navy);border-radius:999px;
+  background:var(--navy);color:#fff;font:700 .9rem/1 inherit;cursor:pointer;transition:.18s}
+.gate-card button:hover{background:var(--lime);border-color:var(--lime);color:var(--navy)}
+.gate-foot{margin:20px 0 0;color:var(--muted);font-size:.72rem;line-height:1.6;text-align:center}
+html.gating body{visibility:hidden}
+html.gating .gate{visibility:visible}
+html.gating{overflow:hidden}

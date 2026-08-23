@@ -15,6 +15,15 @@ const ALLOWED_ORIGINS = [
 // 로컬 개발용 (http://localhost:8000 등) 은 패턴으로 허용한다.
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
+// 수업용 열쇠. gate.js 의 PASSWORD_SHA256 과 같은 값이어야 한다.
+// 빈 문자열로 두면 열쇠 검사를 하지 않는다.
+const KEY_SHA256 = "9552e277ebcc7fa191292c6e900d94dfe6e837d8abf76a2da927d4530d2c8f69";
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 const UPSTREAM = {
   appreviews: "https://store.steampowered.com/appreviews/",
   appdetails: "https://store.steampowered.com/api/appdetails",
@@ -58,6 +67,14 @@ export default {
       return json({ error: "허용되지 않은 출처입니다.", origin }, 403, origin || "*");
     }
 
+    // 수업용 열쇠 확인. 화면 잠금만으로는 막을 수 없는 실제 사용을 여기서 막는다.
+    if (KEY_SHA256) {
+      const key = url.searchParams.get("key") || "";
+      if (!key || (await sha256Hex(key)) !== KEY_SHA256) {
+        return json({ error: "수업용 비밀번호가 필요합니다." }, 401, origin);
+      }
+    }
+
     const segments = url.pathname.split("/").filter(Boolean);
     let target;
 
@@ -70,7 +87,7 @@ export default {
       // json=1 은 항상 강제한다.
       target.searchParams.set("json", "1");
       for (const [k, v] of url.searchParams) {
-        if (k !== "json") target.searchParams.set(k, v);
+        if (k !== "json" && k !== "key") target.searchParams.set(k, v);
       }
     } else if (segments[0] === "appdetails") {
       const appids = url.searchParams.get("appids") || "";
