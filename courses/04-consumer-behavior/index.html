@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스팀 리뷰 분석기 | 소비자행동론 · 이현구</title>
+<meta name="description" content="스팀 게임의 이용자 리뷰를 수집하고 소비자 반응을 분석하는 소비자행동론 수업 도구.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="스팀 리뷰 분석기 | 소비자행동론">
+<meta property="og:description" content="게임 앱 번호로 리뷰를 수집하고, 플레이타임·시점·표현을 기준으로 소비자 반응을 분석합니다.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+<header class="page-header">
+  <div class="header-top">
+    <a class="back" href="../../">← 이현구 홈</a>
+    <button id="theme" class="theme-toggle" type="button">밝게 / 어둡게</button>
+  </div>
+  <p class="section-label" style="color:var(--lime)">04 / 소비자행동론</p>
+  <h1>스팀 리뷰 분석기</h1>
+  <p>게임 앱 번호를 넣으면 이용자 리뷰를 모아 옵니다. 얼마나 오래 해 본 사람이 추천하는지,
+     시간이 지나며 평가가 어떻게 변했는지, 만족한 사람과 실망한 사람이 서로 다른 말을 쓰는지를 봅니다.</p>
+</header>
+
+<main id="main">
+
+  <!-- ── 1. 수집 ───────────────────────────────────────── -->
+  <section class="panel">
+    <p class="section-label">Step 1</p>
+    <h2>리뷰 가져오기</h2>
+    <p class="hint">앱 번호는 스팀 상점 주소에 있습니다. 예를 들어
+       <code>store.steampowered.com/app/<b>1091500</b>/Cyberpunk_2077</code> 이면 1091500 입니다.</p>
+
+    <div class="field-row">
+      <div class="field field-appid">
+        <label for="appid">앱 번호</label>
+        <input id="appid" type="text" inputmode="numeric" value="1091500" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="language">언어</label>
+        <select id="language">
+          <option value="koreana" selected>한국어</option>
+          <option value="english">영어</option>
+          <option value="all">전체</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="review_type">리뷰 유형</label>
+        <select id="review_type">
+          <option value="all" selected>추천 + 비추천</option>
+          <option value="positive">추천만</option>
+          <option value="negative">비추천만</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="purchase_type">구매 경로</label>
+        <select id="purchase_type">
+          <option value="all" selected>전체</option>
+          <option value="steam">스팀 구매만</option>
+          <option value="non_steam_purchase">외부 키 등록</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sort">정렬</label>
+        <select id="sort">
+          <option value="recent" selected>최신순</option>
+          <option value="updated">수정순</option>
+          <option value="all">유용성순</option>
+        </select>
+      </div>
+      <div class="field" id="field-day-range" hidden>
+        <label for="day_range">기간(일)</label>
+        <select id="day_range">
+          <option value="30">최근 30일</option>
+          <option value="90">최근 90일</option>
+          <option value="365" selected>최근 1년</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="limit">최대 수집</label>
+        <select id="limit">
+          <option value="100">100건</option>
+          <option value="500" selected>500건</option>
+          <option value="1000">1,000건</option>
+          <option value="3000">3,000건</option>
+          <option value="5000">5,000건</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="presets">
+      <button type="button" data-appid="1091500">Cyberpunk 2077</button>
+      <button type="button" data-appid="730">Counter-Strike 2</button>
+      <button type="button" data-appid="578080">PUBG</button>
+      <button type="button" data-appid="1245620">ELDEN RING</button>
+      <button type="button" data-appid="292030">The Witcher 3</button>
+      <button type="button" data-appid="271590">GTA V</button>
+    </div>
+
+    <div class="field-row" style="margin-top:20px">
+      <button id="btn-precheck" class="act ghost" type="button">리뷰 상태 확인</button>
+      <button id="btn-collect" class="act" type="button" disabled>수집 시작</button>
+    </div>
+
+    <div id="notice" class="notice info" hidden></div>
+    <div id="precheck" class="precheck"></div>
+
+    <div id="progress" class="progress">
+      <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+      <p id="progress-text" class="progress-text"></p>
+    </div>
+  </section>
+
+  <!-- ── 2. 내려받기 / 불러오기 ─────────────────────────── -->
+  <section class="panel">
+    <p class="section-label">Step 2</p>
+    <h2>내려받기 · 불러오기</h2>
+    <p class="hint">수집한 자료를 파일로 저장하거나, 미리 준비된 샘플로 바로 분석해 볼 수 있습니다.
+       내려받는 파일에는 작성자 계정 정보(스팀 ID·닉네임·프로필 주소)가 들어가지 않습니다.</p>
+
+    <div class="field-row">
+      <button id="dl-json" class="act ghost dl" type="button" disabled>JSON 내려받기</button>
+      <button id="dl-csv" class="act ghost dl" type="button" disabled>CSV 내려받기</button>
+      <div class="field">
+        <label for="sample">샘플 데이터</label>
+        <select id="sample">
+          <option value="">— 고르기 —</option>
+          <option value="cyberpunk-2077.json">Cyberpunk 2077 (100건)</option>
+          <option value="counter-strike-2.json">Counter-Strike 2 (100건)</option>
+          <option value="pubg.json">PUBG: BATTLEGROUNDS (99건)</option>
+          <option value="elden-ring.json">ELDEN RING (100건)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="upload">JSON 파일 올리기</label>
+        <input id="upload" type="file" accept="application/json,.json">
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 3. 분석 ───────────────────────────────────────── -->
+  <section id="results" hidden>
+    <section class="panel">
+      <p class="section-label">Step 3</p>
+      <h2>분석 결과</h2>
+      <p class="hint" id="dataset-label"></p>
+      <div id="tiles" class="tiles"></div>
+    </section>
+
+    <div class="charts">
+      <div class="chart-card">
+        <h3>얼마나 해 본 사람이 추천하는가</h3>
+        <p class="sub">리뷰 작성 시점의 플레이타임 구간별 추천률. 관여도와 만족도의 관계를 봅니다.</p>
+        <div id="chart-playtime"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>평가는 시간에 따라 변했는가</h3>
+        <p class="sub">리뷰 작성 월별 추천률. 출시 논란과 이후 회복 같은 흐름이 드러납니다.</p>
+        <div id="chart-trend"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>실망한 사람이 더 길게 쓰는가</h3>
+        <p class="sub">추천·비추천 리뷰의 길이 중앙값. 부정 편향(negativity bias)을 확인합니다.</p>
+        <div id="chart-length"></div>
+        <p class="legend">
+          <span><i class="swatch" style="background:var(--pos)"></i>추천</span>
+          <span><i class="swatch" style="background:var(--neg)"></i>비추천</span>
+        </p>
+      </div>
+
+      <div class="chart-card">
+        <h3>서로 다른 말을 쓰는가</h3>
+        <p class="sub" id="words-sub">자주 등장한 단어 상위 12개.</p>
+        <div id="words-toggle" class="seg" role="group" aria-label="리뷰 유형 고르기" style="margin-bottom:14px">
+          <button type="button" data-mode="pos" aria-pressed="true">추천 리뷰</button>
+          <button type="button" data-mode="neg" aria-pressed="false">비추천 리뷰</button>
+        </div>
+        <div id="chart-words"></div>
+      </div>
+    </div>
+
+    <section class="panel" style="margin-top:22px">
+      <h2>원자료 보기</h2>
+      <div id="table-host"></div>
+    </section>
+  </section>
+
+  <!-- ── 수업 안내 ─────────────────────────────────────── -->
+  <section class="panel">
+    <h2>수업에서 이렇게 씁니다</h2>
+    <ol style="margin:14px 0 0;padding-left:20px;color:var(--ink-2);font-size:.92rem;line-height:1.9">
+      <li>관심 있는 게임을 하나 골라 앱 번호를 찾습니다.</li>
+      <li><b>리뷰 상태 확인</b>으로 전체 규모와 긍·부정 비율을 먼저 봅니다. 표본이 전체의 몇 %인지 확인하세요.</li>
+      <li>설정을 바꿔 가며 수집한 뒤, 네 개의 질문에 데이터로 답해 봅니다.</li>
+      <li>CSV 로 내려받아 엑셀에서 직접 추가 분석을 해 봅니다.</li>
+      <li>같은 장르의 다른 게임과 비교하면 무엇이 그 게임만의 특징인지 드러납니다.</li>
+    </ol>
+    <div class="notice info" style="margin-top:18px">
+      <b>표본 주의</b>
+      <span>스팀 리뷰는 무작위 표본이 아닙니다. 리뷰를 남기는 사람은 아주 만족했거나 아주 실망한 쪽으로
+        기울어 있습니다(자기선택 편향). 정렬을 최신순으로 두면 최근 패치의 영향이, 유용성순으로 두면
+        오래되고 많이 읽힌 리뷰가 과대 대표됩니다. 결론을 쓸 때 반드시 함께 적으세요.</span>
+    </div>
+  </section>
+</main>
+
+<footer class="page-footer">
+  <p>소비자행동론 · 연성대학교 경영학과 이현구 &nbsp;|&nbsp;
+     자료 출처: Steam Store API (appreviews) &nbsp;|&nbsp;
+     이 도구는 교육 목적으로만 사용합니다.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

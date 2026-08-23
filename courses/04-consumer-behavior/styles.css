@@ -1,0 +1,229 @@
+/* 소비자행동론 - 스팀 리뷰 분석기
+   차트 색은 dataviz 검증 팔레트(밝은/어두운 모드 각각 6개 검사 통과)를 쓴다. */
+
+:root {
+  color-scheme: light;
+  --navy: #101b2d;
+  --lime: #c8ef64;
+  --paper: #f7f6f2;
+  --surface: #ffffff;
+  --ink: #19212d;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --line: #d8dcd8;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11, 11, 11, .10);
+
+  /* 차트 - 추천/비추천은 극성(polarity)이라 blue<->red 다이버징 쌍을 쓴다 */
+  --pos: #2a78d6;
+  --neg: #e34948;
+  --series-1: #2a78d6;
+  --good: #0ca30c;
+  --warn: #fab219;
+  --crit: #d03b3b;
+  --max: 1240px;
+  --radius: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --paper: #0d1119;
+    --surface: #141c28;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --line: #263041;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255, 255, 255, .10);
+    --pos: #3987e5;
+    --neg: #e66767;
+    --series-1: #3987e5;
+    --good: #0ca30c;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0d1119;
+  --surface: #141c28;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --line: #263041;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --ring: rgba(255, 255, 255, .10);
+  --pos: #3987e5;
+  --neg: #e66767;
+  --series-1: #3987e5;
+  --good: #0ca30c;
+}
+
+* { box-sizing: border-box }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+a { color: inherit }
+
+.skip-link { position: fixed; left: 20px; top: -80px; z-index: 100; background: var(--lime); color: var(--navy); padding: 12px 18px; border-radius: 8px }
+.skip-link:focus { top: 20px }
+
+/* ── 헤더 ─────────────────────────────────────────────── */
+.page-header {
+  padding: 26px max(24px, calc((100vw - var(--max)) / 2)) 30px;
+  background: var(--navy);
+  color: #fff;
+}
+.page-header a.back { color: #aeb8c5; font-size: .8rem; text-decoration: none }
+.page-header a.back:hover { color: var(--lime) }
+.page-header h1 { margin: 14px 0 8px; font-size: clamp(1.7rem, 3.4vw, 2.6rem); letter-spacing: -.05em; line-height: 1.2 }
+.page-header p { margin: 0; max-width: 60ch; color: #c3ccd8; font-size: .95rem }
+.header-top { display: flex; align-items: center; justify-content: space-between; gap: 16px }
+
+.theme-toggle {
+  padding: 8px 14px; border: 1px solid rgba(255, 255, 255, .3); border-radius: 999px;
+  background: transparent; color: #dce2ea; font: 600 .74rem/1 inherit; cursor: pointer;
+}
+.theme-toggle:hover { background: var(--lime); border-color: var(--lime); color: var(--navy) }
+
+/* ── 레이아웃 ─────────────────────────────────────────── */
+main { max-width: var(--max); margin: 0 auto; padding: 34px max(24px, calc((100vw - var(--max)) / 2)) 90px }
+.panel {
+  margin: 0 0 22px; padding: 26px 28px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.panel > h2 { margin: 0 0 4px; font-size: 1.12rem; letter-spacing: -.03em }
+.panel > .hint { margin: 0 0 20px; color: var(--muted); font-size: .84rem }
+
+.section-label { margin: 0; color: var(--muted); font: 700 .64rem/1.4 inherit; letter-spacing: .15em; text-transform: uppercase }
+
+/* ── 폼 ───────────────────────────────────────────────── */
+.field-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.field label { color: var(--ink-2); font: 600 .74rem/1 inherit }
+.field input, .field select {
+  padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--paper); color: var(--ink); font: inherit; font-size: .88rem;
+}
+.field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--series-1); outline-offset: 1px }
+.field-appid input { width: 128px; font-variant-numeric: tabular-nums }
+
+button.act {
+  padding: 10px 18px; border: 1px solid var(--navy); border-radius: 999px;
+  background: var(--navy); color: #fff; font: 700 .82rem/1 inherit; cursor: pointer; transition: .18s;
+}
+button.act:hover:not(:disabled) { background: var(--lime); border-color: var(--lime); color: var(--navy) }
+button.act.ghost { background: transparent; color: var(--ink); border-color: var(--line) }
+button.act.ghost:hover:not(:disabled) { border-color: var(--navy); background: transparent }
+button.act:disabled { opacity: .45; cursor: not-allowed }
+
+.presets { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 0 }
+.presets button {
+  padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--ink-2); font: 600 .74rem/1 inherit; cursor: pointer;
+}
+.presets button:hover { border-color: var(--series-1); color: var(--series-1) }
+
+/* ── 상태 배너 ────────────────────────────────────────── */
+.notice { margin: 16px 0 0; padding: 13px 16px; border-radius: 10px; font-size: .85rem; display: flex; gap: 9px; align-items: flex-start }
+.notice.info { background: color-mix(in srgb, var(--series-1) 10%, transparent); color: var(--ink) }
+.notice.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--ink) }
+.notice.err { background: color-mix(in srgb, var(--crit) 14%, transparent); color: var(--ink) }
+.notice b { flex: none }
+
+/* ── 사전 점검 결과 ───────────────────────────────────── */
+.precheck { margin: 18px 0 0; display: none }
+.precheck.on { display: block }
+.precheck-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 14px }
+.precheck-head h3 { margin: 0; font-size: 1.25rem; letter-spacing: -.03em }
+.precheck-head .appid { color: var(--muted); font: 600 .78rem/1 inherit; font-variant-numeric: tabular-nums }
+.verdict { padding: 5px 11px; border-radius: 999px; font: 700 .72rem/1 inherit }
+
+.ratio-bar { height: 12px; border-radius: 999px; overflow: hidden; display: flex; gap: 2px; background: var(--grid) }
+.ratio-bar i { display: block; height: 100% }
+.ratio-legend { margin: 9px 0 0; display: flex; gap: 18px; font-size: .8rem; color: var(--ink-2) }
+.ratio-legend span { display: inline-flex; align-items: center; gap: 6px }
+.swatch { width: 11px; height: 11px; border-radius: 3px; flex: none }
+
+/* ── 통계 타일 ────────────────────────────────────────── */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 12px; margin: 18px 0 0 }
+.tile { padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper) }
+.tile .k { margin: 0; color: var(--muted); font: 600 .72rem/1.4 inherit }
+.tile .v { margin: 7px 0 0; font-size: 1.62rem; letter-spacing: -.04em; font-weight: 700; line-height: 1.1 }
+.tile .s { margin: 4px 0 0; color: var(--ink-2); font-size: .76rem }
+
+/* ── 진행률 ───────────────────────────────────────────── */
+.progress { margin: 16px 0 0; display: none }
+.progress.on { display: block }
+.progress-track { height: 7px; border-radius: 999px; background: var(--grid); overflow: hidden }
+.progress-fill { height: 100%; width: 0; background: var(--series-1); transition: width .25s }
+.progress-text { margin: 8px 0 0; color: var(--ink-2); font-size: .8rem; font-variant-numeric: tabular-nums }
+
+/* ── 차트 ─────────────────────────────────────────────── */
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 22px }
+.chart-card { padding: 22px 24px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius) }
+.chart-card h3 { margin: 0 0 3px; font-size: .98rem; letter-spacing: -.02em }
+.chart-card .sub { margin: 0 0 16px; color: var(--muted); font-size: .78rem }
+.chart-card svg { display: block; width: 100%; height: auto; overflow: visible }
+
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 12px 0 0; font-size: .78rem; color: var(--ink-2) }
+.legend span { display: inline-flex; align-items: center; gap: 6px }
+
+text { font-family: inherit }
+.tick { fill: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums }
+.gridline { stroke: var(--grid); stroke-width: 1 }
+.baseline { stroke: var(--axis); stroke-width: 1 }
+.mark-label { fill: var(--ink-2); font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums }
+.hit { fill: transparent; cursor: pointer }
+
+.tooltip {
+  position: fixed; z-index: 60; pointer-events: none; opacity: 0; transition: opacity .12s;
+  padding: 9px 12px; border-radius: 9px; border: 1px solid var(--ring);
+  background: var(--surface); color: var(--ink); font-size: .8rem; line-height: 1.5;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .16); max-width: 260px;
+}
+.tooltip.on { opacity: 1 }
+.tooltip .t-title { font-weight: 700; margin-bottom: 3px }
+.tooltip .t-row { display: flex; gap: 10px; justify-content: space-between; font-variant-numeric: tabular-nums }
+.tooltip .t-row span:last-child { font-weight: 600 }
+
+/* ── 토글 (단어 빈도) ─────────────────────────────────── */
+.seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; gap: 2px }
+.seg button { padding: 5px 13px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font: 600 .76rem/1 inherit; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--navy); color: #fff }
+
+/* ── 표 ───────────────────────────────────────────────── */
+details.table-view { margin: 22px 0 0 }
+details.table-view summary { cursor: pointer; color: var(--ink-2); font: 600 .84rem/1 inherit; padding: 6px 0 }
+.tbl-wrap { overflow-x: auto; margin: 14px 0 0 }
+table { width: 100%; border-collapse: collapse; font-size: .8rem }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap }
+th { color: var(--muted); font-weight: 700; font-size: .74rem }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums }
+td.txt { white-space: normal; min-width: 280px; max-width: 460px; color: var(--ink-2) }
+
+.pill { padding: 2px 8px; border-radius: 999px; font: 700 .68rem/1.6 inherit; display: inline-block }
+.pill.pos { background: color-mix(in srgb, var(--pos) 16%, transparent); color: var(--pos) }
+.pill.neg { background: color-mix(in srgb, var(--neg) 16%, transparent); color: var(--neg) }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0 }
+
+footer.page-footer { padding: 30px max(24px, calc((100vw - var(--max)) / 2)); border-top: 1px solid var(--line); color: var(--muted); font-size: .76rem }
+
+@media (max-width: 760px) {
+  .charts { grid-template-columns: 1fr }
+  .panel { padding: 20px 18px }
+  .field-appid input { width: 100% }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
