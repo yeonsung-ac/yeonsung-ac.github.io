@@ -10,7 +10,7 @@ const CONFIG = {
   MAX_PAGES: 60, // 안전장치: 최대 6,000건
 };
 
-const state = { reviews: [], meta: null, compare: [] };
+const state = { reviews: [], meta: null, compare: [], nextCursor: null, pasteRounds: 0, lastSummary: null };
 
 // 프록시가 없으면 게임 이름을 조회할 수 없어서, 자주 쓰는 것만 표로 갖고 있는다.
 const KNOWN_NAMES = {
@@ -50,10 +50,10 @@ function reviewParams(s, cursor, perPage = CONFIG.PAGE_SIZE) {
 }
 
 /** 프록시 없이 새 탭에서 직접 열 수 있는 스팀 주소 */
-function steamUrl(s, perPage = 100) {
+function steamUrl(s, perPage = 100, cursor = "*") {
   const u = new URL(`https://store.steampowered.com/appreviews/${s.appid}`);
   u.searchParams.set("json", "1");
-  for (const [k, v] of Object.entries(reviewParams(s, "*", perPage))) u.searchParams.set(k, v);
+  for (const [k, v] of Object.entries(reviewParams(s, cursor, perPage))) u.searchParams.set(k, v);
   return u.toString();
 }
 
@@ -136,7 +136,7 @@ function showPrecheck(d) {
 
   // 수업용 판단 도우미: 표본이 너무 적거나 한쪽으로 쏠리면 알려 준다.
   const tips = [];
-  if (d.pasted && d.pasted < 100) tips.push(`붙여넣기로 ${d.pasted}건만 확보했습니다. 본격적인 분석에는 부족할 수 있습니다.`);
+  if (d.pasted && d.pasted < 200) tips.push(`지금까지 ${fmt(d.pasted)}건입니다. 분석에는 200건 이상을 권합니다. 다음 묶음을 이어 받으세요.`);
   if (total < 200) tips.push("리뷰가 200건 미만입니다. 구간별로 나누면 표본이 부족해집니다. 다른 게임도 함께 보세요.");
   if (posRate > 0.95 || posRate < 0.05) tips.push("한쪽으로 크게 쏠려 있어 비교 분석이 단조로울 수 있습니다.");
   if (posRate >= 0.4 && posRate <= 0.7) tips.push("평가가 갈리는 게임입니다. 추천·비추천 비교 과제에 적합합니다.");
@@ -319,12 +319,62 @@ function analyzePasted() {
   try { parsed = JSON.parse(raw); }
   catch { return notice("err", "JSON 을 읽지 못했습니다. 스팀 화면 전체를 복사했는지 확인하세요.", "형식 오류"); }
   try {
-    const reviews = precheckFromJson(parsed);
-    if (!reviews.length) return notice("warn", "현황은 읽었지만 리뷰 본문이 없습니다. num_per_page 를 올려 다시 열어 보세요.", "리뷰 없음");
-    finishCollection(adoptReviews(reviews), readSettings(), "붙여넣기");
+    const s = readSettings();
+    const fresh = adoptReviews(parsed.reviews || []);
+    if (!fresh.length) return notice("warn", "리뷰 본문이 들어 있지 않습니다. 스팀 화면 전체를 복사했는지 확인하세요.", "리뷰 없음");
+
+    // 이미 받은 것과 합치되 같은 리뷰는 한 번만 센다.
+    const seen = new Set(state.reviews.map((r) => r.recommendationid).filter(Boolean));
+    const added = fresh.filter((r) => !r.recommendationid || !seen.has(r.recommendationid));
+    const merged = [...state.reviews, ...added];
+    state.pasteRounds += 1;
+    state.nextCursor = parsed.cursor || null;
+
+    // 스팀은 첫 응답(cursor=*)에만 전체 집계를 준다. 그 값을 기억해 두고 계속 쓴다.
+    const q = parsed.query_summary || {};
+    if (q.total_reviews) state.lastSummary = q;
+    if (state.lastSummary) {
+      showPrecheck({ name: gameName(s.appid), settings: s, sel: state.lastSummary,
+                     all: {}, pasted: merged.length });
+    }
+    finishCollection(merged, s, `붙여넣기 ${state.pasteRounds}회`);
+    renderNextStep(s, added.length, fresh.length);
   } catch (err) {
     notice("err", err.message, "오류");
   }
+}
+
+/** 다음 100건을 이어서 받을 수 있게 안내한다. */
+function renderNextStep(s, added, fresh) {
+  const host = $("#paste-next");
+  if (!state.nextCursor || added === 0) {
+    host.innerHTML = added === 0
+      ? `<p class="hint">새로 추가된 리뷰가 없습니다. 마지막 묶음까지 다 받았거나 같은 내용을 다시 붙여넣은 것 같습니다.</p>`
+      : `<p class="hint">스팀이 다음 묶음을 주지 않았습니다. 여기까지가 이 조건의 마지막입니다.</p>`;
+    return;
+  }
+  host.innerHTML = `
+    <div class="notice info" style="margin-top:14px">
+      <b>${fmt(added)}건 추가</b>
+      <span>지금까지 <b>${fmt(state.reviews.length)}건</b>을 모았습니다.
+        더 필요하면 아래 버튼으로 다음 묶음을 열어 같은 자리에 붙여넣으세요.</span>
+    </div>
+    <div class="field-row" style="margin-top:12px">
+      <button id="btn-next-batch" class="act" type="button">다음 100건 열기 ↗</button>
+      <button id="btn-reset-paste" class="act ghost" type="button">처음부터 다시</button>
+    </div>`;
+  $("#btn-next-batch").addEventListener("click", () => {
+    window.open(steamUrl(s, 100, state.nextCursor), "_blank", "noopener");
+    $("#paste-json").value = "";
+    $("#paste-json").focus();
+  });
+  $("#btn-reset-paste").addEventListener("click", () => {
+    state.reviews = []; state.nextCursor = null; state.pasteRounds = 0; state.lastSummary = null;
+    $("#paste-json").value = "";
+    host.innerHTML = "";
+    $("#summary").hidden = true;
+    notice("info", "모아 둔 자료를 비웠습니다. 다시 시작하세요.", "초기화");
+  });
 }
 
 /* ── UI 보조 ───────────────────────────────────────────── */
@@ -348,11 +398,14 @@ function init() {
   initTheme();
 
   if (!hasProxy()) {
-    notice("warn",
-      "자동 조회·수집은 프록시를 배포한 뒤 열립니다(worker/README.md). 지금은 '스팀에서 직접 열기'로 JSON 을 연 뒤 붙여넣으면 현황 확인과 내려받기를 그대로 쓸 수 있습니다.",
-      "직접 열기 모드");
-    $("#btn-precheck").disabled = true;
-    $("#paste-box").open = true;
+    // 설치·가입 없이 쓰는 것이 기본이다. 자동 조회 버튼은 아예 감춘다.
+    for (const sel of ["#btn-precheck", "#btn-collect", "#field-limit"]) {
+      const n = $(sel); if (n) n.hidden = true;
+    }
+  } else {
+    for (const sel of ["#btn-precheck", "#btn-collect", "#field-limit"]) {
+      const n = $(sel); if (n) n.hidden = false;
+    }
   }
 
   $("#btn-precheck").addEventListener("click", runPrecheck);
@@ -364,7 +417,7 @@ function init() {
   $("#btn-open-steam").addEventListener("click", () => {
     const s = readSettings();
     if (!/^\d+$/.test(s.appid)) return notice("err", "앱 번호를 숫자로 입력하세요.", "입력 오류");
-    window.open(steamUrl(s, Math.min(s.limit, 100)), "_blank", "noopener");
+    window.open(steamUrl(s, 100), "_blank", "noopener");
   });
 
   $$(".presets button").forEach((b) => b.addEventListener("click", () => {

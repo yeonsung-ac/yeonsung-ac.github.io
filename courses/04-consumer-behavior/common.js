@@ -22,6 +22,7 @@ function normalize(r) {
   const a = r.author || {};
   const text = (r.review || "").trim();
   return {
+    recommendationid: r.recommendationid || "",
     voted_up: !!r.voted_up,
     votes_up: r.votes_up || 0,
     votes_funny: r.votes_funny || 0,

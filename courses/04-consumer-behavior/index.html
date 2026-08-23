@@ -22,9 +22,8 @@
   </div>
   <p class="section-label" style="color:var(--lime)">04 / 소비자행동론</p>
   <h1>스팀 리뷰 수집기</h1>
-  <p>과제에 쓸 자료를 직접 모으는 도구입니다. 게임을 정하기 전에 리뷰가 몇 건이나 있는지,
-     평가가 한쪽으로 쏠려 있는지 먼저 확인하고, 원하는 조건으로 내려받으세요.
-     <b>분석은 여러분의 몫입니다.</b></p>
+  <p>과제에 쓸 자료를 직접 모으는 도구입니다. <b>설치도 가입도 필요 없습니다.</b>
+     조건을 정해 스팀에서 열고, 복사해서 붙여넣으면 됩니다. 분석은 여러분의 몫입니다.</p>
 </header>
 
 <main id="main">
@@ -32,7 +31,7 @@
   <!-- ── 1. 게임 고르기 ─────────────────────────────────── -->
   <section class="panel">
     <p class="section-label">Step 1</p>
-    <h2>게임 고르고 현황 확인하기</h2>
+    <h2>게임과 조건 정하기</h2>
     <p class="hint">앱 번호는 스팀 상점 주소에 있습니다.
        <code>store.steampowered.com/app/<b>1091500</b>/Cyberpunk_2077</code> 이면 1091500 입니다.</p>
 
@@ -81,7 +80,7 @@
           <option value="365" selected>최근 1년</option>
         </select>
       </div>
-      <div class="field">
+      <div class="field" id="field-limit">
         <label for="limit">최대 수집</label>
         <select id="limit">
           <option value="100">100건</option>
@@ -105,13 +104,32 @@
     </div>
 
     <div class="field-row" style="margin-top:20px">
-      <button id="btn-precheck" class="act ghost" type="button">리뷰 현황 확인</button>
-      <button id="btn-collect" class="act" type="button" disabled>이 조건으로 수집</button>
-      <button id="btn-open-steam" class="act ghost" type="button">스팀에서 직접 열기 ↗</button>
+      <button id="btn-open-steam" class="act" type="button">스팀에서 열기 ↗</button>
+      <button id="btn-precheck" class="act ghost" type="button" hidden>리뷰 현황 확인</button>
+      <button id="btn-collect" class="act" type="button" hidden disabled>이 조건으로 수집</button>
     </div>
 
     <div id="notice" class="notice info" hidden></div>
+  </section>
+
+  <!-- ── Step 2. 붙여넣기 ──────────────────────────────── -->
+  <section class="panel">
+    <p class="section-label">Step 2</p>
+    <h2>복사해서 붙여넣기</h2>
+    <p class="hint">위 버튼을 누르면 새 탭에 글자가 잔뜩 뜹니다. 그게 리뷰 자료입니다.
+       그 화면에서 <b>Ctrl+A</b> 로 전체 선택, <b>Ctrl+C</b> 로 복사한 뒤 아래 칸에 붙여넣으세요.</p>
+
+    <textarea id="paste-json" rows="5" placeholder="새 탭에서 복사한 내용을 여기에 붙여넣으세요"
+      style="width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;resize:vertical"></textarea>
+    <div class="field-row" style="margin-top:12px">
+      <button id="btn-paste" class="act" type="button">붙여넣은 내용 읽기</button>
+    </div>
+
     <div id="precheck" class="precheck"></div>
+    <div id="paste-next"></div>
+
+    <p class="hint" style="margin-top:14px">한 번에 100건씩 받습니다. 읽고 나면 <b>다음 100건 열기</b> 버튼이
+       생기니 필요한 만큼 반복하면 계속 쌓입니다. 같은 리뷰는 자동으로 한 번만 셉니다.</p>
 
     <div id="progress" class="progress">
       <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
@@ -124,8 +142,8 @@
 
   <!-- ── 2. 내려받기 ───────────────────────────────────── -->
   <section id="summary" class="panel" hidden>
-    <p class="section-label">Step 2</p>
-    <h2>확보한 자료 내려받기</h2>
+    <p class="section-label">Step 3</p>
+    <h2>모은 자료 내려받기</h2>
     <p class="hint" id="summary-label"></p>
     <div id="summary-tiles" class="tiles"></div>
     <div class="field-row" style="margin-top:20px">
@@ -139,35 +157,13 @@
     </div>
   </section>
 
-  <!-- ── 붙여넣기 경로 ─────────────────────────────────── -->
-  <section class="panel">
-    <h2>프록시 없이 쓰는 방법</h2>
-    <details id="paste-box">
-      <summary style="cursor:pointer;color:var(--ink-2);font-weight:600;font-size:.88rem;padding:6px 0">
-        스팀에서 직접 열어 붙여넣기 — 펼쳐 보기
-      </summary>
-      <ol style="margin:12px 0 14px;padding-left:20px;color:var(--ink-2);font-size:.88rem;line-height:1.9">
-        <li>위에서 앱 번호와 조건을 고른 뒤 <b>스팀에서 직접 열기</b>를 누릅니다. 새 탭에 JSON 이 뜹니다.</li>
-        <li>그 화면을 전체 선택해 복사합니다. (Ctrl+A → Ctrl+C)</li>
-        <li>아래 칸에 붙여넣고 버튼을 누르면 현황이 나오고, 그대로 내려받을 수 있습니다.</li>
-      </ol>
-      <textarea id="paste-json" rows="5" placeholder='{"success":1,"query_summary":{ … },"reviews":[ … ]}'
-        style="width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;resize:vertical"></textarea>
-      <div class="field-row" style="margin-top:10px">
-        <button id="btn-paste" class="act ghost" type="button">붙여넣은 내용 읽기</button>
-      </div>
-      <p class="hint" style="margin-top:10px">이 방식은 한 번에 최대 100건까지만 가져올 수 있습니다.
-         더 많은 자료가 필요하면 담당 교수에게 문의하세요.</p>
-    </details>
-  </section>
-
   <!-- ── 안내 ──────────────────────────────────────────── -->
   <section class="panel">
     <h2>과제 안내</h2>
     <ol style="margin:14px 0 0;padding-left:20px;color:var(--ink-2);font-size:.92rem;line-height:1.9">
       <li>관심 있는 게임을 <b>두 개 이상</b> 골라 현황을 확인하고, 비교표를 보며 분석할 게임을 정합니다.</li>
       <li>왜 그 게임을 골랐는지 한 문단으로 적습니다. 리뷰 수, 추천률, 평가가 갈리는 정도를 근거로 쓰세요.</li>
-      <li>조건을 정해 수집하고 CSV 로 내려받습니다. 어떤 조건으로 받았는지 반드시 기록하세요.</li>
+      <li>필요한 만큼 반복해 모은 뒤 CSV 로 내려받습니다. 어떤 조건으로 받았는지 반드시 기록하세요.</li>
       <li>엑셀이나 원하는 도구로 직접 분석합니다. 표와 그래프는 여러분이 만듭니다.</li>
     </ol>
     <div class="notice warn" style="margin-top:18px">
