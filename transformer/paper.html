@@ -235,6 +235,26 @@ footer a{color:var(--enc)}
 }
 .home:hover{transform:translateY(-2px)}
 @media (max-width:520px){.home{left:10px;bottom:10px;padding:7px 13px;font-size:.78rem}}
+
+/* 출처 — 눌러서 복사한다 */
+.cbox{
+  position:relative;background:var(--plate);border:1px solid var(--rule-2);
+  border-left:3px solid var(--lit);border-radius:3px;
+  padding:14px 74px 14px 16px;margin:0 0 14px;cursor:pointer;
+  font-size:.9rem;line-height:1.75;color:var(--ink);
+  transition:border-color .15s, background .15s;
+}
+.cbox:hover{background:var(--sunk)}
+.cbox em{font-style:italic}
+.cbox .cp{
+  position:absolute;top:10px;right:10px;
+  font-family:"IBM Plex Sans KR",sans-serif;font-size:.74rem;font-weight:500;
+  color:var(--muted);border:1px solid var(--rule-2);border-radius:3px;
+  padding:3px 9px;background:var(--plate);white-space:nowrap;
+}
+.cbox:hover .cp{color:var(--lit);border-color:var(--lit)}
+.cbox.done{border-color:var(--lit)}
+.cbox.done .cp{background:var(--lit);border-color:var(--lit);color:#fff}
 </style>
 
 <a class="home" href="index.html" title="세 갈래 목차로">← 목차</a>
@@ -390,6 +410,75 @@ footer a{color:var(--enc)}
       </a>
     </div>
 
+    <h2>이 논문에 대하여</h2>
+    <p class="sub">2017년 6월 arXiv 공개 · 같은 해 12월 NIPS(현 NeurIPS) 발표</p>
+    <p>
+      그때까지 기계번역의 주류는 <b>순환신경망</b>이었습니다. 문장을 앞에서 뒤로 한 낱말씩 훑어야 해서
+      학습이 느렸고, 멀리 떨어진 낱말끼리 연결하기도 어려웠습니다.
+      이 논문은 순환도 합성곱도 <b>전부 걷어내고 어텐션만</b> 남겼습니다. 제목이 그 주장 그대로입니다.
+    </p>
+    <p>
+      결과는 두 가지였습니다. 문장 안의 모든 위치를 <b>한 번에 병렬로</b> 계산하니 훨씬 빨랐고,
+      번역 성적도 당시 최고를 <b>학습 비용의 일부만으로</b> 넘어섰습니다.
+      GPT·BERT를 비롯해 오늘의 대형 언어모델은 거의 전부 이 구조에서 갈라져 나왔습니다.
+      기계학습 역사에서 <b>10만 회를 훨씬 넘게 인용</b>된 몇 안 되는 논문입니다.
+    </p>
+
+    <h3>지은이 여덟 사람</h3>
+    <p>
+      논문 첫 쪽 각주에 <b>“기여도는 같으며 이름 순서는 무작위”</b>라고 적혀 있습니다.
+      여덟 명 대부분이 뒤에 구글을 떠나 각자 AI 회사를 세웠습니다.
+    </p>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>이름</th><th>당시</th><th>그 뒤</th></tr></thead>
+        <tbody>
+          <tr><td>Ashish Vaswani</td><td>Google Brain</td><td>Adept AI 공동창업 → Essential AI 공동창업</td></tr>
+          <tr><td>Noam Shazeer</td><td>Google Brain</td><td>Character.AI 공동창업 → 2024년 구글 복귀, Gemini 공동 총괄</td></tr>
+          <tr><td>Niki Parmar</td><td>Google Research</td><td>Adept AI 공동창업 → Essential AI 공동창업</td></tr>
+          <tr><td>Jakob Uszkoreit</td><td>Google Research</td><td>Inceptive 창업 — RNA 의약 설계</td></tr>
+          <tr><td>Llion Jones</td><td>Google Research</td><td>Sakana AI 공동창업 (도쿄)</td></tr>
+          <tr><td>Aidan N. Gomez</td><td>토론토대 학부생 · 인턴</td><td>Cohere 공동창업, CEO</td></tr>
+          <tr><td>Łukasz Kaiser</td><td>Google Brain</td><td>OpenAI</td></tr>
+          <tr><td>Illia Polosukhin</td><td>Google Research</td><td>NEAR Protocol 공동창업</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.87rem;color:var(--muted)">
+      Aidan Gomez 는 당시 <b>학부생 인턴</b>이었습니다.
+      ‘그 뒤’ 칸은 이 쪽을 쓴 시점 기준이라 지금은 달라졌을 수 있습니다.
+    </p>
+
+    <h2>출처 표기</h2>
+    <p class="sub">과제나 논문에 인용하실 때 그대로 쓰시면 됩니다. 상자를 누르면 복사됩니다.</p>
+
+    <h3>APA 7판 · 학술대회 논문집</h3>
+    <div class="cbox" data-copy tabindex="0" role="button" aria-label="APA 학술대회 논문집 형식 복사">
+      <span class="txt">Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., &amp; Polosukhin, I. (2017). Attention is all you need. <em>Advances in Neural Information Processing Systems, 30</em>, 5998–6008.</span>
+      <span class="cp">복사</span>
+    </div>
+
+    <h3>APA 7판 · arXiv 프리프린트</h3>
+    <div class="cbox" data-copy tabindex="0" role="button" aria-label="APA arXiv 형식 복사">
+      <span class="txt">Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., &amp; Polosukhin, I. (2017). <em>Attention is all you need</em> (arXiv:1706.03762). arXiv. https://arxiv.org/abs/1706.03762</span>
+      <span class="cp">복사</span>
+    </div>
+
+    <h3>본문 안에서</h3>
+    <div class="grid2">
+      <div class="cbox" data-copy tabindex="0" role="button" aria-label="괄호 인용 복사">
+        <span class="txt">(Vaswani et al., 2017)</span><span class="cp">복사</span>
+      </div>
+      <div class="cbox" data-copy tabindex="0" role="button" aria-label="서술 인용 복사">
+        <span class="txt">Vaswani et al. (2017) 은 …</span><span class="cp">복사</span>
+      </div>
+    </div>
+    <p style="font-size:.88rem">
+      APA 7판은 저자가 <b>스무 명 이하이면 모두</b> 적습니다. 여덟 명이므로 생략 없이 씁니다.
+      본문 인용은 저자가 셋 이상일 때 처음부터 <code>et al.</code> 을 씁니다.
+      <code>Ł</code> 은 폴란드 문자이니 <code>L</code> 로 바꾸지 마세요.
+    </p>
+
     <h2>논문 뒤에 달라진 것</h2>
     <p>
       아래는 <b>논문에는 없는</b> 내용입니다. 오늘의 모형과 그림을 비교할 때 필요해 덧붙입니다.
@@ -405,10 +494,8 @@ footer a{color:var(--enc)}
     </ul>
 
     <footer>
-      A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, I. Polosukhin.
-      <em>Attention Is All You Need.</em> NeurIPS 2017.
-      <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a><br>
-      도해는 논문 Figure 1 의 배치를 따라 다시 그린 것입니다.
+      도해는 논문 <em>Figure 1</em> 의 배치를 따라 다시 그린 것이며, 수치는 모두 논문 본문에서 가져왔습니다.
+      원문은 <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a> 에서 무료로 볼 수 있습니다.
     </footer>
   </section>
 </main>
@@ -786,6 +873,45 @@ footer a{color:var(--enc)}
     const i = cur ? FLOW.indexOf(cur) : -1;
     if (e.key === "ArrowRight") { stop(); goStep(i + 1); }
     if (e.key === "ArrowLeft") { stop(); goStep(Math.max(0, i - 1)); }
+  });
+
+  /* ── 출처 복사 ────────────────────────────
+     클립보드가 막힌 화면도 있으므로, 안 되면 글을 잡아 줘서
+     Ctrl+C 로 이어 갈 수 있게 한다. */
+  async function copyCite(box) {
+    const txt = box.querySelector(".txt").innerText.replace(/\s+/g, " ").trim();
+    const tag = box.querySelector(".cp");
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(txt);
+      ok = true;
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.style.cssText = "position:fixed;opacity:0";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        ta.remove();
+      } catch { ok = false; }
+    }
+    if (!ok) {                                  // 마지막 수단: 글을 잡아 준다
+      const r = document.createRange();
+      r.selectNodeContents(box.querySelector(".txt"));
+      const sel = getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+    box.classList.add("done");
+    tag.textContent = ok ? "복사됨 ✓" : "Ctrl+C 를 누르세요";
+    setTimeout(() => { box.classList.remove("done"); tag.textContent = "복사"; }, 2400);
+  }
+  document.querySelectorAll("[data-copy]").forEach(b => {
+    b.addEventListener("click", () => copyCite(b));
+    b.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); copyCite(b); }
+    });
   });
 
   goStep(0);
