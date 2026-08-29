@@ -13,8 +13,8 @@ footer{padding:100px max(28px,calc((100vw - var(--max))/2)) 32px;background:var(
 .hero-image{object-position:center;transform:translateX(7%) scale(1.04)}
 @media(max-width:940px){.hero-image{object-position:53% center;transform:none}}
 @media(max-width:580px){.hero-image{object-position:61% center}}
-.wordmark{width:auto;height:auto;border:0;border-radius:0;display:block}.wordmark img{display:block;width:172px;height:auto}.wordmark:hover img,.wordmark:focus-visible img{opacity:.82}
-@media(max-width:580px){.wordmark{width:auto;height:auto}.wordmark img{width:145px}}
+.wordmark{width:auto;height:auto;border:0;border-radius:0;display:flex;align-items:baseline;gap:10px;color:#fff;text-decoration:none}.wordmark b{font:700 1.05rem/1 "Malgun Gothic",Arial,sans-serif;letter-spacing:-.04em}.wordmark span{color:#aab4c2;font:400 .71rem/1 "Malgun Gothic",Arial,sans-serif;letter-spacing:-.01em;white-space:nowrap}.wordmark:hover b,.wordmark:focus-visible b{color:var(--lime)}
+@media(max-width:580px){.wordmark{gap:7px}.wordmark span{display:none}}
 .course-list .course-featured{padding:0;border-color:var(--navy);background:var(--navy)}.course-featured>a{min-height:143px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;color:#fff;text-decoration:none}.course-featured em{color:var(--lime);font-size:.7rem;font-style:normal;font-weight:700}.course-list .course-featured span{color:#aeb8c5}.course-list .course-featured:hover,.course-list .course-featured:focus-within{border-color:var(--lime);transform:translateY(-4px)}
 .now-open .section-body h2{margin-bottom:38px}
 .now-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
