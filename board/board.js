@@ -459,11 +459,9 @@ function start() {
         btn.textContent = "이름 가리기";
         btn.disabled = false;
         window.alert(
-          "제목을 바꾸지 못했습니다.
-
-Firebase 콘솔에 새 규칙을 게시하셨는지 확인해 주세요."
-          + "
-(Firestore Database → 규칙 → firestore.rules 내용 붙여넣고 게시)");
+          "제목을 바꾸지 못했습니다." + "\n\n"
+          + "Firebase 콘솔에 새 규칙을 게시하셨는지 확인해 주세요." + "\n"
+          + "(Firestore Database → 규칙 → firestore.rules 내용 붙여넣고 게시)");
       }
     };
   }
