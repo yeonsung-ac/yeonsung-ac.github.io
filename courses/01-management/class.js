@@ -41,8 +41,10 @@ const db = getFirestore(app);
 
 const QUIZZES = "mgmt_quizzes";
 const ANSWERS = "mgmt_answers";
+const LOGS = "mgmt_log";
 const PASS = "0909";                 // 문패다. 소스에 드러나므로 성적의 자물쇠로 쓰지 않는다.
 const KEY = "mgmt-who";
+const SIDS = "mgmt-sids";            // 이 기기가 지금까지 쓴 학번들
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
@@ -59,6 +61,7 @@ const state = {
   view: "room",
   solving: null,
   making: false,
+  logs: [],
 };
 
 /* ── 작은 도우미 ──────────────────────────── */
@@ -78,6 +81,49 @@ function setNet(cls, msg) {
 
 const cleanName = (s) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, 20);
 const cleanSid = (s) => String(s ?? "").replace(/[^0-9A-Za-z-]/g, "").slice(0, 20);
+
+/* ── 어디서 냈는지 남기기 ──────────────────
+   IP 는 브라우저가 스스로 알 수 없어 바깥에 한 번 물어본다.
+   못 받아도 제출은 그대로 진행한다. 기록하려다 제출을 막으면 안 된다. */
+let myIp = null;
+
+async function findIp() {
+  if (myIp !== null) return myIp;
+  try {
+    const stop = new AbortController();
+    const timer = setTimeout(() => stop.abort(), 3500);
+    const res = await fetch("https://api.ipify.org?format=json", { signal: stop.signal });
+    clearTimeout(timer);
+    const d = await res.json();
+    myIp = String(d.ip || "").slice(0, 45);
+  } catch {
+    myIp = "";
+  }
+  return myIp;
+}
+
+/* 이 기기가 지금까지 어떤 학번으로 들어왔는지. 한 폰으로 여러 학번을 내면
+   대리 제출을 의심할 근거가 된다. IP 는 강의실 와이파이면 모두 같아서
+   이쪽이 훨씬 확실한 신호다. */
+function seenSids() {
+  try { return JSON.parse(localStorage.getItem(SIDS)) || []; } catch { return []; }
+}
+function noteSid(sid) {
+  const list = seenSids();
+  if (list.includes(sid)) return;
+  list.push(sid);
+  try { localStorage.setItem(SIDS, JSON.stringify(list.slice(-8))); } catch { /* 그만 */ }
+}
+
+async function writeLog(row) {
+  try {
+    await addDoc(collection(db, LOGS), {
+      ...row, uid: state.uid, ip: await findIp(),
+      ua: String(navigator.userAgent || "").slice(0, 180),
+      t: serverTimestamp(),
+    });
+  } catch { /* 기록이 안 남아도 제출은 살린다 */ }
+}
 
 /* ── 문패 ─────────────────────────────────── */
 function loadWho() {
@@ -107,6 +153,7 @@ $("gate-form").addEventListener("submit", (e) => {
   err.hidden = true;
   state.me = { name, sid };
   saveWho(state.me);
+  noteSid(sid);
   enterRoom();
 });
 
@@ -180,6 +227,7 @@ onAuthStateChanged(auth, async (user) => {
   if (state.isProfessor) $("prof-who").textContent = user.email;
   watchQuizzes();
   watchAnswers();
+  if (state.isProfessor) watchLogs();
   render();
 });
 
@@ -213,6 +261,52 @@ function watchAnswers() {
     },
     () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
   );
+}
+
+let stopLogs = null;
+
+function watchLogs() {
+  if (stopLogs) return;
+  stopLogs = onSnapshot(
+    query(collection(db, LOGS), orderBy("t", "desc")),
+    (snap) => {
+      state.logs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (state.view === "log") renderLog();
+    },
+    () => { /* 교수가 아니면 못 읽는 것이 정상이다 */ }
+  );
+}
+
+/* 무엇이 수상한가.
+   IP 는 강의실 와이파이면 모두 같게 나오므로 그것만으로는 못 가린다.
+   가장 확실한 신호는 '한 기기에서 여러 학번이 나온 것' 이다. */
+function suspects(logs) {
+  const byDevice = new Map();
+  const bySid = new Map();
+  logs.forEach((l) => {
+    if (!l.sid || !l.uid) return;
+    if (!byDevice.has(l.uid)) byDevice.set(l.uid, new Set());
+    byDevice.get(l.uid).add(l.sid);
+    if (!bySid.has(l.sid)) bySid.set(l.sid, new Set());
+    bySid.get(l.sid).add(l.uid);
+  });
+
+  const out = [];
+  byDevice.forEach((sids, uid) => {
+    if (sids.size > 1) {
+      out.push({ level: "high", head: "한 기기에서 여러 학번",
+                 body: [...sids].join(", "),
+                 tail: "기기 " + uid.slice(0, 8) + " · 대리 제출일 수 있습니다" });
+    }
+  });
+  bySid.forEach((uids, sid) => {
+    if (uids.size > 1) {
+      out.push({ level: "mid", head: "한 학번이 여러 기기",
+                 body: sid,
+                 tail: uids.size + "대에서 제출 · 기기를 바꿨거나 대신 냈을 수 있습니다" });
+    }
+  });
+  return out;
 }
 
 /* ── 채점 ─────────────────────────────────── */
@@ -373,6 +467,17 @@ $("solve-form").addEventListener("submit", async (e) => {
     return;
   }
 
+  // 이 기기에서 다른 학번으로 낸 적이 있으면 짚고 넘어간다. 막지는 않는다.
+  const others = seenSids().filter((x) => x !== state.me.sid);
+  if (others.length) {
+    const go = confirm(
+      "이 기기에서 다른 학번으로 제출한 적이 있습니다." + "\n\n"
+      + "먼저 쓴 학번: " + others.join(", ") + "\n\n"
+      + "대리 제출은 기록에 남아 교수님이 확인하십니다." + "\n"
+      + "계속하시겠습니까?");
+    if (!go) return;
+  }
+
   const { right, gradable } = grade(q, picks);
   const btn = $("solve-send");
   btn.disabled = true;
@@ -385,6 +490,9 @@ $("solve-form").addEventListener("submit", async (e) => {
       picks, right, gradable,
       submittedAt: serverTimestamp(),
     });
+    noteSid(state.me.sid);
+    writeLog({ kind: "submit", quizId: q.id, name: state.me.name, sid: state.me.sid,
+               otherSids: others.slice(0, 5) });
     toast("제출했습니다");
     openSolve(q.id);
   } catch (err) {
@@ -400,6 +508,7 @@ $("solve-form").addEventListener("submit", async (e) => {
 function renderProf() {
   const host = $("prof-body");
   if (state.making) return;                     // 만드는 중이면 건드리지 않는다
+  if (state.view === "log") { renderLog(); return; }
 
   host.innerHTML = state.quizzes.map((q) => {
     const rows = state.all.filter((a) => a.quizId === q.id);
@@ -566,6 +675,84 @@ async function saveQuiz() {
   $("m-save").disabled = false;
 }
 
+/* 기록 보기 — 교수만 */
+function renderLog() {
+  const host = $("prof-body");
+  const rows = state.logs;
+  const bad = suspects(rows);
+
+  const flags = bad.length
+    ? `<div class="flags">${bad.map((b) => `
+        <div class="flag ${b.level}">
+          <span class="fh">${esc(b.head)}</span>
+          <span class="fb">${esc(b.body)}</span>
+          <span class="ft">${esc(b.tail)}</span>
+        </div>`).join("")}</div>`
+    : `<p class="count">지금까지 수상한 자취는 없습니다.</p>`;
+
+  const byId = new Map(state.quizzes.map((q) => [q.id, q]));
+  const table = rows.length
+    ? `<div class="logwrap"><table class="logtable">
+        <thead><tr><th>시각</th><th>성명</th><th>학번</th><th>문제</th><th>IP</th><th>기기</th></tr></thead>
+        <tbody>${rows.slice(0, 300).map((l) => {
+          const when = l.t?.toDate ? l.t.toDate().toLocaleString("ko-KR", { hour12: false }) : "…";
+          const q = byId.get(l.quizId);
+          const odd = (l.otherSids || []).length > 0;
+          return `<tr${odd ? ' class="odd"' : ""}>
+            <td class="n">${esc(when)}</td>
+            <td>${esc(l.name || "")}</td>
+            <td class="n">${esc(l.sid || "")}</td>
+            <td>${esc(q ? q.week + "주차 " + q.title : "-")}</td>
+            <td class="n">${esc(l.ip || "알 수 없음")}</td>
+            <td class="n dim">${esc(String(l.uid || "").slice(0, 8))}</td>
+          </tr>`;
+        }).join("")}</tbody></table></div>
+       <p class="count">모두 <b>${rows.length}</b>건${rows.length > 300 ? " (최근 300건만 표시)" : ""}</p>`
+    : `<p class="empty">아직 기록이 없습니다.</p>`;
+
+  host.innerHTML = `
+    <div class="logbar">
+      <button class="btn-line" id="log-back" type="button">← 문제로</button>
+      <button class="btn-line" id="log-csv" type="button">기록 내려받기 (CSV)</button>
+    </div>
+    <h3 class="block-title" style="margin-top:6px">살펴볼 것</h3>
+    ${flags}
+    <h3 class="block-title" style="margin-top:26px">전체 기록</h3>
+    ${table}`;
+
+  $("log-back").onclick = () => { state.view = "room"; renderProf(); };
+  $("log-csv").onclick = () => downloadLog();
+}
+
+function downloadLog() {
+  if (!state.logs.length) { toast("기록이 없습니다", true); return; }
+  const byId = new Map(state.quizzes.map((q) => [q.id, q]));
+  const head = ["시각", "성명", "학번", "주차", "제목", "IP", "기기", "이 기기의 다른 학번", "브라우저"];
+  const rows = state.logs.map((l) => {
+    const q = byId.get(l.quizId);
+    const when = l.t?.toDate ? l.t.toDate().toLocaleString("ko-KR", { hour12: false }) : "";
+    return [when, l.name || "", l.sid || "", q?.week ?? "", q?.title ?? "",
+            l.ip || "", String(l.uid || "").slice(0, 12),
+            (l.otherSids || []).join(" "), l.ua || ""];
+  });
+  const csv = [head, ...rows]
+    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `경영학원론_제출기록_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`${rows.length}건 내려받았습니다`);
+}
+
+$("p-log").addEventListener("click", () => {
+  state.view = "log";
+  state.making = false;
+  renderLog();
+});
+
 /* 결과 내려받기 */
 $("p-csv").addEventListener("click", () => {
   if (!state.all.length) { toast("아직 제출이 없습니다", true); return; }
@@ -580,7 +767,7 @@ $("p-csv").addEventListener("click", () => {
   const csv = [head, ...rows]
     .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
     .join("\r\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `경영학원론_퀴즈결과_${new Date().toISOString().slice(0, 10)}.csv`;

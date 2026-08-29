@@ -7,7 +7,7 @@ rules_version = '2';
 //   applications - 부트캠프 간편 신청  (yeonsung-ac.github.io/YouthLeap/)
 //   secrets      - 비밀글 본문         (게시판의 상담 분류 전용)
 //   submissions  - 과제 제출함         (yeonsung-ac.github.io/submit/)
-//   mgmt_quizzes / mgmt_answers - 경영학원론 수업 퀴즈 (courses/01-management/)
+//   mgmt_quizzes / mgmt_answers / mgmt_log - 경영학원론 수업 퀴즈 (courses/01-management/)
 //
 // 이 파일 전체를 Firebase 콘솔 > Firestore Database > 규칙 탭에 붙여넣고 게시하세요.
 // 일부만 넣으면 나머지가 동작하지 않습니다.
@@ -164,6 +164,23 @@ service cloud.firestore {
       // 한 번 낸 답은 본인도 못 고친다. 잘못 냈으면 교수가 지워 준다.
       allow update: if false;
 
+      allow delete: if isProfessor();
+    }
+
+    match /mgmt_log/{logId} {
+      // 제출 자취. 대리 제출을 가려내려고 남긴다. 교수만 읽는다.
+      // 학생 화면에서 IP 를 수집한다는 사실을 문패에 밝혀 두었다.
+      allow read: if isProfessor();
+
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.sid is string
+        && request.resource.data.sid.size() <= 20
+        && request.resource.data.ip is string
+        && request.resource.data.ip.size() <= 45;
+
+      // 남긴 자취는 아무도 못 고친다. 지우는 것은 교수만.
+      allow update: if false;
       allow delete: if isProfessor();
     }
 
