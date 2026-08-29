@@ -389,8 +389,9 @@ function start() {
     $("post-owner-actions").hidden = !(owner || state.isProfessor);
     if (!(owner || state.isProfessor)) return;
 
-    // 교수는 지울 수만 있고 남의 글을 고치지는 못한다.
+    // 교수는 남의 글을 고쳐 쓰지는 못한다. 제목의 실명을 가리는 것만 따로 연다.
     $("edit-button").hidden = !owner;
+    setupMaskButton(post, owner);
     $("edit-button").onclick = () => {
       state.editing = post.id;
       fillForm(post, body);
@@ -409,6 +410,60 @@ function start() {
       } catch {
         window.alert("삭제에 실패했습니다.");
         $("delete-button").disabled = false;
+      }
+    };
+  }
+
+  /* ---------- 제목 속 실명 가리기 ----------
+     학생이 제목에 이름을 그대로 적어 올리는 일이 있다. 글을 지우면 내용까지
+     사라지므로, 교수가 제목의 이름만 가릴 수 있게 한다.
+     성 한 글자만 남기고 나머지는 길이와 상관없이 ** 로 바꾼다. */
+
+  function maskName(name) {
+    const t = String(name ?? "").trim();
+    return t ? t.slice(0, 1) + "**" : t;
+  }
+
+  function setupMaskButton(post, owner) {
+    const btn = $("mask-button");
+    btn.hidden = !state.isProfessor;
+    if (btn.hidden) return;
+
+    btn.disabled = false;
+    btn.textContent = "이름 가리기";
+    btn.onclick = async () => {
+      // 성이 두 글자인 분(선우·남궁 등)도 있어 값을 고칠 수 있게 물어본다.
+      const next = window.prompt(
+        `제목의 이름을 가립니다. 성이 두 글자면 고쳐 주세요.
+
+지금:  ${post.title}
+바꿀 값:`,
+        maskName(post.title));
+      if (next === null) return;
+
+      const title = next.trim();
+      if (!title) { window.alert("제목을 비울 수는 없습니다."); return; }
+      if (title === post.title) return;
+      if (title.length > 120) { window.alert("제목이 너무 깁니다. 120자까지."); return; }
+
+      btn.disabled = true;
+      btn.textContent = "바꾸는 중…";
+      try {
+        await updateDoc(doc(db, COLLECTION, post.id), { title });
+        post.title = title;
+        $("post-title").textContent = title;
+        await loadPosts();
+        btn.textContent = "가렸습니다 ✓";
+        setTimeout(() => { btn.textContent = "이름 가리기"; btn.disabled = false; }, 1800);
+      } catch (error) {
+        btn.textContent = "이름 가리기";
+        btn.disabled = false;
+        window.alert(
+          "제목을 바꾸지 못했습니다.
+
+Firebase 콘솔에 새 규칙을 게시하셨는지 확인해 주세요."
+          + "
+(Firestore Database → 규칙 → firestore.rules 내용 붙여넣고 게시)");
       }
     };
   }

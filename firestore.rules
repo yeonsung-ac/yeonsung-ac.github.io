@@ -27,6 +27,7 @@ service cloud.firestore {
 
     // ---------- 홈페이지 게시판 ----------
     // 읽기는 누구나, 쓰기는 로그인 사용자, 수정은 본인 글만.
+    // 예외로 교수는 남의 글에서 '제목만' 고칠 수 있다(실명 가리기용).
     //
     // 비밀글은 '상담' 분류에서만 쓸 수 있다. Firestore 는 문서 단위로만 권한을 걸 수 있어
     // 한 문서 안에서 제목만 공개하고 본문만 가릴 수 없다. 그래서 비밀글의 본문은
@@ -52,16 +53,32 @@ service cloud.firestore {
         && bodyPlacedCorrectly(request.resource.data)
         && request.resource.data.category in ['자유', '질문', '후기', '상담', '공지'];
 
-      allow update: if request.auth != null
-        && resource.data.authorId == request.auth.uid
-        && request.resource.data.authorId == resource.data.authorId
-        && request.resource.data.title.size() > 0
-        && request.resource.data.title.size() <= 120
-        && request.resource.data.content is string
-        && request.resource.data.content.size() <= 8000
-        && request.resource.data.secret is bool
-        && bodyPlacedCorrectly(request.resource.data)
-        && request.resource.data.category in ['자유', '질문', '후기', '상담', '공지'];
+      allow update: if request.auth != null && (
+        // 본인 글은 전부 고칠 수 있다.
+        ( resource.data.authorId == request.auth.uid
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.content is string
+          && request.resource.data.content.size() <= 8000
+          && request.resource.data.secret is bool
+          && bodyPlacedCorrectly(request.resource.data)
+          && request.resource.data.category in ['자유', '질문', '후기', '상담', '공지'] )
+
+        // 학생이 제목에 실명을 그대로 적어 올린 경우가 있다. 교수가 그 이름만
+        // 가릴 수 있게 열어 두되, 제목 밖의 값은 하나라도 달라지면 막는다.
+        // 그래서 남의 글을 고쳐 쓰거나 분류를 바꾸는 일은 여전히 불가능하다.
+        || ( isProfessor()
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.authorName == resource.data.authorName
+          && request.resource.data.content == resource.data.content
+          && request.resource.data.category == resource.data.category
+          && request.resource.data.secret == resource.data.secret
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 120 )
+      );
 
       // 부적절한 글은 교수도 지울 수 있다.
       allow delete: if request.auth != null
