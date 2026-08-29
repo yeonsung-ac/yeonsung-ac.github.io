@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="연성대학교 경영학원론 수업 도우미 - 수업 중 퀴즈에 참여하고 지난 문제를 다시 풀어 봅니다.">
+  <title>경영학원론 수업 도우미 | 이현구</title>
+  <meta property="og:title" content="경영학원론 수업 도우미">
+  <meta property="og:description" content="QR을 찍고 이름과 학번을 넣으면 바로 참여할 수 있습니다.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yeonsung-ac.github.io/courses/01-management/">
+  <meta property="og:image" content="https://yeonsung-ac.github.io/assets/social-thumbnail.png">
+  <link rel="canonical" href="https://yeonsung-ac.github.io/courses/01-management/">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="class.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 바로가기</a>
+
+  <header class="site-header">
+    <a class="wordmark" href="../../" aria-label="홈으로 이동"><b>이현구</b><span>연성대학교 경영학과 겸임교수</span></a>
+    <nav aria-label="주요 메뉴">
+      <a href="../../#about">소개</a>
+      <a href="../../#work">경력</a>
+      <a href="../../board/">게시판</a>
+      <a href="../../submit/">제출함</a>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <!-- ── 문패: 이름·학번을 받는다 ────────────── -->
+    <section class="gate" id="gate" hidden>
+      <div class="gate-box">
+        <p class="gate-kicker">경영학원론</p>
+        <h1>수업 도우미</h1>
+        <p class="gate-lede">수업 중 퀴즈에 참여하는 곳입니다.<br>
+          가입은 없습니다. 아래만 채우면 바로 들어갑니다.</p>
+
+        <form id="gate-form" autocomplete="off">
+          <div class="gate-row">
+            <label for="g-name">성명</label>
+            <input id="g-name" name="name" type="text" maxlength="20" required
+                   placeholder="홍길동" autocomplete="name">
+          </div>
+          <div class="gate-row">
+            <label for="g-sid">학번</label>
+            <input id="g-sid" name="sid" type="text" inputmode="numeric" maxlength="20" required
+                   placeholder="20260000">
+          </div>
+          <div class="gate-row">
+            <label for="g-pw">입장 암호</label>
+            <input id="g-pw" name="pw" type="password" maxlength="20" required
+                   placeholder="수업 시간에 알려 드립니다" autocomplete="off">
+          </div>
+          <p class="gate-error" id="gate-error" role="alert" hidden></p>
+          <button class="gate-go" id="gate-go" type="submit">들어가기</button>
+        </form>
+
+        <p class="gate-foot">
+          넣으신 이름과 학번은 <b>퀴즈 제출을 확인하는 데만</b> 씁니다.<br>
+          같은 기기에서는 다음에 다시 넣지 않아도 됩니다.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── 들어온 뒤 ───────────────────────────── -->
+    <section class="room" id="room" hidden>
+
+      <div class="room-head">
+        <div>
+          <p class="section-label">01 / 경영학원론</p>
+          <h1>수업 도우미</h1>
+        </div>
+        <div class="whoami">
+          <span class="who-name" id="who-name"></span>
+          <span class="who-sid" id="who-sid"></span>
+          <button class="who-out" id="who-out" type="button">나가기</button>
+        </div>
+      </div>
+
+      <!-- QR — 강의실 화면에 띄워 두는 자리 -->
+      <div class="qr-band" id="qr-band">
+        <img class="qr-img" src="qr.png" alt="이 페이지 주소 QR 코드" width="752" height="752">
+        <div class="qr-copy">
+          <p class="qr-kicker">휴대폰으로 찍으세요</p>
+          <h2>수업 도우미 들어오기</h2>
+          <p class="qr-url"><code>yeonsung-ac.github.io/courses/01-management/</code></p>
+          <div class="qr-acts">
+            <button class="btn-line" id="qr-big" type="button">크게 띄우기</button>
+            <button class="btn-line" id="qr-copy" type="button">주소 복사</button>
+            <button class="btn-line" id="qr-hide" type="button">접기</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="net" id="net"><span class="dot" id="net-dot"></span><span id="net-msg">연결 중…</span></p>
+
+      <!-- 지금 열린 문제 -->
+      <div class="live" id="live" hidden>
+        <p class="live-tag">지금 열린 문제</p>
+        <h2 id="live-title"></h2>
+        <p class="live-sub" id="live-sub"></p>
+        <button class="btn-go" id="live-go" type="button">풀러 가기</button>
+      </div>
+
+      <!-- 문제 목록 -->
+      <h2 class="block-title">문제</h2>
+      <div class="quiz-list" id="quiz-list"></div>
+      <p class="empty" id="quiz-empty" hidden>아직 열린 문제가 없습니다.</p>
+
+      <!-- 교수 화면 -->
+      <section class="prof" id="prof" hidden>
+        <div class="prof-head">
+          <h2>교수 화면</h2>
+          <span class="prof-who" id="prof-who"></span>
+        </div>
+        <div class="prof-acts">
+          <button class="btn-go" id="p-new" type="button">＋ 문제 만들기</button>
+          <button class="btn-line" id="p-csv" type="button">결과 내려받기 (CSV)</button>
+          <button class="btn-line" id="p-roster" type="button">참여자 명단</button>
+        </div>
+        <div class="prof-body" id="prof-body"></div>
+      </section>
+
+      <div class="prof-login" id="prof-login">
+        <button class="btn-line" id="p-signin" type="button">교수로 로그인</button>
+        <span>문제를 내고 결과를 보려면 구글 계정으로 로그인하세요.</span>
+      </div>
+
+    </section>
+
+    <!-- ── 문제 푸는 화면 ──────────────────────── -->
+    <section class="solve" id="solve" hidden>
+      <button class="back" id="solve-back" type="button">← 목록</button>
+      <p class="section-label" id="solve-week"></p>
+      <h1 id="solve-title"></h1>
+      <p class="solve-sub" id="solve-sub"></p>
+      <form id="solve-form"></form>
+      <p class="solve-error" id="solve-error" role="alert" hidden></p>
+      <button class="btn-go wide" id="solve-send" type="submit" form="solve-form">제출하기</button>
+      <div class="solved" id="solved" hidden></div>
+    </section>
+
+  </main>
+
+  <!-- QR 크게 띄우기 -->
+  <div class="qr-full" id="qr-full" hidden>
+    <button class="qr-x" id="qr-x" type="button" aria-label="닫기">×</button>
+    <img src="qr.png" alt="이 페이지 주소 QR 코드">
+    <p>경영학원론 수업 도우미</p>
+    <code>yeonsung-ac.github.io/courses/01-management/</code>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <footer>
+    <div><p class="eyebrow">경영학원론</p><h2>수업에서 만나요.</h2></div>
+    <a href="../../">← 홈페이지</a>
+    <p class="copyright">© 2026 이현구 · 연성대학교 경영학과</p>
+  </footer>
+
+  <script type="module" src="class.js"></script>
+</body>
+</html>
