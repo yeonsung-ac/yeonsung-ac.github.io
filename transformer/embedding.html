@@ -1,0 +1,578 @@
+<meta charset="utf-8">
+<title>숫자가 된 낱말</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Gowun+Batang:wght@400;700&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────
+   실측 자료가 주인공인 판. 글자는 물러서고 숫자가 앞에 선다.
+   비슷함은 청록, 동떨어짐은 흙빛 — 두 방향으로 갈라지는 눈금.
+   ───────────────────────────────────────────── */
+:root{
+  --paper:#fcfbf9;
+  --plate:#ffffff;
+  --sunk:#f3f2ee;
+  --ink:#191d1c;
+  --ink-2:#414947;
+  --muted:#7f8886;
+  --rule:#e2e1db;
+  --rule-2:#c9c8c0;
+  --pos:#0d7a6b;         /* 비슷하다 */
+  --pos-soft:#d9efeb;
+  --neg:#b5502f;         /* 동떨어졌다 */
+  --neg-soft:#f7e3da;
+  --flag:#8a6d1f;        /* 짚고 넘어갈 대목 */
+  --flag-soft:#fbf3d8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121514;
+    --plate:#1a1f1e;
+    --sunk:#222827;
+    --ink:#eceeed;
+    --ink-2:#b6bebc;
+    --muted:#7d8785;
+    --rule:#2e3634;
+    --rule-2:#414a48;
+    --pos:#48c9b4;
+    --pos-soft:#123430;
+    --neg:#e08a63;
+    --neg-soft:#3a231a;
+    --flag:#d9bb63;
+    --flag-soft:#332b12;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121514;
+  --plate:#1a1f1e;
+  --sunk:#222827;
+  --ink:#eceeed;
+  --ink-2:#b6bebc;
+  --muted:#7d8785;
+  --rule:#2e3634;
+  --rule-2:#414a48;
+  --pos:#48c9b4;
+  --pos-soft:#123430;
+  --neg:#e08a63;
+  --neg-soft:#3a231a;
+  --flag:#d9bb63;
+  --flag-soft:#332b12;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif;
+  font-weight:300;font-size:16.5px;line-height:1.82;
+  -webkit-text-size-adjust:100%;
+}
+.mono,code,.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:940px;margin:0 auto;padding:0 24px 100px}
+.narrow{max-width:64ch}
+
+h1,h2{font-weight:600;letter-spacing:-.02em}
+h1{font-size:clamp(2rem,5.6vw,3.1rem);line-height:1.18;margin:0 0 14px;text-wrap:balance}
+h2{font-size:clamp(1.4rem,3.4vw,1.85rem);line-height:1.3;margin:0 0 10px;text-wrap:balance}
+h3{
+  font-size:.8rem;font-weight:500;color:var(--muted);letter-spacing:.02em;
+  margin:26px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--rule);
+}
+p{margin:0 0 15px;color:var(--ink-2)}
+p b,li b{color:var(--ink);font-weight:500}
+.lead{font-size:1.12rem;color:var(--ink);font-weight:300}
+a{color:var(--pos)}
+:focus-visible{outline:2px solid var(--pos);outline-offset:3px}
+
+/* ── 머리 ───────────────────────────────────── */
+header{padding:52px 0 8px;border-bottom:1px solid var(--rule);margin-bottom:34px}
+.kick{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--pos);margin:0 0 12px;
+}
+.crumb{
+  display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted);
+  text-decoration:none;margin-bottom:22px;border-bottom:1px solid transparent;
+}
+.crumb:hover{color:var(--pos);border-bottom-color:var(--pos)}
+
+section{margin:0 0 58px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.16em;
+  color:var(--muted);margin:0 0 6px;
+}
+
+/* ── 주인공: 진짜 숫자 100개 ────────────────── */
+.vecbox{
+  background:var(--plate);border:1px solid var(--rule);border-radius:5px;
+  padding:20px;margin:0 0 16px;overflow-x:auto;
+}
+.vec{
+  display:grid;grid-template-columns:repeat(10,minmax(0,1fr));
+  gap:2px 6px;min-width:520px;
+}
+.vec span{
+  font-family:"IBM Plex Mono",monospace;font-size:.86rem;text-align:right;
+  font-variant-numeric:tabular-nums;padding:2px 4px;border-radius:2px;
+  opacity:0;animation:ink .5s ease forwards;
+}
+@keyframes ink{to{opacity:1}}
+.vechead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.vechead .who{font-family:"IBM Plex Mono",monospace;font-size:1.1rem;font-weight:600;color:var(--ink)}
+.vechead .cnt{font-size:.8rem;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 26px}
+.stat{
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;background:var(--sunk);
+  border:1px solid var(--rule);border-radius:3px;padding:4px 10px;color:var(--ink-2);
+}
+.stat b{color:var(--ink);font-weight:600}
+
+/* ── 짚고 넘어갈 상자 ───────────────────────── */
+.flag{
+  background:var(--flag-soft);border-left:3px solid var(--flag);
+  padding:16px 20px;margin:0 0 20px;border-radius:0 4px 4px 0;
+}
+.flag .t{font-weight:600;color:var(--ink);display:block;margin-bottom:4px}
+.flag p:last-child{margin-bottom:0}
+.note{
+  border-top:1px dashed var(--rule-2);padding-top:12px;margin-top:20px;
+  font-size:.88rem;color:var(--muted);
+}
+.note b{color:var(--ink-2)}
+
+/* ── 유사도 격자 ────────────────────────────── */
+.gridwrap{overflow-x:auto;margin:0 0 12px}
+table.sim{border-collapse:separate;border-spacing:2px;font-size:.8rem}
+table.sim th{
+  font-family:"IBM Plex Mono",monospace;font-weight:400;color:var(--muted);
+  padding:4px 7px;font-size:.76rem;white-space:nowrap;
+}
+table.sim th.row{text-align:right}
+table.sim td{
+  font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+  text-align:center;padding:7px 9px;border-radius:3px;cursor:default;
+  min-width:52px;transition:transform .12s;
+}
+table.sim td:hover{transform:scale(1.14)}
+table.sim td.self{opacity:.28}
+.legend{display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--muted);flex-wrap:wrap}
+.ramp{display:flex;height:11px;border-radius:2px;overflow:hidden;width:150px}
+.ramp i{flex:1}
+
+/* ── 지도 ───────────────────────────────────── */
+.map{
+  position:relative;background:var(--plate);border:1px solid var(--rule);border-radius:5px;
+  height:400px;margin:0 0 12px;overflow:hidden;
+}
+.pt{
+  position:absolute;transform:translate(-50%,-50%);
+  font-family:"IBM Plex Mono",monospace;font-size:.76rem;white-space:nowrap;
+  padding:3px 8px;border-radius:3px;border:1px solid;line-height:1.3;
+  transition:transform .16s, box-shadow .16s;cursor:default;
+}
+.pt:hover{transform:translate(-50%,-50%) scale(1.16);z-index:5;box-shadow:0 3px 10px rgba(0,0,0,.16)}
+.keys{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.key{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--ink-2)}
+.key i{width:11px;height:11px;border-radius:2px;display:block;border:1px solid}
+
+/* ── 이웃 찾기 ──────────────────────────────── */
+.picks{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.pick{
+  font-family:"IBM Plex Mono",monospace;font-size:.85rem;
+  background:var(--plate);border:1px solid var(--rule-2);border-radius:3px;
+  padding:6px 13px;cursor:pointer;color:var(--ink-2);transition:all .14s;
+}
+.pick:hover{border-color:var(--pos);color:var(--pos)}
+.pick[aria-pressed="true"]{background:var(--pos);border-color:var(--pos);color:var(--paper)}
+.nbrs{display:flex;flex-direction:column;gap:5px;margin:0 0 10px}
+.nbr{display:flex;align-items:center;gap:12px}
+.nbr .w{font-family:"IBM Plex Mono",monospace;font-size:.92rem;width:9em;flex:none;color:var(--ink)}
+.nbr .bar{flex:1;height:20px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.nbr .bar i{display:block;height:100%;background:var(--pos);width:0;transition:width .55s cubic-bezier(.2,.8,.25,1)}
+.nbr .s{font-family:"IBM Plex Mono",monospace;font-size:.82rem;color:var(--muted);width:3.6em;text-align:right;flex:none}
+
+/* ── 벡터 셈 ────────────────────────────────── */
+.sums{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:14px;margin:0 0 14px}
+.sum{background:var(--plate);border:1px solid var(--rule);border-radius:5px;padding:16px 18px}
+.sum .eqn{
+  font-family:"IBM Plex Mono",monospace;font-size:.92rem;color:var(--ink);
+  margin:0 0 12px;padding-bottom:11px;border-bottom:1px solid var(--rule);
+}
+.sum .eqn em{font-style:normal;color:var(--muted)}
+.sum ol{margin:0;padding-left:20px;font-family:"IBM Plex Mono",monospace;font-size:.86rem;color:var(--ink-2)}
+.sum ol li{margin-bottom:2px}
+.sum ol li:first-child{color:var(--pos);font-weight:600}
+.sum ol li span{color:var(--muted);font-size:.92em}
+
+/* ── 차원별 상위 낱말 ───────────────────────── */
+.dimrow{
+  display:flex;gap:14px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--rule);
+  flex-wrap:wrap;
+}
+.dimrow .d{font-family:"IBM Plex Mono",monospace;color:var(--neg);font-size:.85rem;flex:none;width:6.5em}
+.dimrow .ws{font-family:"IBM Plex Mono",monospace;font-size:.85rem;color:var(--ink-2)}
+
+/* ── 이어지는 곳 ────────────────────────────── */
+.links{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:18px 0 0}
+.card{
+  display:block;background:var(--plate);border:1px solid var(--rule);border-radius:5px;
+  padding:17px 19px;text-decoration:none;color:inherit;transition:border-color .15s, transform .15s;
+}
+.card:hover{border-color:var(--pos);transform:translateY(-2px)}
+.card .t{font-weight:600;color:var(--ink);display:block;margin-bottom:3px}
+.card .d{font-size:.85rem;color:var(--muted);display:block;line-height:1.6}
+
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;background:var(--plate);margin:0 0 16px}
+table.plain{width:100%;border-collapse:collapse;font-size:.88rem;min-width:420px}
+table.plain th,table.plain td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--rule)}
+table.plain th{font-size:.78rem;font-weight:500;color:var(--muted);background:var(--sunk);white-space:nowrap}
+table.plain tbody tr:last-child td{border-bottom:0}
+table.plain td.n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+
+footer{border-top:1px solid var(--rule);padding-top:20px;font-size:.86rem;color:var(--muted)}
+footer code{font-size:.92em;background:var(--sunk);padding:1px 5px;border-radius:2px}
+
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+@media (max-width:560px){
+  .vec{grid-template-columns:repeat(5,minmax(0,1fr));min-width:280px}
+  .map{height:340px}
+  .nbr .w{width:7em}
+}
+
+/* 목차로 돌아가는 길 — 세 쪽 공통 */
+.home{
+  position:fixed;left:14px;bottom:14px;z-index:90;
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif;font-size:.82rem;font-weight:500;
+  background:var(--plate);color:var(--ink);border:1px solid var(--rule-2);border-radius:999px;
+  padding:8px 15px;text-decoration:none;box-shadow:0 3px 12px rgba(0,0,0,.13);
+  transition:transform .15s;
+}
+.home:hover{transform:translateY(-2px)}
+@media (max-width:520px){.home{left:10px;bottom:10px;padding:7px 13px;font-size:.78rem}}
+</style>
+
+<a class="home" href="index.html" title="세 갈래 목차로">← 목차</a>
+
+
+<div class="wrap">
+
+<header>
+  <p class="kick">실측 · GloVe 100차원</p>
+  <h1>숫자가 된 낱말</h1>
+  <p class="lead narrow">
+    “낱말을 벡터로 바꾼다”는 말은 자주 듣지만, 그 벡터를 실제로 본 적은 드뭅니다.
+    아래 숫자는 <b>진짜 학습된 모형에서 그대로 꺼내 온 값</b>입니다. 지어낸 값이 하나도 없습니다.
+  </p>
+</header>
+
+<!-- ① 진짜 벡터 -->
+<section>
+  <p class="eyebrow">01 — 이것이 'apple' 입니다</p>
+  <h2>낱말 하나 = 숫자 100개</h2>
+  <p class="narrow">
+    영어 위키백과와 뉴스 말뭉치 60억 낱말로 학습한 GloVe 모형에서 <code>apple</code> 의 벡터를 꺼냈습니다.
+    한 줄에 10개씩, 열 줄입니다. <b>청록은 양수, 흙빛은 음수</b>이고 진할수록 절댓값이 큽니다.
+  </p>
+
+  <div class="vecbox">
+    <div class="vechead">
+      <span class="who">apple</span>
+      <span class="cnt">100개 성분 · GloVe 6B.100d</span>
+    </div>
+    <div class="vec" id="vec"></div>
+  </div>
+  <div class="stats" id="stats"></div>
+
+  <p class="narrow">
+    보시다시피 <b>규칙이라고는 보이지 않습니다.</b> 그래야 정상입니다.
+    이 숫자들은 사람이 설계한 것이 아니라, “같이 나오는 낱말끼리 가까워져라”는 조건만 걸고
+    말뭉치를 통째로 훑어 <b>기계가 스스로 자리잡은 결과</b>이기 때문입니다.
+  </p>
+</section>
+
+<!-- ② 낱개 차원은 뜻이 없다 -->
+<section>
+  <p class="eyebrow">02 — 흔한 오해</p>
+  <h2>37번째 숫자는 무엇을 뜻하나</h2>
+  <p class="narrow">
+    아무것도 뜻하지 않습니다. 확인해 보겠습니다.
+    각 차원에서 <b>값이 가장 큰 낱말들</b>을 뽑아 봤습니다. 만약 차원마다 뜻이 있다면
+    한 줄에 비슷한 낱말이 모여야 합니다.
+  </p>
+  <div id="dims"></div>
+  <p class="narrow" style="margin-top:16px">
+    한 줄 안에 <code>cup</code> 과 <code>ahmed</code> 와 <code>athletics</code> 가 섞여 있습니다.
+    <b>축 하나하나에는 이름이 없습니다.</b> 뜻은 100개가 함께 가리키는 <b>방향</b>에만 있습니다.
+  </p>
+  <div class="flag">
+    <span class="t">그래서 임베딩을 볼 때는</span>
+    <p>
+      숫자 하나를 읽지 않고 <b>두 벡터 사이의 각도</b>를 봅니다.
+      그 각도의 코사인값이 −1에서 +1 사이의 <b>유사도</b>입니다.
+    </p>
+  </div>
+</section>
+
+<!-- ③ 유사도 -->
+<section>
+  <p class="eyebrow">03 — 뜻은 거리에 있다</p>
+  <h2>낱말끼리 얼마나 가까운가</h2>
+  <p class="narrow">
+    여덟 낱말을 서로 견줘 봤습니다. 모두 실제 계산값입니다.
+  </p>
+  <div class="gridwrap"><table class="sim" id="sim"></table></div>
+  <div class="legend">
+    <span>동떨어짐</span>
+    <span class="ramp" id="ramp"></span>
+    <span>비슷함</span>
+    <span style="margin-left:6px">−0.2 &nbsp;…&nbsp; +1.0</span>
+  </div>
+
+  <div class="flag" style="margin-top:22px">
+    <span class="t">여기서 이상한 것이 보입니다</span>
+    <p>
+      <code>apple ↔ banana</code> 는 <b>0.505</b> 인데
+      <code>apple ↔ microsoft</code> 는 <b>0.745</b> 입니다.
+      바나나보다 마이크로소프트가 더 가깝습니다.
+    </p>
+    <p style="margin-bottom:0">
+      틀린 게 아닙니다. 이 모형이 배운 말뭉치는 위키백과와 <b>뉴스</b>인데,
+      거기서 apple 은 과일보다 <b>회사 이름으로 훨씬 자주</b> 등장합니다.
+      곧 다시 이야기하겠습니다 — 트랜스포머가 왜 필요했는지가 여기 있습니다.
+    </p>
+  </div>
+</section>
+
+<!-- ④ 지도 -->
+<section>
+  <p class="eyebrow">04 — 자리로 본 뜻</p>
+  <h2>100차원을 종이 위에 눌러 담으면</h2>
+  <p class="narrow">
+    사람은 100차원을 볼 수 없으니 주성분 분석으로 <b>2차원으로 눌러</b> 그렸습니다.
+    다섯 무리의 낱말이 어떻게 모이는지 보세요.
+  </p>
+  <div class="keys" id="keys"></div>
+  <div class="map" id="map"></div>
+  <p class="note" id="mapnote"></p>
+</section>
+
+<!-- ⑤ 이웃 -->
+<section>
+  <p class="eyebrow">05 — 가장 가까운 이웃</p>
+  <h2>낱말을 골라 보세요</h2>
+  <p class="narrow">
+    6만 개 낱말 전체와 견줘 가장 가까운 여덟 개를 뽑은 결과입니다.
+  </p>
+  <div class="picks" id="picks"></div>
+  <div class="nbrs" id="nbrs"></div>
+</section>
+
+<!-- ⑥ 벡터 셈 -->
+<section>
+  <p class="eyebrow">06 — 방향에 담긴 뜻</p>
+  <h2>낱말끼리 더하고 뺄 수 있다</h2>
+  <p class="narrow">
+    임베딩에서 가장 놀라운 성질입니다. <code>king</code> 에서 <code>man</code> 을 빼고
+    <code>woman</code> 을 더하면 어디에 도착할까요. 아래는 전부 실제 계산 결과이고,
+    계산에 쓴 세 낱말은 후보에서 뺐습니다.
+  </p>
+  <div class="sums" id="sums"></div>
+  <p class="narrow">
+    <code>king − man</code> 이라는 <b>뺄셈이 ‘왕다움에서 남성을 걷어낸 방향’</b>을 만들어 냅니다.
+    마지막 칸을 보세요 — 뜻만이 아니라 <b>과거형 만들기 같은 문법 규칙</b>까지 방향으로 배웁니다.
+  </p>
+  <div class="note">
+    <b>과장은 금물입니다.</b> 이 셈이 늘 맞지는 않습니다. 잘 알려진 몇 쌍에서 잘 들을 뿐이고,
+    후보에서 원래 낱말을 빼 주지 않으면 대개 자기 자신이 1등으로 나옵니다.
+    위 결과도 그 처리를 한 것입니다.
+  </div>
+</section>
+
+<!-- ⑦ 한계와 연결 -->
+<section>
+  <p class="eyebrow">07 — 그래서 트랜스포머</p>
+  <h2>낱말 하나에 벡터 하나라는 한계</h2>
+  <p class="narrow">
+    앞에서 본 <code>apple ↔ microsoft = 0.745</code> 로 돌아갑니다.
+    이 모형에서 <code>apple</code> 의 벡터는 <b>딱 하나</b>입니다. 그래서 이런 일이 생깁니다.
+  </p>
+  <div class="tblwrap">
+    <table class="plain">
+      <thead><tr><th>문장</th><th>필요한 뜻</th><th>GloVe 가 주는 벡터</th></tr></thead>
+      <tbody>
+        <tr><td class="n">I ate an <b>apple</b>.</td><td>과일</td><td class="n" rowspan="2" style="vertical-align:middle;background:var(--flag-soft)">언제나 <b>똑같은 벡터 하나</b></td></tr>
+        <tr><td class="n"><b>Apple</b> released a phone.</td><td>회사</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="narrow">
+    두 문장에서 apple 의 뜻은 완전히 다른데 벡터는 같습니다.
+    과일 쪽 뜻과 회사 쪽 뜻이 <b>하나의 평균으로 뭉개져</b> 있고,
+    말뭉치에 회사 이야기가 많았으니 평균이 회사 쪽으로 끌려간 것입니다.
+  </p>
+  <div class="flag">
+    <span class="t">트랜스포머가 푼 문제가 정확히 이것입니다</span>
+    <p style="margin-bottom:0">
+      트랜스포머에서도 출발점은 이런 <b>고정된 임베딩 하나</b>입니다.
+      다만 그 뒤에 <b>어텐션</b>이 붙어, 같은 문장 안의 다른 낱말들을 보고 벡터를 <b>그 자리에 맞게 고쳐 씁니다.</b>
+      옆에 <code>ate</code> 가 있으면 과일 쪽으로, <code>released</code> 가 있으면 회사 쪽으로 움직입니다.
+      이것을 <b>문맥 임베딩</b>이라고 합니다.
+    </p>
+  </div>
+
+  <h3>덧붙임 · 논문이 √d_model 을 곱하는 까닭</h3>
+  <p class="narrow">
+    트랜스포머는 임베딩에 위치 인코딩을 <b>더합니다.</b> 그런데 두 값의 크기가 처음부터 맞지 않습니다.
+    d_model = 512 로 계산해 보면 이렇습니다.
+  </p>
+  <div class="tblwrap">
+    <table class="plain">
+      <thead><tr><th>벡터</th><th>길이(노름)</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>위치 인코딩</td><td class="n">16.00</td><td>사인·코사인이라 늘 √(512/2)</td></tr>
+        <tr><td>임베딩 (초기값 그대로)</td><td class="n">0.96</td><td>표준편차 1/√512 로 초기화</td></tr>
+        <tr style="background:var(--pos-soft)"><td><b>임베딩 × √512</b></td><td class="n"><b>21.73</b></td><td>이제 크기가 견줄 만하다</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="narrow" style="margin-bottom:0">
+    그냥 더하면 <b>위치 정보가 낱말 뜻을 20배로 짓눌러</b> 버립니다.
+    무슨 낱말이든 “몇 번째냐”만 남습니다. 논문 3.4절 끝의 그 한 줄에 이런 계산이 들어 있습니다.
+  </p>
+</section>
+
+<!-- ⑧ 이어지는 곳 -->
+<section>
+  <h2>이어서 볼 것</h2>
+  <div class="links">
+    <a class="card" href="paper.html">
+      <span class="t">트랜스포머 논문 도해 →</span>
+      <span class="d">Figure 1 의 블록을 하나씩. 이 임베딩이 들어가는 첫 상자가 <code>Input Embedding</code> 입니다.</span>
+    </a>
+    <a class="card" href="kids.html">
+      <span class="t">트랜스포머 탐험대 →</span>
+      <span class="d">같은 내용을 초등학생용으로. 낱말들이 서로 쳐다보는 장면을 눈으로 봅니다.</span>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <p style="margin-bottom:8px">
+    <b>자료</b> · GloVe (Pennington, Socher &amp; Manning, 2014).
+    <code>glove-wiki-gigaword-100</code> — Wikipedia 2014 + Gigaword 5, 60억 낱말로 학습.
+    어휘 40만 개 중 빈도 상위 <b>6만 개</b>를 썼고 차원은 <b>100</b> 입니다.
+  </p>
+  <p style="margin-bottom:8px">
+    유사도는 코사인 유사도, 지도는 주성분 분석(SVD) 2축입니다.
+    이 쪽의 <b>모든 수치는 그 자료로 직접 계산한 값</b>이며 손으로 고친 것이 없습니다.
+  </p>
+  <p style="margin-bottom:0">
+    GloVe 는 트랜스포머보다 앞선 <b>정적 임베딩</b>이라 한 낱말에 벡터가 하나입니다.
+    임베딩이 무엇인지 보기에는 가장 깨끗한 자료라 골랐습니다.
+    실제 트랜스포머의 임베딩은 512차원 이상이며 모형 안에서 함께 학습됩니다.
+  </p>
+</footer>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const D = {"map":[{"w":"apple","g":"과일","x":0.3339,"y":1.0},{"w":"banana","g":"과일","x":0.7366,"y":0.756},{"w":"orange","g":"과일","x":0.7746,"y":0.7591},{"w":"grape","g":"과일","x":0.8775,"y":0.8572},{"w":"strawberry","g":"과일","x":0.8506,"y":0.8587},{"w":"lemon","g":"과일","x":0.8425,"y":0.9989},{"w":"peach","g":"과일","x":0.8205,"y":0.9732},{"w":"dog","g":"동물","x":1.0,"y":0.5246},{"w":"cat","g":"동물","x":0.9333,"y":0.5559},{"w":"horse","g":"동물","x":0.9964,"y":0.4126},{"w":"rabbit","g":"동물","x":0.941,"y":0.5906},{"w":"tiger","g":"동물","x":0.7138,"y":0.5253},{"w":"elephant","g":"동물","x":0.9326,"y":0.4891},{"w":"mouse","g":"동물","x":0.802,"y":0.6896},{"w":"france","g":"나라","x":0.5533,"y":0.0114},{"w":"japan","g":"나라","x":0.2105,"y":0.0678},{"w":"korea","g":"나라","x":0.2271,"y":0.0771},{"w":"germany","g":"나라","x":0.315,"y":0.0},{"w":"brazil","g":"나라","x":0.4417,"y":0.1535},{"w":"canada","g":"나라","x":0.5363,"y":0.1405},{"w":"india","g":"나라","x":0.3758,"y":0.1042},{"w":"run","g":"움직임","x":0.6472,"y":0.2977},{"w":"walk","g":"움직임","x":0.8706,"y":0.3823},{"w":"jump","g":"움직임","x":0.6426,"y":0.3285},{"w":"swim","g":"움직임","x":0.8543,"y":0.3723},{"w":"fly","g":"움직임","x":0.8487,"y":0.2812},{"w":"climb","g":"움직임","x":0.6628,"y":0.3505},{"w":"dance","g":"움직임","x":0.832,"y":0.3617},{"w":"microsoft","g":"회사","x":0.013,"y":0.8105},{"w":"google","g":"회사","x":0.1622,"y":0.7103},{"w":"intel","g":"회사","x":0.0,"y":0.8403},{"w":"samsung","g":"회사","x":0.0528,"y":0.6836},{"w":"sony","g":"회사","x":0.0143,"y":0.6525},{"w":"toshiba","g":"회사","x":0.0784,"y":0.6997},{"w":"dell","g":"회사","x":0.1505,"y":0.8336}],"mapVar":[0.193,0.17],"near":{"apple":[{"w":"microsoft","s":0.745},{"w":"ibm","s":0.682},{"w":"intel","s":0.678},{"w":"software","s":0.678},{"w":"dell","s":0.674},{"w":"pc","s":0.668},{"w":"macintosh","s":0.662},{"w":"iphone","s":0.66}],"dog":[{"w":"cat","s":0.88},{"w":"dogs","s":0.834},{"w":"pet","s":0.745},{"w":"puppy","s":0.724},{"w":"horse","s":0.711},{"w":"animal","s":0.682},{"w":"pig","s":0.655},{"w":"boy","s":0.655}],"king":[{"w":"prince","s":0.768},{"w":"queen","s":0.751},{"w":"son","s":0.702},{"w":"brother","s":0.699},{"w":"monarch","s":0.698},{"w":"throne","s":0.692},{"w":"kingdom","s":0.681},{"w":"father","s":0.68}],"japan":[{"w":"japanese","s":0.803},{"w":"korea","s":0.767},{"w":"tokyo","s":0.746},{"w":"china","s":0.741},{"w":"indonesia","s":0.646},{"w":"russia","s":0.646},{"w":"asia","s":0.646},{"w":"thailand","s":0.642}],"run":[{"w":"running","s":0.802},{"w":"runs","s":0.774},{"w":"ran","s":0.749},{"w":"out","s":0.739},{"w":"go","s":0.729},{"w":"third","s":0.727},{"w":"allowed","s":0.723},{"w":"first","s":0.718}],"music":[{"w":"musical","s":0.813},{"w":"songs","s":0.798},{"w":"dance","s":0.79},{"w":"pop","s":0.786},{"w":"recording","s":0.765},{"w":"folk","s":0.76},{"w":"jazz","s":0.757},{"w":"concert","s":0.747}],"red":[{"w":"yellow","s":0.86},{"w":"blue","s":0.844},{"w":"green","s":0.82},{"w":"black","s":0.768},{"w":"white","s":0.768},{"w":"purple","s":0.766},{"w":"pink","s":0.749},{"w":"orange","s":0.714}],"money":[{"w":"funds","s":0.851},{"w":"cash","s":0.848},{"w":"fund","s":0.759},{"w":"paying","s":0.742},{"w":"pay","s":0.741},{"w":"paid","s":0.734},{"w":"get","s":0.734},{"w":"tax","s":0.723}]},"grid":{"words":["apple","banana","fruit","microsoft","computer","dog","cat","democracy"],"m":[[1.0,0.505,0.536,0.745,0.617,0.272,0.279,0.21],[0.505,1.0,0.652,0.166,0.121,0.291,0.274,0.202],[0.536,0.652,1.0,0.114,0.182,0.377,0.342,0.198],[0.745,0.166,0.114,1.0,0.688,0.082,0.098,0.248],[0.617,0.121,0.182,0.688,1.0,0.265,0.297,0.274],[0.272,0.291,0.377,0.082,0.265,1.0,0.88,0.125],[0.279,0.274,0.342,0.098,0.297,0.88,1.0,0.084],[0.21,0.202,0.198,0.248,0.274,0.125,0.084,1.0]]},"analogy":[{"q":["king","man","woman"],"r":[{"w":"queen","s":0.77},{"w":"monarch","s":0.684},{"w":"throne","s":0.676},{"w":"daughter","s":0.659}]},{"q":["paris","france","japan"],"r":[{"w":"tokyo","s":0.899},{"w":"osaka","s":0.742},{"w":"japanese","s":0.706},{"w":"seoul","s":0.695}]},{"q":["bigger","big","small"],"r":[{"w":"larger","s":0.892},{"w":"smaller","s":0.869},{"w":"large","s":0.793},{"w":"tiny","s":0.714}]},{"q":["walked","walk","swim"],"r":[{"w":"swam","s":0.748},{"w":"swimming","s":0.612},{"w":"drowned","s":0.577},{"w":"overboard","s":0.57}]}],"dims":[{"d":12,"top":["bodies","shiite","truce","sunni","hamas","kashmir","muslim"]},{"d":37,"top":["cup","ali","ahmad","ah","ahmed","mohamed","women"]},{"d":71,"top":["survey","palm","apple","mill","poll","da","cents"]},{"d":90,"top":["interior","quake","interfax","kabul","xinhua","earthquake","zhang"]}],"apple":[-0.599,-0.463,0.13,-0.02,0.46,-0.302,0.898,-0.656,0.669,-0.492,0.038,-0.051,0.645,-0.539,-0.377,-0.043,0.514,0.178,0.286,0.921,-0.493,-0.486,0.613,0.782,0.193,0.912,-0.056,-0.125,-0.657,0.069,0.556,1.611,-0.007,-0.489,0.455,0.961,-0.063,0.174,0.981,-1.312,-0.158,-0.543,-0.139,-0.261,-0.369,0.268,-0.244,-0.195,0.626,-0.738,0.384,-0.75,-0.391,0.091,-0.366,-1.472,-0.452,0.226,1.141,-0.385,-0.067,0.573,-0.392,0.313,-0.292,-0.962,0.152,-0.217,0.251,0.097,0.284,1.43,-0.506,-0.514,-0.472,0.32,0.023,0.226,-0.097,0.821,0.926,-1.009,-0.386,0.864,-1.206,-0.285,0.227,-0.388,0.409,0.593,0.308,0.838,-0.637,-0.446,-0.434,-0.794,-0.287,-0.034,1.343,0.349],"appleStat":{"mean":0.0201,"std":0.599,"min":-1.472,"max":1.611,"norm":5.99},"meta":{"model":"GloVe (Wikipedia 2014 + Gigaword 5)","dim":100,"vocab":400000,"used":60000}};
+  const $ = s => document.querySelector(s);
+  const slow = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
+
+  /* 값 → 색. 양수는 청록, 음수는 흙빛. 진하기는 절댓값. */
+  function tint(v, max) {
+    const t = Math.min(1, Math.abs(v) / max);
+    return { color: v >= 0 ? "var(--pos)" : "var(--neg)",
+             background: `color-mix(in oklab, var(--${v >= 0 ? "pos" : "neg"}-soft) ${Math.round(t * 100)}%, transparent)` };
+  }
+
+  /* ── 01 진짜 벡터 ─────────────────────────── */
+  const v = D.apple, mx = Math.max(...v.map(Math.abs));
+  $("#vec").innerHTML = v.map((x, i) => {
+    const s = tint(x, mx);
+    return `<span style="color:${s.color};background:${s.background};animation-delay:${slow ? 0 : (i * 6)}ms">${
+      (x >= 0 ? "+" : "") + x.toFixed(3)}</span>`;
+  }).join("");
+  const st = D.appleStat;
+  $("#stats").innerHTML = [
+    ["성분 개수", "100"], ["평균", (st.mean >= 0 ? "+" : "") + st.mean],
+    ["표준편차", st.std], ["최댓값", "+" + st.max], ["최솟값", st.min],
+    ["벡터 길이", st.norm]
+  ].map(([k, val]) => `<span class="stat">${k} <b>${val}</b></span>`).join("");
+
+  /* ── 02 차원별 상위 낱말 ──────────────────── */
+  $("#dims").innerHTML = D.dims.map(d =>
+    `<div class="dimrow"><span class="d">${d.d}번 차원</span>
+     <span class="ws">${d.top.map(esc).join("  ·  ")}</span></div>`).join("");
+
+  /* ── 03 유사도 격자 ───────────────────────── */
+  const G = D.grid, lo = -0.2, hi = 1.0;
+  const cell = s => {
+    const t = Math.max(0, Math.min(1, (s - lo) / (hi - lo)));
+    return `background:color-mix(in oklab, var(--pos) ${Math.round(t * 78)}%, var(--sunk));` +
+           `color:${t > .52 ? "var(--paper)" : "var(--ink-2)"}`;
+  };
+  $("#sim").innerHTML =
+    `<thead><tr><th></th>${G.words.map(w => `<th>${esc(w)}</th>`).join("")}</tr></thead><tbody>` +
+    G.words.map((a, i) => `<tr><th class="row">${esc(a)}</th>` +
+      G.m[i].map((s, j) => i === j
+        ? `<td class="self" style="${cell(s)}">${s.toFixed(2)}</td>`
+        : `<td style="${cell(s)}" title="${esc(a)} ↔ ${esc(G.words[j])} = ${s}">${s.toFixed(2)}</td>`
+      ).join("") + "</tr>").join("") + "</tbody>";
+  $("#ramp").innerHTML = Array.from({ length: 12 }, (_, i) =>
+    `<i style="background:color-mix(in oklab, var(--pos) ${Math.round(i / 11 * 78)}%, var(--sunk))"></i>`).join("");
+
+  /* ── 04 지도 ──────────────────────────────── */
+  const GC = { "과일": "pos", "동물": "neg", "나라": "flag", "움직임": "pos", "회사": "neg" };
+  const HUE = { "과일": [13, 122, 107], "동물": [181, 80, 47], "나라": [138, 109, 31],
+                "움직임": [58, 96, 156], "회사": [120, 74, 140] };
+  const rgb = g => `rgb(${HUE[g].join(",")})`;
+  const groups = [...new Set(D.map.map(p => p.g))];
+  $("#keys").innerHTML = groups.map(g =>
+    `<span class="key"><i style="background:${rgb(g)};border-color:${rgb(g)};opacity:.28"></i>
+     <i style="background:${rgb(g)};border-color:${rgb(g)};display:none"></i>${g}</span>`).join("");
+  $("#keys").innerHTML = groups.map(g =>
+    `<span class="key"><i style="background:${rgb(g)};border-color:${rgb(g)}"></i>${g}</span>`).join("");
+  $("#map").innerHTML = D.map.map(p =>
+    `<span class="pt" style="left:${(6 + p.x * 88).toFixed(2)}%;top:${(8 + p.y * 84).toFixed(2)}%;
+      color:${rgb(p.g)};border-color:${rgb(p.g)};background:color-mix(in oklab, ${rgb(p.g)} 13%, var(--plate))"
+      title="${esc(p.w)} · ${esc(p.g)}">${esc(p.w)}</span>`).join("");
+  const pv = D.mapVar;
+  $("#mapnote").innerHTML =
+    `두 축이 담아낸 정보는 원래 100차원 중 <b>${((pv[0] + pv[1]) * 100).toFixed(0)}%</b>
+     (가로 ${(pv[0] * 100).toFixed(0)}% · 세로 ${(pv[1] * 100).toFixed(0)}%) 뿐입니다.
+     나머지 98개 축은 버렸으니, <b>붙어 보인다고 실제로 가까운 것은 아닙니다.</b>
+     정확한 거리는 위의 유사도 표가 말해 줍니다.`;
+
+  /* ── 05 이웃 ──────────────────────────────── */
+  const qs = Object.keys(D.near);
+  $("#picks").innerHTML = qs.map((q, i) =>
+    `<button class="pick" type="button" data-q="${esc(q)}" aria-pressed="${i === 0}">${esc(q)}</button>`).join("");
+  function showNear(q) {
+    $("#nbrs").innerHTML = D.near[q].map(n =>
+      `<div class="nbr"><span class="w">${esc(n.w)}</span>
+       <span class="bar"><i data-p="${Math.max(0, n.s) * 100}"></i></span>
+       <span class="s">${n.s.toFixed(3)}</span></div>`).join("");
+    requestAnimationFrame(() =>
+      document.querySelectorAll("#nbrs .bar i").forEach(b => b.style.width = b.dataset.p + "%"));
+    document.querySelectorAll(".pick").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.q === q)));
+  }
+  $("#picks").addEventListener("click", e => {
+    const b = e.target.closest(".pick"); if (b) showNear(b.dataset.q);
+  });
+  showNear(qs[0]);
+
+  /* ── 06 벡터 셈 ───────────────────────────── */
+  $("#sums").innerHTML = D.analogy.map(a => `
+    <div class="sum">
+      <p class="eqn">${esc(a.q[0])} <em>−</em> ${esc(a.q[1])} <em>+</em> ${esc(a.q[2])} <em>=</em> ?</p>
+      <ol>${a.r.map(r => `<li>${esc(r.w)} <span>${r.s.toFixed(3)}</span></li>`).join("")}</ol>
+    </div>`).join("");
+})();
+</script>

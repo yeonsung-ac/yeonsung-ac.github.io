@@ -1,0 +1,249 @@
+<meta charset="utf-8">
+<title>트랜스포머 세 갈래</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────
+   목차. 바탕은 물러서고, 세 갈래가 저마다의 색으로 선다.
+   각 색은 그 쪽이 실제로 쓰는 강조색을 그대로 가져왔다.
+   ───────────────────────────────────────────── */
+:root{
+  --paper:#f6f7f8;
+  --plate:#ffffff;
+  --ink:#141a20;
+  --ink-2:#48545f;
+  --muted:#7d8894;
+  --rule:#e0e5ea;
+  --rule-2:#c7ced6;
+  --kids:#ff7a2f;      /* 탐험대 */
+  --paperc:#2b4c8c;    /* 논문 도해 */
+  --embed:#0d7a6b;     /* 임베딩 */
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#101519;
+    --plate:#191f25;
+    --ink:#e9eef2;
+    --ink-2:#aeb9c3;
+    --muted:#7a8590;
+    --rule:#2a333b;
+    --rule-2:#3b4650;
+    --kids:#ff9455;
+    --paperc:#7ea6e8;
+    --embed:#48c9b4;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#101519;
+  --plate:#191f25;
+  --ink:#e9eef2;
+  --ink-2:#aeb9c3;
+  --muted:#7a8590;
+  --rule:#2a333b;
+  --rule-2:#3b4650;
+  --kids:#ff9455;
+  --paperc:#7ea6e8;
+  --embed:#48c9b4;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif;
+  font-weight:300;font-size:16.5px;line-height:1.8;
+  -webkit-text-size-adjust:100%;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.wrap{max-width:820px;margin:0 auto;padding:56px 24px 90px}
+
+.kick{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 12px;
+}
+h1{
+  font-family:"Gowun Batang","Batang",serif;font-weight:700;
+  font-size:clamp(2rem,5.6vw,2.9rem);line-height:1.2;margin:0 0 14px;text-wrap:balance;
+}
+.lead{font-size:1.08rem;color:var(--ink-2);margin:0 0 6px;max-width:62ch}
+.lead b{color:var(--ink);font-weight:500}
+hr{border:0;border-top:1px solid var(--rule);margin:34px 0}
+
+/* ── 세 갈래 ────────────────────────────────── */
+.ways{display:flex;flex-direction:column;gap:14px;margin:0 0 10px}
+.way{
+  display:grid;grid-template-columns:64px minmax(0,1fr);gap:20px;
+  background:var(--plate);border:1px solid var(--rule);border-radius:8px;
+  border-left:5px solid var(--c);padding:22px 24px;
+  text-decoration:none;color:inherit;
+  transition:transform .16s, box-shadow .16s, border-color .16s;
+}
+.way:hover,.way:focus-visible{
+  transform:translateY(-3px);box-shadow:0 8px 22px rgba(20,26,32,.09);border-color:var(--c);
+}
+.way:focus-visible{outline:2px solid var(--c);outline-offset:3px}
+.mark{
+  font-size:2rem;line-height:1;align-self:start;
+  width:56px;height:56px;border-radius:12px;display:grid;place-items:center;
+  background:color-mix(in oklab, var(--c) 14%, var(--plate));
+}
+.way h2{
+  font-family:"Gowun Batang",serif;font-weight:700;font-size:1.36rem;
+  margin:0 0 4px;line-height:1.3;color:var(--ink);
+}
+.who{
+  font-family:"IBM Plex Sans KR",sans-serif;font-size:.76rem;font-weight:500;
+  letter-spacing:.01em;color:var(--c);margin:0 0 8px;
+}
+.way p{margin:0 0 12px;color:var(--ink-2);font-size:.96rem;line-height:1.72}
+.bits{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.bit{
+  font-size:.78rem;color:var(--ink-2);background:color-mix(in oklab, var(--c) 9%, transparent);
+  border:1px solid color-mix(in oklab, var(--c) 30%, transparent);
+  border-radius:3px;padding:3px 9px;
+}
+.go{
+  display:inline-block;margin-top:12px;font-size:.88rem;font-weight:500;color:var(--c);
+}
+@media (max-width:540px){
+  .way{grid-template-columns:1fr;gap:14px;padding:20px}
+  .mark{width:46px;height:46px;font-size:1.6rem}
+}
+
+/* ── 어디부터 ───────────────────────────────── */
+.guide{
+  background:var(--plate);border:1px solid var(--rule);border-radius:8px;
+  padding:20px 24px;margin:0 0 14px;
+}
+.guide h3{font-size:1rem;font-weight:600;margin:0 0 10px;color:var(--ink)}
+.guide dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.94rem}
+.guide dt{color:var(--ink);font-weight:500;white-space:nowrap}
+.guide dd{margin:0;color:var(--ink-2)}
+@media (max-width:520px){.guide dl{grid-template-columns:1fr;gap:2px}.guide dd{margin-bottom:10px}}
+
+.note{
+  font-size:.89rem;color:var(--muted);border-top:1px dashed var(--rule-2);
+  padding-top:16px;margin-top:32px;
+}
+.note b{color:var(--ink-2)}
+.note code{
+  font-family:"IBM Plex Mono",monospace;font-size:.92em;
+  background:color-mix(in oklab, var(--muted) 12%, transparent);padding:1px 5px;border-radius:2px;
+}
+.note p{margin:0 0 10px}
+.note p:last-child{margin:0}
+
+@media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important}}
+</style>
+
+<div class="wrap">
+
+  <p class="kick">Attention Is All You Need · 2017</p>
+  <h1>트랜스포머, 세 갈래로 읽기</h1>
+  <p class="lead">
+    같은 구조를 <b>세 가지 눈높이</b>로 만들었습니다.
+    초등학생이 눈으로 보는 쪽, 논문 그림을 블록마다 뜯어보는 쪽,
+    그리고 그 안의 임베딩을 <b>진짜 숫자로 확인하는</b> 쪽입니다.
+  </p>
+
+  <hr>
+
+  <div class="ways">
+
+    <a class="way" style="--c:var(--kids)"
+       href="kids.html">
+      <span class="mark">🧩</span>
+      <span>
+        <p class="who">초등학생 · 여섯 정거장</p>
+        <h2>트랜스포머 탐험대</h2>
+        <p>
+          낱말 카드가 서로를 쳐다보는 장면을 빛줄기로 봅니다.
+          ‘그것은’이 ‘사과’를 71% 쳐다보는 순간이 이 쪽의 중심입니다.
+          누르고 넘기며 여섯 정거장을 지나갑니다.
+        </p>
+        <p class="bits">
+          <span class="bit">어텐션 빛줄기</span>
+          <span class="bit">눈 세 개 바꾸기</span>
+          <span class="bit">다음 말 고르기</span>
+          <span class="bit">선생님 쪽지</span>
+        </p>
+        <span class="go">들어가기 →</span>
+      </span>
+    </a>
+
+    <a class="way" style="--c:var(--paperc)"
+       href="paper.html">
+      <span class="mark">📐</span>
+      <span>
+        <p class="who">대학생 · 논문 Figure 1</p>
+        <h2>트랜스포머 논문 도해</h2>
+        <p>
+          논문의 구조도를 그대로 다시 그렸습니다. 상자 16개를 누르면
+          그 상자의 수식·역할·논문 수치가 나옵니다.
+          Table 1·3 과 학습 설정도 함께 실었습니다.
+        </p>
+        <p class="bits">
+          <span class="bit">블록 16개 주석</span>
+          <span class="bit">데이터 흐름 재생</span>
+          <span class="bit">√d_k 의 이유</span>
+          <span class="bit">논문 뒤 변화</span>
+        </p>
+        <span class="go">들어가기 →</span>
+      </span>
+    </a>
+
+    <a class="way" style="--c:var(--embed)"
+       href="embedding.html">
+      <span class="mark">🔢</span>
+      <span>
+        <p class="who">실측 자료 · GloVe 100차원</p>
+        <h2>숫자가 된 낱말</h2>
+        <p>
+          “낱말을 벡터로 바꾼다”는 그 벡터를 실제로 꺼내 봤습니다.
+          지어낸 숫자가 하나도 없습니다.
+          <code style="font-family:'IBM Plex Mono',monospace;font-size:.92em">king − man + woman = queen</code>
+          도 직접 계산한 결과입니다.
+        </p>
+        <p class="bits">
+          <span class="bit">진짜 벡터 100개</span>
+          <span class="bit">유사도 표</span>
+          <span class="bit">2차원 지도</span>
+          <span class="bit">벡터 셈</span>
+        </p>
+        <span class="go">들어가기 →</span>
+      </span>
+    </a>
+
+  </div>
+
+  <hr>
+
+  <div class="guide">
+    <h3>어디부터 볼까요</h3>
+    <dl>
+      <dt>수업 도입</dt>
+      <dd><b>탐험대</b> 네 번째 정거장만 5분. 어텐션이 무엇인지 한 번에 잡힙니다.</dd>
+      <dt>개념 정리</dt>
+      <dd><b>논문 도해</b>에서 [데이터 흐름 따라가기] 를 틀어 두고 블록 순서대로 설명.</dd>
+      <dt>“그래서 벡터가 뭔데요”</dt>
+      <dd><b>숫자가 된 낱말</b>의 첫 화면. 100개 숫자를 보면 더 물어보지 않습니다.</dd>
+      <dt>혼자 읽기</dt>
+      <dd>탐험대 → 숫자가 된 낱말 → 논문 도해 순서를 권합니다.</dd>
+    </dl>
+  </div>
+
+  <div class="note">
+    <p>
+      <b>어디까지가 진짜인가</b> — ‘숫자가 된 낱말’의 모든 수치는 공개된 GloVe 모형에서 직접 계산한 값입니다.
+      ‘논문 도해’의 수치는 논문 본문에서 가져왔습니다.
+      ‘탐험대’의 어텐션 비율만 아이들이 관계를 눈으로 보도록 <b>사람이 정한 예시</b>이며, 각 쪽에 그렇게 밝혀 두었습니다.
+    </p>
+    <p>
+      <b>파일</b> — <code>index.html</code> · <code>kids.html</code> · <code>paper.html</code> ·
+      <code>embedding.html</code> · <code>data.json</code>.
+      모두 혼자 도는 한 장짜리라 인터넷 없이 열립니다. 쪽끼리 오가는 링크만 인터넷이 필요합니다.
+    </p>
+  </div>
+
+</div>

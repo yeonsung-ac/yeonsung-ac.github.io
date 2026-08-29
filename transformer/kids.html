@@ -1,0 +1,986 @@
+<meta charset="utf-8">
+<title>트랜스포머 탐험대</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────
+   색: 교실 공책 — 연한 하늘빛 종이에 잉크빛 글씨,
+   주황은 '쳐다보는 빛줄기' 하나에만 쓴다.
+   ───────────────────────────────────────────── */
+:root{
+  --paper:#eef3f9;
+  --card:#ffffff;
+  --card-2:#f7fafd;
+  --ink:#1d2b3a;
+  --ink-2:#4a5c70;
+  --muted:#8496a9;
+  --line:#d3dee9;
+  --beam:#ff7a2f;        /* 어텐션 — 이 색은 여기에만 */
+  --beam-soft:#ffe3d0;
+  --blue:#2e7dd1;
+  --blue-soft:#dceaf8;
+  --yellow:#f5c400;
+  --yellow-soft:#fff3c4;
+  --green:#2fa96b;
+  --green-soft:#d9f2e5;
+  --shadow:rgba(29,43,58,.13);
+  --stage:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#131b25;
+    --card:#1e2a37;
+    --card-2:#24313f;
+    --ink:#e8eef5;
+    --ink-2:#b3c3d3;
+    --muted:#7d90a3;
+    --line:#33455a;
+    --beam:#ff9455;
+    --beam-soft:#4a2c1a;
+    --blue:#6fb0ec;
+    --blue-soft:#1c3247;
+    --yellow:#ffd84d;
+    --yellow-soft:#3d3316;
+    --green:#5ed49a;
+    --green-soft:#173d2c;
+    --shadow:rgba(0,0,0,.42);
+    --stage:#1a2531;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131b25;
+  --card:#1e2a37;
+  --card-2:#24313f;
+  --ink:#e8eef5;
+  --ink-2:#b3c3d3;
+  --muted:#7d90a3;
+  --line:#33455a;
+  --beam:#ff9455;
+  --beam-soft:#4a2c1a;
+  --blue:#6fb0ec;
+  --blue-soft:#1c3247;
+  --yellow:#ffd84d;
+  --yellow-soft:#3d3316;
+  --green:#5ed49a;
+  --green-soft:#173d2c;
+  --shadow:rgba(0,0,0,.42);
+  --stage:#1a2531;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Gowun Dodum","Malgun Gothic",sans-serif;
+  font-size:17px;
+  line-height:1.75;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,.jua{font-family:"Jua","Malgun Gothic",sans-serif;font-weight:400;letter-spacing:-.01em}
+
+.wrap{max-width:860px;margin:0 auto;padding:0 18px 72px}
+
+/* ── 위 진행 막대 ───────────────────────────── */
+.top{
+  position:sticky;top:0;z-index:20;background:var(--paper);
+  border-bottom:1px solid var(--line);
+  padding:11px 18px 10px;
+}
+.top-in{max-width:860px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.brand{font-family:"Jua",sans-serif;font-size:1.05rem;color:var(--ink);flex:none}
+.brand b{color:var(--beam);font-weight:400}
+.rail{display:flex;gap:7px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.rail button{
+  width:30px;height:30px;border-radius:50%;border:2px solid var(--line);
+  background:var(--card);color:var(--muted);font-family:"Jua",sans-serif;
+  font-size:.86rem;cursor:pointer;padding:0;line-height:1;
+  transition:transform .15s, background .15s, border-color .15s, color .15s;
+}
+.rail button:hover{transform:translateY(-2px)}
+.rail button[aria-current="true"]{background:var(--beam);border-color:var(--beam);color:#fff}
+.rail button.seen{border-color:var(--beam);color:var(--beam)}
+.rail button:focus-visible,.card:focus-visible,.btn:focus-visible,
+.pick:focus-visible,.eye:focus-visible,.wordbar:focus-visible{
+  outline:3px solid var(--blue);outline-offset:3px
+}
+
+/* ── 한 정거장 ──────────────────────────────── */
+.stop{display:none;animation:rise .38s ease both}
+.stop.on{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.eyebrow{
+  font-family:"Jua",sans-serif;font-size:.82rem;letter-spacing:.14em;
+  color:var(--beam);margin:30px 0 6px;text-transform:none;
+}
+h1{font-size:clamp(1.9rem,6vw,2.7rem);margin:0 0 10px;text-wrap:balance;line-height:1.28}
+h2{font-size:clamp(1.55rem,5vw,2.1rem);margin:0 0 10px;text-wrap:balance;line-height:1.3}
+.lead{font-size:1.09rem;color:var(--ink-2);margin:0 0 22px;max-width:60ch}
+p{margin:0 0 14px;max-width:62ch}
+
+/* ── 낱말 카드 무대 ─────────────────────────── */
+.stage{
+  position:relative;background:var(--stage);border:1px solid var(--line);
+  border-radius:20px;padding:26px 20px;margin:0 0 18px;
+  box-shadow:0 6px 20px var(--shadow);overflow:hidden;
+}
+.beams{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+/* 빛줄기가 카드 아래로 크게 휘므로 그만큼 자리를 비워 둔다 */
+.stage.beamy{padding-bottom:104px}
+@media (max-width:520px){.stage.beamy{padding-bottom:88px}}
+.cards{
+  position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:11px;
+  justify-content:center;align-items:flex-start;
+}
+.card{
+  font-family:"Jua",sans-serif;font-size:clamp(1.05rem,3.6vw,1.4rem);
+  background:var(--card);color:var(--ink);
+  border:2px solid var(--line);border-radius:14px;
+  padding:13px 16px 12px;cursor:pointer;position:relative;
+  box-shadow:0 3px 0 var(--line);
+  transition:transform .16s, box-shadow .16s, border-color .16s, background .16s;
+}
+.card:hover{transform:translateY(-3px);box-shadow:0 6px 0 var(--line)}
+.card.pop{
+  animation:pop .42s ease both;
+}
+@keyframes pop{
+  0%{opacity:0;transform:scale(.6) translateY(10px)}
+  60%{transform:scale(1.08)}
+  100%{opacity:1;transform:none}
+}
+.card.me{background:var(--beam);border-color:var(--beam);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.18)}
+.card.dim{opacity:.42}
+.num{
+  position:absolute;top:-9px;left:-9px;width:24px;height:24px;border-radius:50%;
+  background:var(--blue);color:#fff;font-family:"Jua",sans-serif;font-size:.78rem;
+  display:grid;place-items:center;line-height:1;box-shadow:0 2px 5px var(--shadow);
+}
+.pct{
+  position:absolute;bottom:-11px;left:50%;transform:translateX(-50%);
+  background:var(--beam);color:#fff;font-family:"Jua",sans-serif;font-size:.74rem;
+  padding:2px 8px;border-radius:999px;white-space:nowrap;
+  box-shadow:0 2px 6px var(--shadow);
+}
+.card .back{
+  display:block;font-family:"Gowun Dodum",sans-serif;font-size:.68rem;
+  color:var(--muted);margin-top:4px;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── 조작 줄 ────────────────────────────────── */
+.controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:0 0 18px}
+.btn{
+  font-family:"Jua",sans-serif;font-size:1rem;
+  background:var(--card);color:var(--ink);border:2px solid var(--line);
+  border-radius:12px;padding:10px 17px;cursor:pointer;
+  box-shadow:0 3px 0 var(--line);
+  transition:transform .14s, box-shadow .14s, background .14s, border-color .14s;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 5px 0 var(--line)}
+.btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--line)}
+.btn.go{background:var(--beam);border-color:var(--beam);color:#fff;box-shadow:0 3px 0 #c85615}
+.btn.go:hover{box-shadow:0 5px 0 #c85615}
+.pick{
+  font-family:"Gowun Dodum",sans-serif;font-size:.95rem;
+  background:var(--card);border:2px solid var(--line);border-radius:999px;
+  padding:8px 15px;cursor:pointer;color:var(--ink-2);transition:all .14s;
+}
+.pick[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.hintline{color:var(--muted);font-size:.9rem;margin:0 0 18px}
+
+/* ── 말풍선 설명 ────────────────────────────── */
+.bubble{
+  background:var(--yellow-soft);border:2px solid var(--yellow);
+  border-radius:16px;padding:15px 18px;margin:0 0 20px;position:relative;
+}
+.bubble b{color:var(--ink)}
+.bubble.blue{background:var(--blue-soft);border-color:var(--blue)}
+.bubble.green{background:var(--green-soft);border-color:var(--green)}
+.bubble .tag{
+  font-family:"Jua",sans-serif;font-size:.84rem;display:block;margin-bottom:3px;
+  color:var(--ink-2);
+}
+
+/* ── 낱말 지도 (비슷한 말끼리) ──────────────── */
+.map{
+  position:relative;height:230px;background:var(--stage);
+  border:1px solid var(--line);border-radius:18px;margin:0 0 18px;overflow:hidden;
+  box-shadow:0 6px 20px var(--shadow);
+}
+.dot{
+  position:absolute;transform:translate(-50%,-50%);font-family:"Jua",sans-serif;
+  font-size:.9rem;padding:5px 11px;border-radius:999px;white-space:nowrap;
+  border:2px solid;line-height:1.2;
+}
+.g1{background:var(--beam-soft);border-color:var(--beam);color:var(--beam)}
+.g2{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+.g3{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+
+/* ── 눈 고르기 (멀티헤드) ───────────────────── */
+.eyes{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 16px}
+.eye{
+  flex:1 1 150px;font-family:"Jua",sans-serif;font-size:1rem;text-align:left;
+  background:var(--card);border:2px solid var(--line);border-radius:14px;
+  padding:12px 14px;cursor:pointer;color:var(--ink-2);transition:all .15s;
+  box-shadow:0 3px 0 var(--line);
+}
+.eye span{display:block;font-family:"Gowun Dodum",sans-serif;font-size:.8rem;color:var(--muted);margin-top:2px}
+.eye[aria-pressed="true"]{background:var(--beam);border-color:var(--beam);color:#fff;box-shadow:0 3px 0 #c85615}
+.eye[aria-pressed="true"] span{color:#ffe0cd}
+
+/* ── 층 쌓기 ────────────────────────────────── */
+.layers{display:flex;flex-direction:column-reverse;gap:7px;margin:0 0 18px}
+.layer{
+  display:flex;align-items:center;gap:12px;background:var(--card);
+  border:2px solid var(--line);border-radius:13px;padding:11px 15px;
+  opacity:.35;transition:opacity .4s, border-color .4s, transform .4s;
+}
+.layer.lit{opacity:1;border-color:var(--beam);transform:translateX(4px)}
+.layer i{
+  font-style:normal;font-family:"Jua",sans-serif;width:28px;height:28px;flex:none;
+  border-radius:8px;background:var(--beam-soft);color:var(--beam);
+  display:grid;place-items:center;font-size:.85rem;
+}
+.layer.lit i{background:var(--beam);color:#fff}
+.layer em{font-style:normal;color:var(--ink-2);font-size:.94rem}
+
+/* ── 다음 말 고르기 막대 ────────────────────── */
+.bars{display:flex;flex-direction:column;gap:9px;margin:0 0 16px}
+.wordbar{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:transparent;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;
+}
+.wordbar .w{font-family:"Jua",sans-serif;font-size:1.05rem;width:5.6em;flex:none}
+.wordbar .track{
+  flex:1;height:26px;background:var(--card-2);border:1px solid var(--line);
+  border-radius:999px;overflow:hidden;
+}
+.wordbar .fill{
+  height:100%;background:var(--beam);border-radius:999px;
+  width:0;transition:width .7s cubic-bezier(.2,.8,.25,1);
+}
+.wordbar:nth-child(1) .fill{background:var(--beam)}
+.wordbar:nth-child(n+2) .fill{background:var(--blue)}
+.wordbar .n{
+  font-size:.9rem;color:var(--muted);width:3.4em;text-align:right;flex:none;
+  font-variant-numeric:tabular-nums;
+}
+.wordbar:hover .track{border-color:var(--beam)}
+.made{
+  font-family:"Jua",sans-serif;font-size:clamp(1.15rem,4vw,1.55rem);
+  background:var(--stage);border:2px dashed var(--line);border-radius:16px;
+  padding:18px 20px;margin:0 0 16px;min-height:3.4em;line-height:1.6;
+}
+.made .new{color:var(--beam);animation:pop .4s ease both;display:inline-block}
+
+/* ── 아래 이동 단추 ─────────────────────────── */
+.nav{display:flex;gap:10px;align-items:center;margin:26px 0 0;flex-wrap:wrap}
+.nav .sp{flex:1}
+
+/* ── 선생님 쪽지 ────────────────────────────── */
+details.note{
+  margin:34px 0 0;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:0 18px;
+}
+details.note summary{
+  font-family:"Jua",sans-serif;cursor:pointer;padding:15px 0;color:var(--ink-2);
+  font-size:1rem;
+}
+details.note[open] summary{border-bottom:1px solid var(--line);margin-bottom:14px}
+details.note table{width:100%;border-collapse:collapse;font-size:.93rem;margin:0 0 14px}
+details.note td{padding:7px 10px 7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+details.note td:first-child{font-family:"Jua",sans-serif;color:var(--beam);white-space:nowrap;width:9.5em}
+details.note p{font-size:.93rem;color:var(--ink-2)}
+.tblwrap{overflow-x:auto}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+@media (max-width:520px){
+  body{font-size:16px}
+  .stage{padding:22px 12px}
+  .rail button{width:26px;height:26px;font-size:.78rem}
+  .brand{font-size:.95rem}
+}
+
+/* 목차로 돌아가는 길 — 세 쪽 공통 */
+.home{
+  position:fixed;left:14px;bottom:14px;z-index:90;
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif;font-size:.82rem;font-weight:500;
+  background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;
+  padding:8px 15px;text-decoration:none;box-shadow:0 3px 12px rgba(0,0,0,.13);
+  transition:transform .15s;
+}
+.home:hover{transform:translateY(-2px)}
+@media (max-width:520px){.home{left:10px;bottom:10px;padding:7px 13px;font-size:.78rem}}
+</style>
+
+<a class="home" href="index.html" title="세 갈래 목차로">← 목차</a>
+
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">트랜스포머 <b>탐험대</b></div>
+    <nav class="rail" id="rail" aria-label="정거장 고르기"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ══════════ 0. 시작 ══════════ -->
+<section class="stop on" data-stop="0">
+  <p class="eyebrow">출발</p>
+  <h1>기계는 어떻게 다음 말을 알까?</h1>
+  <p class="lead">
+    “학교 끝나고 친구랑 …” 여기까지 들으면 다음에 뭐가 올지 짐작이 가지요?
+    챗봇 안에 든 <b>트랜스포머</b>도 그걸 합니다. 어떻게 하는지 여섯 정거장을 지나며 알아봐요.
+  </p>
+
+  <div class="stage">
+    <div class="cards" id="teaseCards"></div>
+  </div>
+  <p class="hintline">↑ 카드를 눌러 보세요. 서로 쳐다보기 시작합니다.</p>
+
+  <div class="bubble">
+    <span class="tag">한 줄로 말하면</span>
+    트랜스포머는 <b>말을 조각내서, 조각끼리 서로 쳐다보게 만든 다음, 다음 말을 고르는</b> 기계입니다.
+    여기서 제일 신기한 건 <b>서로 쳐다본다</b>는 부분이에요.
+  </div>
+
+  <div class="nav">
+    <span class="sp"></span>
+    <button class="btn go" data-go="1">출발! →</button>
+  </div>
+</section>
+
+<!-- ══════════ 1. 조각내기 ══════════ -->
+<section class="stop" data-stop="1">
+  <p class="eyebrow">첫 번째 정거장</p>
+  <h2>말을 조각으로 쪼개요</h2>
+  <p class="lead">
+    기계는 문장을 통째로 삼키지 않아요. 먼저 <b>낱말 카드</b>처럼 조각조각 자릅니다.
+  </p>
+
+  <div class="controls">
+    <button class="pick" data-sent="0" aria-pressed="true">민수와 사과</button>
+    <button class="pick" data-sent="1" aria-pressed="false">고양이와 쥐</button>
+    <button class="pick" data-sent="2" aria-pressed="false">엄마와 우유</button>
+  </div>
+
+  <div class="stage">
+    <div class="cards" id="splitCards"></div>
+  </div>
+  <p class="hintline">위 단추로 문장을 바꿔 보세요.</p>
+
+  <div class="bubble blue">
+    <span class="tag">왜 자를까요?</span>
+    긴 끈은 다루기 어렵지만 짧은 블록은 쌓기 쉽지요. 말도 마찬가지예요.
+    조각으로 잘라 두면 <b>어느 조각이 어느 조각과 관계있는지</b> 따져 볼 수 있습니다.
+  </div>
+
+  <div class="nav">
+    <button class="btn" data-go="0">← 이전</button><span class="sp"></span>
+    <button class="btn go" data-go="2">다음 →</button>
+  </div>
+</section>
+
+<!-- ══════════ 2. 숫자로 ══════════ -->
+<section class="stop" data-stop="2">
+  <p class="eyebrow">두 번째 정거장</p>
+  <h2>조각마다 숫자를 붙여요</h2>
+  <p class="lead">
+    기계는 글자를 모릅니다. 숫자만 압니다. 그래서 낱말마다 <b>숫자 목걸이</b>를 걸어 줘요.
+  </p>
+
+  <div class="stage">
+    <div class="cards" id="numCards"></div>
+  </div>
+  <div class="controls">
+    <button class="btn" id="flipBtn">카드 뒤집기</button>
+  </div>
+
+  <p>여기서 놀라운 점이 있어요. 숫자를 아무렇게나 붙이는 게 아니라 <b>뜻이 비슷한 말끼리 가까운 숫자</b>를 받습니다.</p>
+
+  <div class="map" id="map" aria-label="비슷한 말끼리 모여 있는 지도"></div>
+
+  <div class="bubble green">
+    <span class="tag">그래서 이런 일이 됩니다</span>
+    ‘사과’와 ‘바나나’는 옆자리, ‘강아지’는 저 멀리. 기계는 <b>말뜻을 자리로 기억</b>하는 셈이에요.
+  </div>
+
+  <div class="nav">
+    <button class="btn" data-go="1">← 이전</button><span class="sp"></span>
+    <button class="btn go" data-go="3">다음 →</button>
+  </div>
+</section>
+
+<!-- ══════════ 3. 순서 ══════════ -->
+<section class="stop" data-stop="3">
+  <p class="eyebrow">세 번째 정거장</p>
+  <h2>순서표를 붙여요</h2>
+  <p class="lead">
+    낱말 카드를 흩어 놓으면 큰일이 납니다. <b>누가 먼저인지</b>에 따라 뜻이 완전히 달라지거든요.
+  </p>
+
+  <div class="stage">
+    <div class="cards" id="orderCards"></div>
+  </div>
+  <div class="controls">
+    <button class="btn go" id="swapBtn">앞뒤 바꿔 보기</button>
+  </div>
+  <div class="bubble" id="orderMsg">
+    <span class="tag">지금 이 문장은</span>
+    <b>개가</b> 고양이를 물었어요. 아픈 건 고양이!
+  </div>
+
+  <div class="bubble blue">
+    <span class="tag">그래서</span>
+    낱말마다 <b>①②③ 번호표</b>를 함께 붙여 줍니다. 그래야 기계가 순서를 헷갈리지 않아요.
+  </div>
+
+  <div class="nav">
+    <button class="btn" data-go="2">← 이전</button><span class="sp"></span>
+    <button class="btn go" data-go="4">다음 →</button>
+  </div>
+</section>
+
+<!-- ══════════ 4. 서로 쳐다보기 (핵심) ══════════ -->
+<section class="stop" data-stop="4">
+  <p class="eyebrow">네 번째 정거장 · 가장 중요한 곳</p>
+  <h2>낱말끼리 서로 쳐다봐요</h2>
+  <p class="lead">
+    여기가 트랜스포머의 심장입니다. 낱말 하나하나가 고개를 돌려
+    <b>“나랑 관계있는 말이 누구지?”</b> 하고 친구들을 쳐다봅니다.
+  </p>
+
+  <div class="stage beamy">
+    <canvas class="beams" id="attnCanvas"></canvas>
+    <div class="cards" id="attnCards"></div>
+  </div>
+  <p class="hintline">낱말을 눌러 보세요. 그 낱말이 누구를 쳐다보는지 빛줄기로 보입니다.</p>
+
+  <div class="bubble" id="attnMsg">
+    <span class="tag">눌러 보세요</span>
+    특히 <b>‘그것은’</b>을 눌러 보세요. 아주 재미있는 일이 일어납니다.
+  </div>
+
+  <div class="bubble green">
+    <span class="tag">왜 대단한가요?</span>
+    ‘그것은’이 무엇을 가리키는지 아무도 가르쳐 주지 않았어요.
+    그런데 기계는 <b>사과</b>를 제일 오래 쳐다봅니다. 스스로 알아낸 거예요.
+    이걸 어른들은 <b>어텐션</b>이라고 부릅니다. 우리말로 <b>‘주목’</b>이지요.
+  </div>
+
+  <div class="nav">
+    <button class="btn" data-go="3">← 이전</button><span class="sp"></span>
+    <button class="btn go" data-go="5">다음 →</button>
+  </div>
+</section>
+
+<!-- ══════════ 5. 여러 눈 ══════════ -->
+<section class="stop" data-stop="5">
+  <p class="eyebrow">다섯 번째 정거장</p>
+  <h2>눈이 여러 개예요</h2>
+  <p class="lead">
+    한 번만 쳐다보면 한 가지만 알 수 있어요. 그래서 트랜스포머는
+    <b>눈을 여러 개</b> 두고 각각 다른 것을 찾게 합니다.
+  </p>
+
+  <div class="eyes" id="eyes"></div>
+
+  <div class="stage beamy">
+    <canvas class="beams" id="headCanvas"></canvas>
+    <div class="cards" id="headCards"></div>
+  </div>
+  <p class="hintline">위에서 눈을 바꿔 보세요. 쳐다보는 곳이 달라집니다.</p>
+
+  <div class="bubble">
+    <span class="tag">모둠 활동처럼</span>
+    한 사람은 <b>누가</b>, 한 사람은 <b>누구에게</b>, 한 사람은 <b>무엇을</b> 찾아요.
+    셋이 찾은 걸 합치면 문장이 훨씬 잘 이해되지요. 어른 말로는 <b>멀티헤드</b>라고 합니다.
+  </div>
+
+  <div class="nav">
+    <button class="btn" data-go="4">← 이전</button><span class="sp"></span>
+    <button class="btn go" data-go="6">다음 →</button>
+  </div>
+</section>
+
+<!-- ══════════ 6. 층 쌓기 + 다음 말 ══════════ -->
+<section class="stop" data-stop="6">
+  <p class="eyebrow">여섯 번째 정거장</p>
+  <h2>여러 번 되풀이하고, 다음 말을 골라요</h2>
+  <p class="lead">
+    쳐다보기를 <b>한 번만</b> 하지 않아요. 몇십 번을 되풀이합니다.
+    책을 여러 번 읽으면 더 깊이 알게 되는 것과 같아요.
+  </p>
+
+  <div class="layers" id="layers"></div>
+  <div class="controls">
+    <button class="btn" id="layerBtn">한 층 더 읽기</button>
+    <span class="hintline" id="layerMsg" style="margin:0"></span>
+  </div>
+
+  <p>다 읽고 나면 마지막 일이 남았어요. <b>다음에 올 말</b>을 고르는 겁니다.</p>
+
+  <div class="made" id="made">학교 끝나고 친구랑 <span style="color:var(--muted)">…</span></div>
+  <div class="bars" id="bars"></div>
+  <p class="hintline">막대를 눌러 문장을 이어 보세요. 긴 막대일수록 기계가 더 그럴듯하다고 여기는 말입니다.</p>
+  <div class="controls">
+    <button class="btn" id="resetBtn">처음부터 다시</button>
+  </div>
+
+  <div class="nav">
+    <button class="btn" data-go="5">← 이전</button><span class="sp"></span>
+    <button class="btn go" data-go="7">정리하기 →</button>
+  </div>
+</section>
+
+<!-- ══════════ 7. 정리 ══════════ -->
+<section class="stop" data-stop="7">
+  <p class="eyebrow">도착</p>
+  <h2>다시 한 번, 처음부터 끝까지</h2>
+  <p class="lead">여섯 정거장을 지나왔어요. 이게 트랜스포머가 하는 일 전부입니다.</p>
+
+  <div class="layers" id="recap" style="flex-direction:column"></div>
+
+  <div class="bubble green">
+    <span class="tag">가장 중요한 한 가지만 기억한다면</span>
+    <b>낱말들이 서로 쳐다본다.</b> 이것 하나예요.
+    ‘그것은’이 ‘사과’를 쳐다보는 걸 봤지요? 그 힘으로 기계가 말을 이해합니다.
+  </div>
+
+  <div class="controls">
+    <button class="btn go" data-go="4">가장 재미있는 곳 다시 보기</button>
+    <button class="btn" data-go="0">처음으로</button>
+  </div>
+
+  <details class="note">
+    <summary>선생님·부모님께 — 진짜 이름은 이렇습니다</summary>
+    <div class="tblwrap">
+      <table>
+        <tr><td>말을 조각내기</td><td>토큰화 (Tokenization). 실제로는 낱말보다 잘게 쪼갠 <em>서브워드</em> 단위입니다.</td></tr>
+        <tr><td>숫자 목걸이</td><td>임베딩 (Embedding). 낱말을 수백 차원 벡터로 바꾸고, 뜻이 비슷하면 거리가 가깝습니다.</td></tr>
+        <tr><td>번호표</td><td>위치 인코딩 (Positional Encoding). 어텐션 자체는 순서를 모르므로 따로 넣어 줍니다.</td></tr>
+        <tr><td>서로 쳐다보기</td><td>셀프 어텐션 (Self-Attention). Query·Key로 관련도를 재고 Softmax로 비중을 나눈 뒤 Value를 섞습니다.</td></tr>
+        <tr><td>여러 개의 눈</td><td>멀티헤드 어텐션 (Multi-Head Attention). 여러 관계를 동시에 봅니다.</td></tr>
+        <tr><td>층층이 되풀이</td><td>레이어 스택. 큰 모델은 수십~백여 층입니다. 사이사이에 잔차 연결·정규화·FFN이 들어갑니다.</td></tr>
+        <tr><td>다음 말 고르기</td><td>Softmax 확률 분포에서 표본을 뽑습니다. 그래서 같은 질문에도 답이 조금씩 달라집니다.</td></tr>
+      </table>
+    </div>
+    <p>
+      이 화면의 어텐션 수치는 <b>설명을 위해 사람이 정한 값</b>입니다.
+      실제 모델의 가중치를 뽑아 온 것이 아니라, 아이들이 관계를 눈으로 보게 하려고 만든 예시입니다.
+      대신 <em>“대명사가 자기가 가리키는 명사에 크게 주목한다”</em>는 성질은 실제 모델에서 관찰되는 현상입니다.
+    </p>
+    <p>
+      수업에서 쓰실 때는 <b>네 번째 정거장</b>에 시간을 가장 많이 쓰시길 권합니다.
+      나머지는 준비 과정이고, 트랜스포머가 이전 방식과 갈라지는 지점이 바로 거기입니다.
+    </p>
+  </details>
+</section>
+
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const slow = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── 문장 자료 ─────────────────────────────
+     어텐션 값은 아이들이 관계를 눈으로 보도록 사람이 정한 예시다.
+     ‘그것은 → 사과를’ 처럼 실제 모델에서도 나타나는 성질을 담았다. */
+  const SENTS = [
+    { name: "민수와 사과",
+      words: ["민수가", "사과를", "먹었어요", "그것은", "정말", "달았어요"],
+      attn: {
+        "민수가":   {"먹었어요":.62, "사과를":.18, "민수가":.20},
+        "사과를":   {"먹었어요":.44, "민수가":.26, "사과를":.30},
+        "먹었어요": {"민수가":.42, "사과를":.38, "먹었어요":.20},
+        "그것은":   {"사과를":.71, "달았어요":.13, "먹었어요":.09, "그것은":.07},
+        "정말":     {"달았어요":.68, "정말":.20, "그것은":.12},
+        "달았어요": {"사과를":.46, "그것은":.28, "정말":.16, "달았어요":.10}
+      }},
+    { name: "고양이와 쥐",
+      words: ["고양이가", "쥐를", "빠르게", "쫓았어요"],
+      attn: {
+        "고양이가": {"쫓았어요":.64, "고양이가":.24, "쥐를":.12},
+        "쥐를":     {"쫓았어요":.58, "고양이가":.24, "쥐를":.18},
+        "빠르게":   {"쫓았어요":.74, "빠르게":.26},
+        "쫓았어요": {"고양이가":.44, "쥐를":.36, "빠르게":.20}
+      }},
+    { name: "엄마와 우유",
+      words: ["엄마가", "동생에게", "우유를", "주었어요"],
+      attn: {
+        "엄마가":   {"주었어요":.66, "엄마가":.34},
+        "동생에게": {"주었어요":.60, "우유를":.22, "동생에게":.18},
+        "우유를":   {"주었어요":.62, "동생에게":.20, "우유를":.18},
+        "주었어요": {"엄마가":.36, "동생에게":.32, "우유를":.32}
+      }}
+  ];
+
+  /* ── 카드 만들기 ──────────────────────────── */
+  function makeCards(host, words, opts = {}) {
+    host.innerHTML = "";
+    words.forEach((w, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "card pop";
+      b.style.animationDelay = slow ? "0s" : (i * 0.075) + "s";
+      b.dataset.word = w;
+      b.textContent = w;
+      if (opts.numbered) {
+        const n = document.createElement("span");
+        n.className = "num";
+        n.textContent = i + 1;
+        b.appendChild(n);
+      }
+      host.appendChild(b);
+    });
+    return [...host.children];
+  }
+
+  /* ── 빛줄기 그리기 ────────────────────────── */
+  function beamPainter(canvasSel, cardsSel) {
+    const cv = $(canvasSel), host = $(cardsSel);
+    const ctx = cv.getContext("2d");
+    let links = [];              // {from, to, weight}
+    let t = 0, raf = null;
+
+    function fit() {
+      const r = cv.parentElement.getBoundingClientRect();
+      const d = window.devicePixelRatio || 1;
+      cv.width = Math.round(r.width * d);
+      cv.height = Math.round(r.height * d);
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+    }
+
+    function centre(el) {
+      const a = el.getBoundingClientRect(), b = cv.getBoundingClientRect();
+      return { x: a.left - b.left + a.width / 2, y: a.top - b.top + a.height / 2,
+               w: a.width, h: a.height };
+    }
+
+    function paint() {
+      const r = cv.getBoundingClientRect();
+      ctx.clearRect(0, 0, r.width, r.height);
+      const beam = getComputedStyle(document.body).getPropertyValue("--beam").trim() || "#ff7a2f";
+      links.forEach((l, i) => {
+        const a = host.querySelector(`[data-word="${CSS.escape(l.from)}"]`);
+        const b = host.querySelector(`[data-word="${CSS.escape(l.to)}"]`);
+        if (!a || !b || a === b) return;
+        const p = centre(a), q = centre(b);
+        // 카드 아래로 나와 크게 휘어 상대 카드 아래로 들어간다
+        const p1 = { x: p.x, y: p.y + p.h / 2 - 2 };
+        const q1 = { x: q.x, y: q.y + q.h / 2 - 2 };
+        const drop = Math.max(46, Math.abs(q.x - p.x) * .34);
+        // 곡선의 가장 낮은 점이 그림판 밖으로 나가면 잘려 보인다. 안쪽에 가둔다.
+        const room = (r.height - 8 - .25 * (p1.y + q1.y)) / .5;
+        const cy = Math.min(Math.max(p1.y, q1.y) + drop, room);
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.quadraticCurveTo((p1.x + q1.x) / 2, cy, q1.x, q1.y);
+        ctx.lineCap = "round";
+        ctx.strokeStyle = beam;
+        ctx.globalAlpha = .16 + l.weight * .5;
+        ctx.lineWidth = 2 + l.weight * 17;
+        ctx.stroke();
+
+        if (!slow) {                       // 빛이 상대에게 흘러가는 느낌
+          const k = ((t / 62) + i * .27) % 1;
+          const mx = (1 - k) * (1 - k) * p1.x + 2 * (1 - k) * k * ((p1.x + q1.x) / 2) + k * k * q1.x;
+          const my = (1 - k) * (1 - k) * p1.y + 2 * (1 - k) * k * cy + k * k * q1.y;
+          ctx.beginPath();
+          ctx.arc(mx, my, 3 + l.weight * 5, 0, 6.284);
+          ctx.globalAlpha = .85;
+          ctx.fillStyle = beam;
+          ctx.fill();
+        }
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function loop() { t++; paint(); raf = requestAnimationFrame(loop); }
+
+    return {
+      set(newLinks) {
+        links = newLinks;
+        fit(); paint();
+        if (!slow && links.length && !raf) loop();
+        if ((!links.length || slow) && raf) { cancelAnimationFrame(raf); raf = null; paint(); }
+      },
+      refit() { fit(); paint(); }
+    };
+  }
+
+  /* ── 0. 맛보기 ────────────────────────────── */
+  const tease = SENTS[0];
+  makeCards($("#teaseCards"), tease.words);
+  $("#teaseCards").addEventListener("click", e => {
+    const c = e.target.closest(".card"); if (!c) return;
+    const w = c.dataset.word, tbl = tease.attn[w] || {};
+    $$("#teaseCards .card").forEach(x => {
+      const v = tbl[x.dataset.word] || 0;
+      x.classList.toggle("me", x === c);
+      x.style.borderColor = (v > .25 && x !== c) ? "var(--beam)" : "";
+      x.classList.toggle("dim", x !== c && v < .12);
+    });
+  });
+
+  /* ── 1. 쪼개기 ────────────────────────────── */
+  let picked = 0;
+  function drawSplit() {
+    makeCards($("#splitCards"), SENTS[picked].words);
+  }
+  $$("[data-sent]").forEach(b => b.addEventListener("click", () => {
+    picked = +b.dataset.sent;
+    $$("[data-sent]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    drawSplit();
+  }));
+  drawSplit();
+
+  /* ── 2. 숫자 목걸이 ───────────────────────── */
+  const NUMS = {
+    "민수가": "0.71  −0.20  0.44",
+    "사과를": "0.12   0.88  0.31",
+    "먹었어요": "−0.35  0.09  0.77",
+    "그것은": "0.14   0.80  0.28",
+    "정말": "0.05  −0.44  0.61",
+    "달았어요": "0.22   0.74  0.19"
+  };
+  const numCards = makeCards($("#numCards"), SENTS[0].words);
+  let flipped = false;
+  $("#flipBtn").addEventListener("click", () => {
+    flipped = !flipped;
+    numCards.forEach(c => {
+      const old = c.querySelector(".back");
+      if (old) old.remove();
+      if (flipped) {
+        const s = document.createElement("span");
+        s.className = "back";
+        s.textContent = NUMS[c.dataset.word] || "0.00  0.00  0.00";
+        c.appendChild(s);
+      }
+    });
+    $("#flipBtn").textContent = flipped ? "다시 글자로" : "카드 뒤집기";
+  });
+
+  const MAP = [
+    ["사과", 22, 26, "g1"], ["바나나", 36, 18, "g1"], ["포도", 30, 40, "g1"], ["딸기", 15, 44, "g1"],
+    ["강아지", 74, 24, "g2"], ["고양이", 84, 40, "g2"], ["토끼", 68, 46, "g2"],
+    ["달리다", 46, 76, "g3"], ["걷다", 60, 84, "g3"], ["뛰다", 34, 86, "g3"]
+  ];
+  $("#map").innerHTML = MAP.map(([w, x, y, g]) =>
+    `<span class="dot ${g}" style="left:${x}%;top:${y}%">${w}</span>`).join("");
+
+  /* ── 3. 순서표 ────────────────────────────── */
+  const ORDER = [
+    { words: ["개가", "고양이를", "물었어요"], msg: "<b>개가</b> 고양이를 물었어요. 아픈 건 고양이!" },
+    { words: ["고양이가", "개를", "물었어요"], msg: "<b>고양이가</b> 개를 물었어요. 이번엔 개가 아파요!" }
+  ];
+  let ord = 0;
+  function drawOrder() {
+    makeCards($("#orderCards"), ORDER[ord].words, { numbered: true });
+    $("#orderMsg").innerHTML = `<span class="tag">지금 이 문장은</span>${ORDER[ord].msg}`;
+  }
+  $("#swapBtn").addEventListener("click", () => { ord = 1 - ord; drawOrder(); });
+  drawOrder();
+
+  /* ── 4. 서로 쳐다보기 ─────────────────────── */
+  const A = SENTS[0];
+  makeCards($("#attnCards"), A.words);
+  const attnPaint = beamPainter("#attnCanvas", "#attnCards");
+  const MSG = {
+    "그것은": "<b>‘그것은’이 ‘사과를’ 을 71%나 쳐다봅니다.</b> 아무도 안 가르쳐 줬는데 스스로 찾았어요!",
+    "달았어요": "‘달았어요’도 <b>‘사과를’</b> 을 크게 쳐다봐요. 단 건 사과니까요.",
+    "먹었어요": "‘먹었어요’는 <b>누가</b>(민수가)와 <b>무엇을</b>(사과를) 둘 다 봅니다.",
+    "민수가": "‘민수가’는 자기가 한 일 <b>‘먹었어요’</b> 를 쳐다봐요.",
+    "사과를": "‘사과를’은 자기에게 일어난 일 <b>‘먹었어요’</b> 를 봅니다.",
+    "정말": "‘정말’은 꾸며 주는 말 <b>‘달았어요’</b> 를 봐요."
+  };
+  function showAttn(word) {
+    const tbl = A.attn[word] || {};
+    const links = Object.entries(tbl)
+      .filter(([to, v]) => to !== word && v >= .08)
+      .map(([to, v]) => ({ from: word, to, weight: v }));
+    attnPaint.set(links);
+    $$("#attnCards .card").forEach(c => {
+      c.querySelector(".pct")?.remove();
+      const v = tbl[c.dataset.word] || 0;
+      c.classList.toggle("me", c.dataset.word === word);
+      c.classList.toggle("dim", c.dataset.word !== word && v < .08);
+      if (c.dataset.word !== word && v >= .08) {
+        const p = document.createElement("span");
+        p.className = "pct";
+        p.textContent = Math.round(v * 100) + "%";
+        c.appendChild(p);
+      }
+    });
+    $("#attnMsg").innerHTML = `<span class="tag">‘${word}’ 이(가) 쳐다보는 곳</span>` +
+      (MSG[word] || "이 낱말과 관계있는 친구들이에요.");
+  }
+  $("#attnCards").addEventListener("click", e => {
+    const c = e.target.closest(".card"); if (c) showAttn(c.dataset.word);
+  });
+
+  /* ── 5. 여러 개의 눈 ──────────────────────── */
+  const H = SENTS[2];                       // 엄마가 동생에게 우유를 주었어요
+  const HEADS = [
+    { name: "누가 했나?", sub: "행동한 사람 찾기", from: "주었어요",
+      links: { "엄마가": .78, "동생에게": .12, "우유를": .10 } },
+    { name: "누구에게?", sub: "받는 사람 찾기", from: "주었어요",
+      links: { "동생에게": .74, "엄마가": .14, "우유를": .12 } },
+    { name: "무엇을?", sub: "주고받은 물건 찾기", from: "주었어요",
+      links: { "우유를": .76, "동생에게": .13, "엄마가": .11 } }
+  ];
+  makeCards($("#headCards"), H.words);
+  const headPaint = beamPainter("#headCanvas", "#headCards");
+  $("#eyes").innerHTML = HEADS.map((h, i) =>
+    `<button class="eye" type="button" data-head="${i}" aria-pressed="${i === 0}">
+       👁 ${h.name}<span>${h.sub}</span></button>`).join("");
+  function showHead(i) {
+    const h = HEADS[i];
+    headPaint.set(Object.entries(h.links).map(([to, v]) => ({ from: h.from, to, weight: v })));
+    $$("#headCards .card").forEach(c => {
+      c.querySelector(".pct")?.remove();
+      const v = h.links[c.dataset.word] || 0;
+      c.classList.toggle("me", c.dataset.word === h.from);
+      c.classList.toggle("dim", c.dataset.word !== h.from && v < .2);
+      if (v >= .2) {
+        const p = document.createElement("span");
+        p.className = "pct";
+        p.textContent = Math.round(v * 100) + "%";
+        c.appendChild(p);
+      }
+    });
+    $$("#eyes .eye").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.head === i)));
+  }
+  $("#eyes").addEventListener("click", e => {
+    const b = e.target.closest(".eye"); if (b) showHead(+b.dataset.head);
+  });
+
+  /* ── 6. 층 쌓기 ───────────────────────────── */
+  const LAYERS = [
+    "낱말이 무슨 뜻인지 대충 안다",
+    "누가 무엇을 했는지 안다",
+    "‘그것은’이 사과라는 걸 안다",
+    "사과가 달았다는 느낌까지 안다",
+    "그래서 다음에 올 말이 짐작된다"
+  ];
+  $("#layers").innerHTML = LAYERS.map((t, i) =>
+    `<div class="layer" data-l="${i}"><i>${i + 1}</i><em>${t}</em></div>`).join("");
+  let lit = 0;
+  function lightLayers() {
+    $$("#layers .layer").forEach(el => el.classList.toggle("lit", +el.dataset.l < lit));
+    $("#layerMsg").textContent = lit === 0 ? "" :
+      lit >= LAYERS.length ? "다 읽었어요! 이제 다음 말을 고를 수 있습니다."
+      : `${lit}층까지 읽었어요.`;
+    $("#layerBtn").textContent = lit >= LAYERS.length ? "처음부터 읽기" : "한 층 더 읽기";
+  }
+  $("#layerBtn").addEventListener("click", () => {
+    lit = lit >= LAYERS.length ? 0 : lit + 1;
+    lightLayers();
+  });
+  lightLayers();
+
+  /* ── 6b. 다음 말 고르기 ───────────────────── */
+  const NEXT = {
+    "start": { text: "학교 끝나고 친구랑 ", opts: [["놀았어요", 41], ["떡볶이", 23], ["축구를", 19], ["집에", 11], ["도서관에", 6]] },
+    "떡볶이": { text: "", opts: [["먹었어요", 74], ["사 먹으러", 14], ["가게에", 8], ["만들었어요", 4]] },
+    "축구를": { text: "", opts: [["했어요", 81], ["보러", 11], ["배웠어요", 8]] },
+    "집에": { text: "", opts: [["갔어요", 76], ["돌아왔어요", 15], ["있었어요", 9]] },
+    "도서관에": { text: "", opts: [["갔어요", 69], ["들렀어요", 20], ["앉아", 11]] }
+  };
+  let made = ["학교", "끝나고", "친구랑"], node = "start";
+  function drawBars() {
+    const cur = NEXT[node] || null;
+    $("#made").innerHTML = made.map((w, i) =>
+      i >= 3 ? `<span class="new">${w}</span> ` : w + " ").join("") +
+      (cur ? '<span style="color:var(--muted)">…</span>' : ' 🎉');
+    if (!cur) {
+      $("#bars").innerHTML = '<p class="hintline" style="margin:0">문장이 완성됐어요! 아래에서 다시 해 볼 수 있어요.</p>';
+      return;
+    }
+    $("#bars").innerHTML = cur.opts.map(([w, n]) =>
+      `<button class="wordbar" type="button" data-w="${w}">
+         <span class="w">${w}</span>
+         <span class="track"><span class="fill" data-n="${n}"></span></span>
+         <span class="n">${n}%</span>
+       </button>`).join("");
+    requestAnimationFrame(() => $$("#bars .fill").forEach(f => f.style.width = f.dataset.n + "%"));
+  }
+  $("#bars").addEventListener("click", e => {
+    const b = e.target.closest(".wordbar"); if (!b) return;
+    made.push(b.dataset.w);
+    node = NEXT[b.dataset.w] ? b.dataset.w : null;
+    drawBars();
+  });
+  $("#resetBtn").addEventListener("click", () => {
+    made = ["학교", "끝나고", "친구랑"]; node = "start"; drawBars();
+  });
+  drawBars();
+
+  /* ── 7. 정리 ──────────────────────────────── */
+  const RECAP = [
+    ["말을 조각으로 쪼갠다", "낱말 카드로"],
+    ["조각마다 숫자를 붙인다", "비슷한 말은 가까운 숫자로"],
+    ["번호표로 순서를 알린다", "‘개가 고양이를’과 ‘고양이가 개를’은 다르니까"],
+    ["서로 쳐다본다 ⭐", "‘그것은’이 ‘사과’를 찾아낸다"],
+    ["여러 눈으로 나눠 본다", "누가 · 누구에게 · 무엇을"],
+    ["여러 번 되풀이한다", "읽을수록 깊이 안다"],
+    ["다음 말을 고른다", "가장 그럴듯한 말로"]
+  ];
+  $("#recap").innerHTML = RECAP.map(([t, s], i) =>
+    `<div class="layer lit"><i>${i + 1}</i><em><b>${t}</b><br>
+     <span style="color:var(--muted);font-size:.88rem">${s}</span></em></div>`).join("");
+
+  /* ── 정거장 이동 ──────────────────────────── */
+  const STOPS = $$(".stop");
+  const NAMES = ["출발", "쪼개기", "숫자", "순서", "쳐다보기", "여러 눈", "다음 말", "정리"];
+  const seen = new Set([0]);
+  let at = 0;
+
+  $("#rail").innerHTML = NAMES.map((n, i) =>
+    `<button type="button" data-r="${i}" title="${n}" aria-label="${i}. ${n}"
+      aria-current="${i === 0}">${i}</button>`).join("");
+
+  function goto(i) {
+    if (i < 0 || i >= STOPS.length) return;
+    at = i; seen.add(i);
+    STOPS.forEach((s, k) => s.classList.toggle("on", k === i));
+    $$("#rail button").forEach((b, k) => {
+      b.setAttribute("aria-current", String(k === i));
+      b.classList.toggle("seen", k !== i && seen.has(k));
+    });
+    window.scrollTo({ top: 0, behavior: slow ? "auto" : "smooth" });
+    // 그 정거장에 들어설 때 한 번 보여 준다
+    if (i === 4) setTimeout(() => showAttn("그것은"), slow ? 0 : 420);
+    if (i === 5) setTimeout(() => showHead(0), slow ? 0 : 420);
+  }
+  document.addEventListener("click", e => {
+    const g = e.target.closest("[data-go]");
+    if (g) { goto(+g.dataset.go); return; }
+    const r = e.target.closest("[data-r]");
+    if (r) goto(+r.dataset.r);
+  });
+  document.addEventListener("keydown", e => {
+    if (e.target.closest("input,textarea")) return;
+    if (e.key === "ArrowRight") goto(at + 1);
+    if (e.key === "ArrowLeft") goto(at - 1);
+  });
+
+  let rt;
+  addEventListener("resize", () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { attnPaint.refit(); headPaint.refit(); }, 120);
+  });
+})();
+</script>

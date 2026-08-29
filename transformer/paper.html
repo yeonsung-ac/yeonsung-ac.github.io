@@ -1,0 +1,793 @@
+<meta charset="utf-8">
+<title>트랜스포머 논문 도해</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────
+   학술 도판. 차가운 백지에 잉크, 인코더는 남색,
+   디코더는 적갈색 — 두 기둥을 색으로만 가른다.
+   ───────────────────────────────────────────── */
+:root{
+  --paper:#f8fafb;
+  --plate:#ffffff;
+  --sunk:#f0f4f7;
+  --ink:#10171e;
+  --ink-2:#3d4b58;
+  --muted:#7d8a97;
+  --rule:#dbe3ea;
+  --rule-2:#c3ced8;
+  --enc:#2b4c8c;          /* 인코더 */
+  --enc-fill:#e7edf8;
+  --dec:#a2542a;          /* 디코더 */
+  --dec-fill:#fbeee3;
+  --lit:#0f8a72;          /* 지금 보고 있는 블록 */
+  --lit-fill:#dff2ed;
+  --mark:#fdf3d4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e1319;
+    --plate:#161d26;
+    --sunk:#1b232d;
+    --ink:#e7edf3;
+    --ink-2:#adbcc9;
+    --muted:#78889a;
+    --rule:#2a3642;
+    --rule-2:#3c4a58;
+    --enc:#7ea6e8;
+    --enc-fill:#1a2740;
+    --dec:#e0996a;
+    --dec-fill:#39251a;
+    --lit:#4fd3b4;
+    --lit-fill:#123029;
+    --mark:#3a3117;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e1319;
+  --plate:#161d26;
+  --sunk:#1b232d;
+  --ink:#e7edf3;
+  --ink-2:#adbcc9;
+  --muted:#78889a;
+  --rule:#2a3642;
+  --rule-2:#3c4a58;
+  --enc:#7ea6e8;
+  --enc-fill:#1a2740;
+  --dec:#e0996a;
+  --dec-fill:#39251a;
+  --lit:#4fd3b4;
+  --lit-fill:#123029;
+  --mark:#3a3117;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif;
+  font-weight:300;font-size:16px;line-height:1.8;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,.serif{font-family:"Gowun Batang","Batang",serif;font-weight:700;letter-spacing:-.015em}
+code,.mono,.dim-chip,.eq{font-family:"IBM Plex Mono",ui-monospace,monospace}
+
+.sheet{max-width:1180px;margin:0 auto;padding:0 26px 90px}
+
+/* ── 머리 ───────────────────────────────────── */
+header{border-bottom:1px solid var(--rule);background:var(--plate)}
+.hd{max-width:1180px;margin:0 auto;padding:34px 26px 26px}
+.kicker{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 10px;
+}
+h1{font-size:clamp(1.8rem,4.4vw,2.55rem);margin:0 0 12px;line-height:1.25;text-wrap:balance}
+.cite{
+  font-size:.88rem;color:var(--ink-2);margin:0;max-width:66ch;
+  padding-left:15px;border-left:2px solid var(--rule-2);
+}
+.cite em{font-style:italic;color:var(--ink)}
+
+/* ── 본판: 도해 | 설명 ──────────────────────── */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:34px;margin-top:34px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr;gap:22px}}
+
+.figure{
+  background:var(--plate);border:1px solid var(--rule);border-radius:4px;
+  padding:16px 12px 12px;position:sticky;top:18px;
+}
+@media (max-width:900px){.figure{position:static}}
+.figcap{
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.13em;
+  color:var(--muted);text-transform:uppercase;margin:0 0 8px;padding-left:6px;
+}
+svg.plate{display:block;width:100%;height:auto}
+svg.plate text{font-family:"IBM Plex Sans KR",sans-serif;font-weight:400}
+.blk{cursor:pointer}
+.blk rect,.blk circle{transition:fill .18s, stroke-width .18s}
+.blk:hover rect,.blk:hover circle{stroke-width:2.6}
+.blk.sel rect,.blk.sel circle{fill:var(--lit-fill);stroke:var(--lit);stroke-width:2.6}
+.blk.sel text{fill:var(--lit)}
+.blk:focus{outline:none}
+.blk:focus-visible rect,.blk:focus-visible circle{stroke:var(--lit);stroke-width:3}
+.nxbox{fill:none;stroke-dasharray:5 4}
+.wire{fill:none;stroke:var(--rule-2);stroke-width:1.5}
+.wire.flow{stroke:var(--lit);stroke-width:2.4}
+.tinylab{font-size:10px;fill:var(--muted);font-family:"IBM Plex Mono",monospace}
+.nlab{font-family:"Gowun Batang",serif;font-size:15px;font-weight:700}
+
+.hint{
+  font-family:"IBM Plex Sans KR",sans-serif;font-size:.76rem;color:var(--muted);
+  text-align:center;margin:8px 0 0;
+}
+
+/* ── 설명 판 ────────────────────────────────── */
+.panel{min-width:0}
+.tagrow{display:flex;align-items:center;gap:9px;margin:0 0 8px;flex-wrap:wrap}
+.side{
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.16em;
+  text-transform:uppercase;padding:3px 9px;border-radius:2px;
+}
+.side.enc{background:var(--enc-fill);color:var(--enc)}
+.side.dec{background:var(--dec-fill);color:var(--dec)}
+.side.both{background:var(--sunk);color:var(--ink-2)}
+.en{font-family:"IBM Plex Mono",monospace;font-size:.84rem;color:var(--muted)}
+.panel h2{font-size:clamp(1.35rem,3.2vw,1.75rem);margin:0 0 10px;line-height:1.3}
+.gist{
+  font-size:1.02rem;color:var(--ink);margin:0 0 20px;
+  background:var(--mark);padding:12px 15px;border-radius:3px;
+}
+.panel h3{
+  font-family:"IBM Plex Sans KR",sans-serif;font-weight:500;font-size:.78rem;
+  letter-spacing:.02em;color:var(--muted);
+  margin:22px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--rule);
+}
+.panel p{margin:0 0 12px;max-width:60ch;color:var(--ink-2)}
+.panel p b,.panel li b{color:var(--ink);font-weight:500}
+.eq{
+  background:var(--sunk);border-left:3px solid var(--rule-2);
+  padding:13px 16px;margin:0 0 14px;font-size:.92rem;line-height:2;
+  overflow-x:auto;white-space:nowrap;color:var(--ink);
+}
+.eq i{font-style:italic;color:var(--enc)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 6px}
+.dim-chip{
+  font-size:.76rem;background:var(--plate);border:1px solid var(--rule);
+  border-radius:2px;padding:4px 9px;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+}
+.dim-chip b{color:var(--ink);font-weight:500}
+ul{margin:0 0 14px;padding-left:20px;color:var(--ink-2)}
+li{margin-bottom:6px}
+.after{
+  font-size:.87rem;color:var(--muted);border-top:1px dashed var(--rule-2);
+  padding-top:10px;margin-top:16px;
+}
+.after b{color:var(--ink-2)}
+.after a{color:var(--lit);text-decoration:none;border-bottom:1px solid var(--lit)}
+
+/* ── 흐름 재생 ──────────────────────────────── */
+.player{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 0}
+button.ctl{
+  font-family:"IBM Plex Sans KR",sans-serif;font-size:.84rem;font-weight:400;
+  background:var(--plate);color:var(--ink);border:1px solid var(--rule-2);
+  border-radius:3px;padding:7px 14px;cursor:pointer;transition:background .15s,border-color .15s;
+}
+button.ctl:hover{border-color:var(--lit);color:var(--lit)}
+button.ctl[disabled]{opacity:.4;cursor:default}
+button.ctl.on{background:var(--lit);border-color:var(--lit);color:#fff}
+.step{font-family:"IBM Plex Mono",monospace;font-size:.74rem;color:var(--muted);font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--lit);outline-offset:2px}
+
+/* ── 아래 참고 절 ───────────────────────────── */
+.more{margin-top:64px;border-top:2px solid var(--ink);padding-top:6px}
+.more > h2{
+  font-size:1.5rem;margin:26px 0 6px;
+}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 18px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:22px}
+.tblwrap{overflow-x:auto;margin:0 0 18px;border:1px solid var(--rule);border-radius:3px;background:var(--plate)}
+table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:440px}
+th,td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--rule)}
+th{
+  font-family:"IBM Plex Sans KR",sans-serif;font-weight:500;font-size:.76rem;
+  letter-spacing:.01em;color:var(--muted);
+  background:var(--sunk);white-space:nowrap;
+}
+td:first-child{font-weight:500;color:var(--ink)}
+tbody tr:last-child td{border-bottom:0}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+tr.hi td{background:var(--mark)}
+
+/* 스케일드 닷프로덕트 세로 순서도 */
+.chain{display:flex;flex-direction:column;gap:0;margin:0 0 18px}
+.chain .s{
+  background:var(--plate);border:1px solid var(--rule-2);border-radius:3px;
+  padding:10px 14px;font-size:.92rem;
+}
+.chain .s em{font-style:normal;display:block;font-size:.78rem;color:var(--muted);margin-top:2px}
+.chain .s .op{font-family:"IBM Plex Mono",monospace;color:var(--enc)}
+.chain .a{
+  width:1px;height:16px;background:var(--rule-2);margin:0 auto;position:relative;
+}
+.chain .a::after{
+  content:"";position:absolute;bottom:0;left:-3px;
+  border-left:3.5px solid transparent;border-right:3.5px solid transparent;
+  border-top:5px solid var(--rule-2);
+}
+.chain .s.opt{border-style:dashed;color:var(--muted)}
+
+footer{
+  margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);
+  font-size:.84rem;color:var(--muted);
+}
+footer a{color:var(--enc)}
+
+/* 목차로 돌아가는 길 — 세 쪽 공통 */
+.home{
+  position:fixed;left:14px;bottom:14px;z-index:90;
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif;font-size:.82rem;font-weight:500;
+  background:var(--plate);color:var(--ink);border:1px solid var(--rule-2);border-radius:999px;
+  padding:8px 15px;text-decoration:none;box-shadow:0 3px 12px rgba(0,0,0,.13);
+  transition:transform .15s;
+}
+.home:hover{transform:translateY(-2px)}
+@media (max-width:520px){.home{left:10px;bottom:10px;padding:7px 13px;font-size:.78rem}}
+</style>
+
+<a class="home" href="index.html" title="세 갈래 목차로">← 목차</a>
+
+
+<header>
+  <div class="hd">
+    <p class="kicker">Vaswani et al. · NeurIPS 2017 · Figure 1</p>
+    <h1>논문 속 그림 한 장, 블록 하나씩</h1>
+    <p class="cite">
+      <em>Attention Is All You Need</em> 의 모형 구조도입니다.
+      상자를 누르면 그 상자가 무엇을 계산하고, 왜 거기 있어야 하는지 나옵니다.
+      숫자는 모두 논문의 <b>base</b> 모형 기준입니다. <span class="mono">arXiv:1706.03762</span>
+    </p>
+  </div>
+</header>
+
+<main class="sheet">
+  <div class="split">
+
+    <!-- 왼쪽: 도판 -->
+    <div class="figure">
+      <p class="figcap">Figure 1 — The Transformer</p>
+      <svg class="plate" id="plate" viewBox="0 176 706 694" role="img"
+           aria-label="트랜스포머 구조도. 왼쪽은 인코더, 오른쪽은 디코더입니다."></svg>
+      <p class="hint">상자를 누르세요 &nbsp;·&nbsp; ← → 로도 이동</p>
+      <div class="player">
+        <button class="ctl" id="play">데이터 흐름 따라가기</button>
+        <button class="ctl" id="prev" disabled>◀</button>
+        <button class="ctl" id="next" disabled>▶</button>
+        <span class="step" id="stepno"></span>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 설명 -->
+    <div class="panel" id="panel" aria-live="polite"></div>
+  </div>
+
+  <!-- ── 아래: 논문 안쪽 자료 ───────────────── -->
+  <section class="more">
+    <h2>어텐션 한 번의 속내 <span style="font-weight:400;color:var(--muted);font-size:.7em">Figure 2 (좌)</span></h2>
+    <p class="sub">Multi-Head 상자 안에서 헤드 하나가 하는 계산의 순서입니다.</p>
+
+    <div class="grid2">
+      <div>
+        <div class="chain">
+          <div class="s"><span class="op">MatMul</span> &nbsp;Q · Kᵀ<em>모든 위치 쌍의 관련도 점수</em></div>
+          <div class="a"></div>
+          <div class="s"><span class="op">Scale</span> &nbsp;÷ √d<sub>k</sub><em>점수가 커져 softmax가 굳는 것을 막음</em></div>
+          <div class="a"></div>
+          <div class="s opt"><span class="op">Mask</span> &nbsp;(디코더에서만)<em>미래 위치를 −∞ 로</em></div>
+          <div class="a"></div>
+          <div class="s"><span class="op">SoftMax</span><em>행마다 합이 1인 배분 비율로</em></div>
+          <div class="a"></div>
+          <div class="s"><span class="op">MatMul</span> &nbsp;· V<em>비율대로 값을 섞어 새 표현을 만듦</em></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">왜 √d<sub>k</sub> 로 나누는가</h3>
+        <p>
+          d<sub>k</sub> 가 커지면 내적 <span class="mono">q·k</span> 의 크기가 함께 커집니다.
+          성분이 서로 독립이고 평균 0, 분산 1이라면 내적의 분산은 <b>d<sub>k</sub></b> 가 됩니다.
+          값이 커진 채로 softmax 에 들어가면 한 곳만 1에 가까워지고 <b>기울기가 거의 0인 영역</b>으로 밀립니다.
+          그래서 표준편차 √d<sub>k</sub> 로 되돌려 놓습니다. (논문 각주 4)
+        </p>
+        <h3>가산 어텐션 대신 내적을 쓴 이유</h3>
+        <p>
+          이론적 복잡도는 비슷하지만, 내적은 <b>행렬 곱 한 번</b>으로 끝나 실제 장비에서 훨씬 빠르고
+          메모리 효율이 좋습니다.
+        </p>
+      </div>
+    </div>
+
+    <h2>왜 순환신경망을 버렸나 <span style="font-weight:400;color:var(--muted);font-size:.7em">Table 1</span></h2>
+    <p class="sub">
+      논문의 핵심 논거입니다. <b>최대 경로 길이</b>는 두 위치가 서로 영향을 주고받는 데 거쳐야 하는 단계 수입니다.
+      짧을수록 먼 거리 의존을 배우기 쉽습니다. (n = 문장 길이, d = 표현 차원, k = 커널 폭, r = 이웃 범위)
+    </p>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>층 종류</th><th>층당 복잡도</th><th>순차 연산</th><th>최대 경로 길이</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td>Self-Attention</td><td class="num">O(n²·d)</td><td class="num">O(1)</td><td class="num">O(1)</td></tr>
+          <tr><td>Recurrent</td><td class="num">O(n·d²)</td><td class="num">O(n)</td><td class="num">O(n)</td></tr>
+          <tr><td>Convolutional</td><td class="num">O(k·n·d²)</td><td class="num">O(1)</td><td class="num">O(log<sub>k</sub> n)</td></tr>
+          <tr><td>Self-Attention (제한)</td><td class="num">O(r·n·d)</td><td class="num">O(1)</td><td class="num">O(n/r)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      순환신경망은 <b>순차 연산이 O(n)</b> 이라 문장 안에서 병렬화가 되지 않고, 양 끝 단어 사이 경로도 n 단계입니다.
+      셀프 어텐션은 <b>한 번에 모든 쌍을 잇기</b> 때문에 경로가 상수이고 전부 병렬로 계산됩니다.
+      대신 길이의 제곱에 비례하는 계산량을 치릅니다 — 오늘날 긴 문맥이 비싼 이유가 여기 있습니다.
+    </p>
+
+    <h2>논문이 쓴 숫자 <span style="font-weight:400;color:var(--muted);font-size:.7em">Table 3 · Section 5</span></h2>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>항목</th><th>기호</th><th>base</th><th>big</th></tr></thead>
+        <tbody>
+          <tr><td>층 수</td><td class="num">N</td><td class="num">6</td><td class="num">6</td></tr>
+          <tr><td>표현 차원</td><td class="num">d_model</td><td class="num">512</td><td class="num">1024</td></tr>
+          <tr><td>내부 층 차원</td><td class="num">d_ff</td><td class="num">2048</td><td class="num">4096</td></tr>
+          <tr><td>헤드 수</td><td class="num">h</td><td class="num">8</td><td class="num">16</td></tr>
+          <tr><td>헤드당 차원</td><td class="num">d_k = d_v</td><td class="num">64</td><td class="num">64</td></tr>
+          <tr><td>드롭아웃</td><td class="num">P_drop</td><td class="num">0.1</td><td class="num">0.3</td></tr>
+          <tr><td>레이블 스무딩</td><td class="num">ε_ls</td><td class="num">0.1</td><td class="num">0.1</td></tr>
+          <tr class="hi"><td>파라미터 수</td><td class="num">—</td><td class="num">65M</td><td class="num">213M</td></tr>
+          <tr><td>학습 스텝</td><td class="num">—</td><td class="num">100,000</td><td class="num">300,000</td></tr>
+          <tr><td>학습 시간 (P100 8장)</td><td class="num">—</td><td class="num">12시간</td><td class="num">3.5일</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid2">
+      <div>
+        <h3>최적화</h3>
+        <p>
+          Adam, <span class="mono">β₁=0.9, β₂=0.98, ε=10⁻⁹</span>.
+          학습률은 고정이 아니라 <b>처음 4,000 스텝 동안 선형으로 올린 뒤</b> 스텝 수의 역제곱근으로 낮춥니다.
+        </p>
+        <div class="eq">lrate = d_model<sup>−0.5</sup> · min(step<sup>−0.5</sup>, step · warmup<sup>−1.5</sup>)</div>
+      </div>
+      <div>
+        <h3>번역 성적 (BLEU)</h3>
+        <div class="chips">
+          <span class="dim-chip">EN→DE base <b>27.3</b></span>
+          <span class="dim-chip">EN→DE big <b>28.4</b></span>
+          <span class="dim-chip">EN→FR big <b>41.8</b></span>
+        </div>
+        <p style="font-size:.88rem">
+          당시 최고 성적을 <b>학습 비용의 일부만으로</b> 넘어섰다는 것이 이 논문의 실험적 주장이었습니다.
+        </p>
+      </div>
+    </div>
+
+    <h2>더 볼 것</h2>
+    <p class="sub">이 논문에서 갈라져 나온 다른 쪽들입니다.</p>
+    <div class="grid2" style="margin-bottom:26px">
+      <a href="embedding.html"
+         style="display:block;background:var(--plate);border:1px solid var(--rule);border-radius:4px;
+                padding:16px 18px;text-decoration:none;color:inherit">
+        <b style="display:block;color:var(--ink);margin-bottom:3px">숫자가 된 낱말 →</b>
+        <span style="font-size:.87rem;color:var(--muted);line-height:1.6">
+          <code>Input Embedding</code> 이 만들어 내는 벡터를 진짜 모형에서 꺼내 봅니다.
+          유사도·2차원 지도·벡터 셈까지 전부 실측값입니다.</span>
+      </a>
+      <a href="kids.html"
+         style="display:block;background:var(--plate);border:1px solid var(--rule);border-radius:4px;
+                padding:16px 18px;text-decoration:none;color:inherit">
+        <b style="display:block;color:var(--ink);margin-bottom:3px">트랜스포머 탐험대 →</b>
+        <span style="font-size:.87rem;color:var(--muted);line-height:1.6">
+          같은 구조를 초등학생용으로. 수업에서 도입부로 쓰기 좋습니다.</span>
+      </a>
+    </div>
+
+    <h2>논문 뒤에 달라진 것</h2>
+    <p>
+      아래는 <b>논문에는 없는</b> 내용입니다. 오늘의 모형과 그림을 비교할 때 필요해 덧붙입니다.
+    </p>
+    <ul>
+      <li><b>Post-LN → Pre-LN</b> — 논문은 <span class="mono">LayerNorm(x + Sublayer(x))</span> 이지만,
+        이후 대부분은 정규화를 서브층 <em>앞</em>에 두어 깊은 모형의 학습을 안정시킵니다.</li>
+      <li><b>인코더·디코더 → 디코더만</b> — GPT 계열은 오른쪽 기둥만 씁니다. 번역이 아니라 이어쓰기가 목적이라
+        인코더가 필요 없습니다. BERT 는 반대로 왼쪽만 씁니다.</li>
+      <li><b>절대 위치 → 상대 위치</b> — 정현파 위치 인코딩 대신 RoPE, ALiBi 같은 방식이 널리 쓰입니다.</li>
+      <li><b>ReLU → GELU · SwiGLU</b>, <b>LayerNorm → RMSNorm</b> 등 세부 부품이 바뀌었습니다.</li>
+      <li>그러나 <b>가운데 뼈대 — 어텐션으로 위치를 잇고, 위치별 FFN 을 통과시키고, 잔차로 쌓는다 — 는 그대로입니다.</b></li>
+    </ul>
+
+    <footer>
+      A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, I. Polosukhin.
+      <em>Attention Is All You Need.</em> NeurIPS 2017.
+      <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a><br>
+      도해는 논문 Figure 1 의 배치를 따라 다시 그린 것입니다.
+    </footer>
+  </section>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const SVG = "http://www.w3.org/2000/svg";
+
+  /* ── 도판 좌표 ─────────────────────────────
+     행(row) 하나를 52px 로 잡고, 두 기둥이 같은 행에서 나란히 서게 한다. */
+  const COL = { enc: 170, dec: 500 };
+  const BW = 208, BH = 38, ROWH = 52, BASE = 836;
+  const y = r => BASE - r * ROWH;
+
+  const BLOCKS = [
+    // id,            기둥,   행,  글,                          모양
+    ["in-emb",  "enc", 1,  "Input Embedding"],
+    ["enc-pe",  "enc", 2,  "+",  "circle"],
+    ["enc-mha", "enc", 3,  "Multi-Head Attention"],
+    ["enc-an1", "enc", 4,  "Add & Norm"],
+    ["enc-ff",  "enc", 5,  "Feed Forward"],
+    ["enc-an2", "enc", 6,  "Add & Norm"],
+    ["out-emb", "dec", 1,  "Output Embedding"],
+    ["dec-pe",  "dec", 2,  "+",  "circle"],
+    ["dec-mmha","dec", 3,  "Masked Multi-Head Attention", "two"],
+    ["dec-an1", "dec", 4,  "Add & Norm"],
+    ["dec-mha", "dec", 5,  "Multi-Head Attention"],
+    ["dec-an2", "dec", 6,  "Add & Norm"],
+    ["dec-ff",  "dec", 7,  "Feed Forward"],
+    ["dec-an3", "dec", 8,  "Add & Norm"],
+    ["linear",  "dec", 10, "Linear"],
+    ["softmax", "dec", 11, "Softmax"]
+  ];
+  const at = {};
+  BLOCKS.forEach(([id, col, row, label, shape]) =>
+    at[id] = { id, col, row, label, shape, x: COL[col], cy: y(row) });
+
+  const svg = $("#plate");
+  const mk = (n, a = {}) => {
+    const e = document.createElementNS(SVG, n);
+    for (const k in a) e.setAttribute(k, a[k]);
+    return e;
+  };
+  const add = (p, n, a) => { const e = mk(n, a); p.appendChild(e); return e; };
+
+  // 화살표 촉
+  const defs = add(svg, "defs");
+  for (const [nm, cls] of [["ah", "var(--rule-2)"], ["ahf", "var(--lit)"]]) {
+    const m = add(defs, "marker", { id: nm, viewBox: "0 0 10 10", refX: "8", refY: "5",
+      markerWidth: "6", markerHeight: "6", orient: "auto-start-reverse" });
+    add(m, "path", { d: "M0 0 L10 5 L0 10 z", fill: cls });
+  }
+
+  const gWire = add(svg, "g");
+  const gBox = add(svg, "g");
+  const gBlk = add(svg, "g");
+
+  /* 점선 N× 상자 */
+  function nxBox(col, r0, r1, side) {
+    const x = COL[col] - BW / 2 - 30, w = BW + 56;
+    const top = y(r1) - BH / 2 - 16, bot = y(r0) + BH / 2 + 16;
+    add(gBox, "rect", { x, y: top, width: w, height: bot - top, rx: 6,
+      class: "nxbox", stroke: `var(--${side})`, "stroke-width": 1.3, "stroke-opacity": .55 });
+    // 논문처럼 바깥쪽에 붙인다. 가운데는 K·V 화살표가 지나갈 자리로 비워 둔다.
+    const out = side === "enc";
+    const t = add(gBox, "text", { x: out ? x - 9 : x + w + 9, y: (top + bot) / 2, class: "nlab",
+      fill: `var(--${side})`, "text-anchor": out ? "end" : "start",
+      "dominant-baseline": "middle" });
+    t.textContent = "N×";
+  }
+  nxBox("enc", 3, 6, "enc");
+  nxBox("dec", 3, 8, "dec");
+
+  /* 세로 연결선 */
+  const wire = (d, id) => add(gWire, "path", { d, class: "wire", "marker-end": "url(#ah)", "data-w": id || "" });
+  function up(col, r0, r1) {
+    const x = COL[col];
+    wire(`M${x} ${y(r0) - BH / 2} L${x} ${y(r1) + BH / 2 + 3}`);
+  }
+  // 인코더 줄기
+  wire(`M${COL.enc} ${y(0) - 14} L${COL.enc} ${y(1) + BH / 2 + 3}`);
+  up("enc", 1, 2); up("enc", 2, 3); up("enc", 3, 4); up("enc", 4, 5); up("enc", 5, 6);
+  // 디코더 줄기
+  wire(`M${COL.dec} ${y(0) - 14} L${COL.dec} ${y(1) + BH / 2 + 3}`);
+  up("dec", 1, 2); up("dec", 2, 3); up("dec", 3, 4); up("dec", 4, 5);
+  up("dec", 5, 6); up("dec", 6, 7); up("dec", 7, 8);
+  wire(`M${COL.dec} ${y(8) - BH / 2} L${COL.dec} ${y(10) + BH / 2 + 3}`);
+  up("dec", 10, 11);
+  wire(`M${COL.dec} ${y(11) - BH / 2} L${COL.dec} ${y(12) + 6}`);
+
+  /* 잔차 연결 — 서브층을 건너뛰어 Add & Norm 으로 들어간다 */
+  function residual(col, fromR, toR) {
+    const x = COL[col], lx = x - BW / 2 - 20;
+    const y0 = y(fromR) - 6, y1 = y(toR);
+    add(gWire, "path", {
+      d: `M${x} ${y0} L${lx + 10} ${y0} Q${lx} ${y0} ${lx} ${y0 - 12}
+          L${lx} ${y1 + 12} Q${lx} ${y1} ${lx + 10} ${y1} L${x - BW / 2 - 3} ${y1}`,
+      class: "wire", "marker-end": "url(#ah)", "stroke-dasharray": "0"
+    });
+  }
+  residual("enc", 2.55, 4); residual("enc", 4.55, 6);
+  residual("dec", 2.55, 4); residual("dec", 4.55, 6); residual("dec", 6.55, 8);
+
+  /* 인코더 → 디코더 (K, V) */
+  const encTop = y(6) - BH / 2, hop = y(6) - BH / 2 - 30;
+  const rx = COL.dec - BW / 2 - 46;
+  [-5, 5].forEach(o => {
+    add(gWire, "path", {
+      d: `M${COL.enc + BW / 2 + 3} ${encTop + 16 + o} L${rx - 10} ${encTop + 16 + o}
+          Q${rx} ${encTop + 16 + o} ${rx} ${encTop + 30 + o}
+          L${rx} ${y(5) - 12} Q${rx} ${y(5)} ${rx + 12} ${y(5)}
+          L${COL.dec - BW / 2 - 3} ${y(5) + o * .6}`,
+      class: "wire", "marker-end": "url(#ah)", "data-w": "kv"
+    });
+  });
+  const kv = add(gWire, "text", {
+    x: (COL.enc + COL.dec) / 2, y: encTop + 3,
+    class: "tinylab", "text-anchor": "middle" });
+  kv.textContent = "K, V";
+
+  /* 블록 */
+  BLOCKS.forEach(b => {
+    const [id, col, row, label, shape] = b;
+    const side = col === "enc" ? "enc" : "dec";
+    const g = add(gBlk, "g", { class: "blk", "data-id": id, tabindex: "0", role: "button",
+      "aria-label": label });
+    if (shape === "circle") {
+      add(g, "circle", { cx: COL[col], cy: y(row), r: 15,
+        fill: `var(--${side}-fill)`, stroke: `var(--${side})`, "stroke-width": 1.6 });
+      const t = add(g, "text", { x: COL[col], y: y(row) + 1, "text-anchor": "middle",
+        "dominant-baseline": "middle", "font-size": "17", fill: `var(--${side})` });
+      t.textContent = "+";
+      const p = add(gBlk, "text", { x: COL[col] - 26, y: y(row) + 4, class: "tinylab", "text-anchor": "end" });
+      p.textContent = "Positional";
+      const p2 = add(gBlk, "text", { x: COL[col] - 26, y: y(row) + 16, class: "tinylab", "text-anchor": "end" });
+      p2.textContent = "Encoding";
+      return;
+    }
+    const two = shape === "two";
+    const h = two ? BH + 12 : BH;
+    add(g, "rect", { x: COL[col] - BW / 2, y: y(row) - h / 2, width: BW, height: h, rx: 4,
+      fill: `var(--${side}-fill)`, stroke: `var(--${side})`, "stroke-width": 1.6 });
+    if (two) {
+      const t1 = add(g, "text", { x: COL[col], y: y(row) - 7, "text-anchor": "middle",
+        "dominant-baseline": "middle", "font-size": "13.5", fill: `var(--${side})` });
+      t1.textContent = "Masked";
+      const t2 = add(g, "text", { x: COL[col], y: y(row) + 11, "text-anchor": "middle",
+        "dominant-baseline": "middle", "font-size": "13.5", fill: `var(--${side})` });
+      t2.textContent = "Multi-Head Attention";
+    } else {
+      const t = add(g, "text", { x: COL[col], y: y(row) + 1, "text-anchor": "middle",
+        "dominant-baseline": "middle", "font-size": "13.5", fill: `var(--${side})` });
+      t.textContent = label;
+    }
+  });
+
+  /* 위·아래 글자 */
+  function plain(x, yy, s, size = 14, weight = 400) {
+    const t = add(gBlk, "text", { x, y: yy, "text-anchor": "middle", "font-size": size,
+      fill: "var(--ink-2)", "font-weight": weight });
+    t.textContent = s;
+    return t;
+  }
+  plain(COL.enc, y(0), "Inputs");
+  plain(COL.dec, y(0), "Outputs");
+  const sh = add(gBlk, "text", { x: COL.dec, y: y(0) + 16, "text-anchor": "middle",
+    "font-size": "10.5", fill: "var(--muted)" });
+  sh.textContent = "(shifted right)";
+  plain(COL.dec, y(12) - 4, "Output Probabilities", 14, 500);
+
+  /* ── 설명 자료 ─────────────────────────── */
+  const DOC = {
+    "in-emb": { side: "enc", en: "Input Embedding", ko: "입력 임베딩",
+      gist: "낱말 번호를 512개 숫자로 된 벡터로 바꿉니다. 이 표 자체가 학습됩니다.",
+      eq: "x = E[token] · √<i>d_model</i>",
+      what: "어휘 크기 × d_model 짜리 표에서 한 줄을 꺼내 옵니다. 표의 값은 무작위에서 시작해 학습으로 정해집니다.",
+      why: "신경망은 숫자만 다룹니다. 그리고 이 벡터들은 <b>뜻이 비슷하면 가까워지도록</b> 학습되므로, 단순한 번호표가 아니라 의미를 담은 좌표가 됩니다.",
+      dims: ["입력 <b>정수 토큰 id</b>", "출력 <b>d_model = 512</b>"],
+      note: "논문은 입력 임베딩·출력 임베딩·소프트맥스 앞 선형변환 <b>셋이 같은 가중치 행렬을 공유</b>합니다(3.4절). 임베딩 층에서는 √d_model 을 곱해 위치 인코딩과 크기를 맞춥니다.<br><br>→ <a href=\"embedding.html\" target=\"_blank\" rel=\"noopener\"><b>진짜 임베딩 벡터를 숫자로 보기</b></a> · 실제 학습된 모형에서 꺼낸 값과 유사도·벡터 셈" },
+
+    "enc-pe": { side: "enc", en: "Positional Encoding", ko: "위치 인코딩",
+      gist: "‘몇 번째 낱말인가’를 벡터에 더해 줍니다. 곱하지 않고 더합니다.",
+      eq: "PE(<i>pos</i>, 2i)&nbsp;&nbsp;= sin( <i>pos</i> / 10000<sup>2i/d_model</sup> )\nPE(<i>pos</i>, 2i+1) = cos( <i>pos</i> / 10000<sup>2i/d_model</sup> )",
+      what: "차원마다 파장이 다른 사인·코사인 값을 만들어 임베딩에 더합니다. 낮은 차원은 빠르게, 높은 차원은 아주 천천히 진동합니다.",
+      why: "어텐션은 <b>순서를 전혀 모릅니다.</b> 입력을 뒤섞어도 결과가 그대로 따라 섞일 뿐입니다(순열 등변). 순환신경망과 달리 구조 자체에 순서 개념이 없으므로 <b>따로 넣어 주어야</b> 합니다.",
+      dims: ["더하기 <b>⊕</b> · 이어붙이기 아님", "이후 <b>드롭아웃 0.1</b> 적용"],
+      note: "논문은 학습형 위치 임베딩도 시험했고 <b>성능이 거의 같았다</b>고 적었습니다. 그럼에도 정현파를 택한 까닭은 학습 때보다 <b>긴 문장에도 외삽</b>될 수 있으리라 보았기 때문입니다." },
+
+    "enc-mha": { side: "enc", en: "Multi-Head Attention", ko: "멀티헤드 셀프 어텐션",
+      gist: "모든 위치가 모든 위치를 봅니다. 여기서 낱말끼리 정보가 오갑니다.",
+      eq: "Attention(Q,K,V) = softmax( QKᵀ / √<i>d_k</i> ) V\nMultiHead = Concat(head₁ … head_h) W<sup>O</sup>",
+      what: "같은 입력에서 Q·K·V 세 가지를 각각 다른 행렬로 뽑아냅니다(그래서 <b>셀프</b>). Q와 K의 내적으로 관련도를 재고, softmax 로 배분 비율을 만든 뒤 그 비율대로 V를 섞습니다.",
+      why: "이 층이 <b>유일하게 위치 사이를 잇는 곳</b>입니다. 나머지 층은 위치마다 따로 계산합니다. 헤드를 여러 개 두는 것은 문법 관계·의미 관계처럼 <b>서로 다른 종류의 관계를 동시에</b> 보기 위해서입니다.",
+      dims: ["h = <b>8</b>", "d_k = d_v = <b>64</b>", "8 × 64 = <b>512</b>"],
+      note: "헤드마다 차원을 512/8 로 줄였기 때문에 <b>전체 계산량은 단일 헤드 512차원과 비슷</b>합니다. 공짜로 관점을 여러 개 얻는 구조입니다." },
+
+    "enc-an1": { side: "enc", en: "Add & Norm", ko: "잔차 연결 + 층 정규화",
+      gist: "서브층을 건너뛴 원본을 더한 뒤 정규화합니다. 그림의 모든 곡선 화살표가 이것입니다.",
+      eq: "LayerNorm( x + Dropout(Sublayer(x)) )",
+      what: "서브층을 통과하지 않은 입력 x 를 결과에 그대로 더하고, 그 합을 층 정규화합니다.",
+      why: "<b>더하기가 핵심입니다.</b> 역전파에서 기울기가 서브층을 거치지 않고 지나갈 지름길이 생겨, 층을 깊게 쌓아도 신호가 죽지 않습니다. 정규화는 각 층에 들어오는 값의 크기를 일정하게 만들어 학습을 안정시킵니다.",
+      dims: ["모든 서브층 출력 = <b>512</b>", "드롭아웃 <b>0.1</b>"],
+      note: "잔차로 더하려면 <b>차원이 같아야</b> 합니다. 논문이 모든 서브층과 임베딩 차원을 512로 통일한 실질적인 이유가 이것입니다." },
+
+    "enc-ff": { side: "enc", en: "Position-wise Feed-Forward", ko: "위치별 완전연결층",
+      gist: "위치마다 따로, 넓혔다가 다시 좁힙니다. 여기서는 위치끼리 섞이지 않습니다.",
+      eq: "FFN(x) = max(0, xW₁ + b₁) W₂ + b₂",
+      what: "512 → 2048 로 펼쳐 ReLU 를 통과시킨 뒤 다시 512 로 되돌립니다. 같은 가중치를 <b>모든 위치에 똑같이</b> 적용합니다.",
+      why: "어텐션은 값을 <b>가중평균</b>할 뿐이라 그 자체로는 선형에 가깝습니다. 비선형 변환을 넣어 표현력을 얻는 곳이 여기입니다. 어텐션이 ‘정보를 모으는’ 층이라면 이곳은 ‘모은 것을 가공하는’ 층입니다.",
+      dims: ["d_model <b>512</b> → d_ff <b>2048</b> → <b>512</b>", "커널 1인 합성곱 두 번과 같음"],
+      note: "파라미터가 가장 많이 몰린 곳입니다. base 모형에서 이 층들이 <b>전체의 절반을 훌쩍 넘습니다</b>. 요즘 MoE 가 바로 이 부분을 여러 벌 두고 골라 쓰는 방식입니다." },
+
+    "enc-an2": { side: "enc", en: "Add & Norm", ko: "잔차 연결 + 층 정규화",
+      gist: "인코더 한 층의 마지막 단계. 여기서 나온 값이 다음 층의 입력이 됩니다.",
+      eq: "LayerNorm( x + Dropout(FFN(x)) )",
+      what: "앞의 Add & Norm 과 같은 계산입니다. 이 지점의 출력이 위로 올라가 다음 인코더 층으로 들어갑니다.",
+      why: "인코더 층 하나는 <b>[어텐션 → Add&Norm → FFN → Add&Norm]</b> 이 한 벌입니다. 이 한 벌을 여섯 번 쌓습니다.",
+      dims: ["N = <b>6</b> 번 반복"],
+      note: "여섯 층을 모두 지난 <b>맨 위의 출력</b>이 디코더로 건너가는 값입니다. 중간 층의 값은 넘어가지 않습니다." },
+
+    "out-emb": { side: "dec", en: "Output Embedding", ko: "출력 임베딩",
+      gist: "지금까지 만들어 낸 문장을 한 칸 밀어서 넣습니다.",
+      eq: "입력 = [시작기호, y₁, y₂, …, y_{t−1}]",
+      what: "정답 문장을 오른쪽으로 한 칸 밀고 앞에 시작 기호를 붙여 넣습니다. t 번째 자리를 예측할 때 t−1 번째까지만 주어지게 하려는 것입니다.",
+      why: "<b>shifted right</b> 가 없으면 t 번째 자리에서 t 번째 정답이 입력으로 들어옵니다. 답을 보고 답을 쓰는 셈이 되어 학습이 무너집니다.",
+      dims: ["입력 임베딩과 <b>가중치 공유</b>"],
+      note: "학습 때는 정답 전체를 한 번에 넣어 모든 자리를 동시에 계산합니다(teacher forcing). 실제 생성 때는 한 낱말씩 만들어 다시 넣습니다. <b>학습은 병렬, 생성은 순차</b>입니다." },
+
+    "dec-pe": { side: "dec", en: "Positional Encoding", ko: "위치 인코딩",
+      gist: "디코더 쪽에도 똑같은 위치 정보를 더합니다.",
+      eq: "PE(<i>pos</i>, 2i) = sin( <i>pos</i> / 10000<sup>2i/d_model</sup> )",
+      what: "인코더와 완전히 같은 식이며, 학습되는 값이 아니라 <b>정해진 함수</b>입니다.",
+      why: "디코더도 몇 번째 낱말을 만드는 중인지 알아야 합니다.",
+      dims: ["학습 파라미터 <b>없음</b>"],
+      note: "값이 고정이므로 미리 계산해 두고 꺼내 씁니다." },
+
+    "dec-mmha": { side: "dec", en: "Masked Multi-Head Attention", ko: "가려진 셀프 어텐션",
+      gist: "디코더가 자기 자신을 보되, 아직 안 만든 뒤쪽은 볼 수 없게 가립니다.",
+      eq: "score[i][j] = −∞  (j > i)  →  softmax 후 0",
+      what: "관련도 점수 행렬에서 <b>미래 위치에 해당하는 자리를 −∞ 로</b> 채웁니다. softmax 를 지나면 그 자리의 비율이 정확히 0이 됩니다.",
+      why: "학습할 때는 정답 문장 전체가 한꺼번에 들어갑니다. 가리지 않으면 3번째 낱말을 예측하면서 5번째 정답을 훔쳐봅니다. 그러면 <b>학습 성적은 좋은데 실제 생성은 못 하는</b> 모형이 됩니다.",
+      dims: ["가리개 = 위쪽 삼각행렬", "인코더에는 <b>없음</b>"],
+      note: "인코더는 문장 전체가 이미 주어져 있으므로 가릴 이유가 없습니다. <b>인코더는 양방향, 디코더는 단방향</b> — 이 차이가 나중에 BERT 와 GPT 로 갈라집니다." },
+
+    "dec-an1": { side: "dec", en: "Add & Norm", ko: "잔차 연결 + 층 정규화",
+      gist: "인코더 쪽과 같은 계산입니다.",
+      eq: "LayerNorm( x + Dropout(MaskedAttn(x)) )",
+      what: "디코더의 서브층 세 개에도 똑같이 잔차와 정규화가 붙습니다.",
+      why: "디코더 층 하나에는 서브층이 <b>셋</b>이라 Add & Norm 도 세 번 나옵니다.",
+      dims: ["디코더 층당 서브층 <b>3</b>개"],
+      note: "인코더 층은 서브층 둘, 디코더 층은 셋. 그림에서 오른쪽 기둥이 더 높은 이유입니다." },
+
+    "dec-mha": { side: "dec", en: "Encoder-Decoder Attention", ko: "교차 어텐션",
+      gist: "이 논문에서 가장 중요한 연결입니다. 두 기둥이 만나는 유일한 곳입니다.",
+      eq: "Q = 디코더에서\nK, V = 인코더 맨 위 출력에서",
+      what: "질문(Q)은 지금 만들고 있는 문장에서 나오고, 열쇠와 값(K, V)은 <b>원문을 읽은 인코더의 출력</b>에서 옵니다. 계산 자체는 셀프 어텐션과 완전히 같습니다.",
+      why: "‘지금 이 자리에 무엇을 쓸까’를 정하려면 <b>원문의 어느 부분을 봐야 하는지</b> 알아야 합니다. 기존 번역 모형이 문장 전체를 벡터 하나에 욱여넣던 병목이 여기서 사라집니다.",
+      dims: ["Q ← <b>디코더</b>", "K, V ← <b>인코더</b>", "가리개 <b>없음</b>"],
+      note: "번역에서 이 어텐션 지도를 그리면 원문과 번역문의 <b>단어 정렬</b>처럼 보입니다. 셀프 어텐션이 아니므로 디코더의 모든 자리가 원문 전체를 자유롭게 볼 수 있습니다.",
+      wire: "kv" },
+
+    "dec-an2": { side: "dec", en: "Add & Norm", ko: "잔차 연결 + 층 정규화",
+      gist: "교차 어텐션 결과를 원래 값에 더하고 정규화합니다.",
+      eq: "LayerNorm( x + Dropout(CrossAttn(x)) )",
+      what: "원문에서 가져온 정보가 여기서 디코더의 흐름에 합쳐집니다.",
+      why: "더하기이므로 원문 정보가 기존 표현을 <b>덮어쓰지 않고 보태집니다.</b>",
+      dims: ["출력 <b>512</b>"],
+      note: "" },
+
+    "dec-ff": { side: "dec", en: "Position-wise Feed-Forward", ko: "위치별 완전연결층",
+      gist: "인코더의 것과 같은 구조이나, 가중치는 따로 학습됩니다.",
+      eq: "FFN(x) = max(0, xW₁ + b₁) W₂ + b₂",
+      what: "512 → 2048 → 512. 위치마다 따로 적용합니다.",
+      why: "모아 온 정보를 비선형으로 가공합니다.",
+      dims: ["d_ff = <b>2048</b>"],
+      note: "인코더와 디코더는 물론, <b>층마다도 가중치를 공유하지 않습니다.</b> 층 하나하나가 자기 몫을 따로 배웁니다." },
+
+    "dec-an3": { side: "dec", en: "Add & Norm", ko: "잔차 연결 + 층 정규화",
+      gist: "디코더 한 층의 끝. 여기까지가 여섯 번 반복됩니다.",
+      eq: "LayerNorm( x + Dropout(FFN(x)) )",
+      what: "이 출력이 다음 디코더 층으로 올라가고, 여섯 번째 층에서는 Linear 로 갑니다.",
+      why: "디코더 층 한 벌은 <b>[가려진 어텐션 → 교차 어텐션 → FFN]</b> 에 각각 Add & Norm 이 붙은 모양입니다.",
+      dims: ["N = <b>6</b>"],
+      note: "" },
+
+    "linear": { side: "dec", en: "Linear", ko: "선형 사영",
+      gist: "512차원 벡터를 어휘 크기만큼의 점수로 펼칩니다.",
+      eq: "logits = h · Wᵀ&nbsp;&nbsp;(W = 임베딩 행렬)",
+      what: "마지막 디코더 출력을 어휘 개수만큼의 실수(로짓)로 바꿉니다. 낱말마다 점수 하나씩입니다.",
+      why: "‘다음에 올 낱말’을 고르려면 <b>모든 후보에 점수</b>를 매겨야 합니다.",
+      dims: ["<b>512</b> → 어휘 크기", "논문 어휘 <b>37,000</b> (EN-DE, BPE 공유)"],
+      note: "이 행렬은 <b>임베딩 행렬과 같은 것</b>을 씁니다(전치해서). 파라미터를 크게 아끼고, 같은 낱말의 입력·출력 표현을 묶어 주는 효과도 있습니다." },
+
+    "softmax": { side: "dec", en: "Softmax", ko: "소프트맥스",
+      gist: "점수를 확률로 바꿉니다. 모두 더하면 1이 됩니다.",
+      eq: "p(w) = exp(logit_w) / Σ exp(logit_j)",
+      what: "지수를 취해 전부 양수로 만든 뒤 합으로 나눕니다. 결과는 어휘 전체에 대한 확률 분포입니다.",
+      why: "여기서 나온 분포에서 <b>뽑기</b>를 합니다. 늘 1등만 고르지 않고 확률대로 뽑기 때문에, 같은 질문에도 답이 조금씩 달라집니다.",
+      dims: ["출력 = <b>어휘 크기</b> 짜리 확률"],
+      note: "논문은 학습할 때 정답 확률을 1이 아니라 <b>0.9</b> 로 두는 레이블 스무딩(ε_ls = 0.1)을 씁니다. 혼란도는 나빠지지만 <b>정확도와 BLEU 는 좋아졌다</b>고 보고합니다." }
+  };
+
+  /* ── 그리기 ────────────────────────────── */
+  const ids = BLOCKS.map(b => b[0]);
+  let cur = null;
+
+  function show(id) {
+    const d = DOC[id]; if (!d) return;
+    cur = id;
+    document.querySelectorAll(".blk").forEach(g =>
+      g.classList.toggle("sel", g.dataset.id === id));
+    document.querySelectorAll("[data-w]").forEach(w =>
+      w.classList.toggle("flow", !!d.wire && w.dataset.w === d.wire));
+    document.querySelectorAll("[data-w]").forEach(w =>
+      w.setAttribute("marker-end", w.classList.contains("flow") ? "url(#ahf)" : "url(#ah)"));
+
+    const sideName = d.side === "enc" ? "인코더" : "디코더";
+    $("#panel").innerHTML = `
+      <div class="tagrow">
+        <span class="side ${d.side}">${sideName}</span>
+        <span class="en">${d.en}</span>
+      </div>
+      <h2>${d.ko}</h2>
+      <p class="gist">${d.gist}</p>
+      ${d.eq ? `<div class="eq">${d.eq.replace(/\n/g, "<br>")}</div>` : ""}
+      <h3>무엇을 하는가</h3><p>${d.what}</p>
+      <h3>왜 여기 있는가</h3><p>${d.why}</p>
+      ${d.dims && d.dims.length ? `<h3>크기</h3><div class="chips">${
+        d.dims.map(x => `<span class="dim-chip">${x}</span>`).join("")}</div>` : ""}
+      ${d.note ? `<p class="after">${d.note}</p>` : ""}`;
+  }
+
+  svg.addEventListener("click", e => {
+    const g = e.target.closest(".blk");
+    if (g) { show(g.dataset.id); stop(); }
+  });
+  svg.addEventListener("keydown", e => {
+    const g = e.target.closest(".blk");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); show(g.dataset.id); stop(); }
+  });
+
+  /* ── 데이터 흐름 따라가기 ──────────────── */
+  const FLOW = ["in-emb", "enc-pe", "enc-mha", "enc-an1", "enc-ff", "enc-an2",
+                "out-emb", "dec-pe", "dec-mmha", "dec-an1", "dec-mha", "dec-an2",
+                "dec-ff", "dec-an3", "linear", "softmax"];
+  let step = -1, timer = null;
+
+  function goStep(i) {
+    step = Math.max(0, Math.min(i, FLOW.length - 1));
+    show(FLOW[step]);
+    $("#stepno").textContent = `${step + 1} / ${FLOW.length}`;
+    $("#prev").disabled = step === 0;
+    $("#next").disabled = step === FLOW.length - 1;
+    if (timer && step === FLOW.length - 1) stop();
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    $("#play").classList.remove("on");
+    $("#play").textContent = "데이터 흐름 따라가기";
+  }
+  $("#play").addEventListener("click", () => {
+    if (timer) { stop(); return; }
+    goStep(step >= FLOW.length - 1 ? 0 : Math.max(step, 0));
+    $("#play").classList.add("on");
+    $("#play").textContent = "멈춤";
+    timer = setInterval(() => goStep(step + 1), 2600);
+  });
+  $("#prev").addEventListener("click", () => { stop(); goStep(step - 1); });
+  $("#next").addEventListener("click", () => { stop(); goStep(step + 1); });
+
+  document.addEventListener("keydown", e => {
+    if (e.target.closest("input,textarea")) return;
+    const i = cur ? FLOW.indexOf(cur) : -1;
+    if (e.key === "ArrowRight") { stop(); goStep(i + 1); }
+    if (e.key === "ArrowLeft") { stop(); goStep(Math.max(0, i - 1)); }
+  });
+
+  goStep(0);
+})();
+</script>
