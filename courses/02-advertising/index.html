@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="수강생을 위한 광고학개론 강의 영상 목록">
+  <meta name="robots" content="noindex, nofollow">
+  <title>광고학개론 | 강의 콘텐츠</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="locked">
+  <div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <form class="gate-card" id="gate-form">
+      <p class="eyebrow">STUDENT ACCESS</p>
+      <h1 id="gate-title">광고학개론</h1>
+      <p>수강생 확인 숫자 4자리를 입력하세요.</p>
+      <label for="access-code">확인 숫자</label>
+      <input id="access-code" name="access-code" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" required autofocus>
+      <button type="submit">강의실 입장</button>
+      <p class="gate-error" id="gate-error" role="alert" aria-live="polite"></p>
+      <a href="../../">홈페이지로 돌아가기</a>
+    </form>
+  </div>
+
+  <div class="site" id="course-site" aria-hidden="true">
+    <a class="skip-link" href="#lectures">강의 목록으로 바로가기</a>
+    <header class="page-header">
+      <a class="brand" href="../../" aria-label="홈으로 이동"><img src="../../assets/yeonsung-logo.png" alt="연성대학교"></a>
+      <button class="exit-button" id="exit-button" type="button">나가기</button>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">INTRODUCTION TO ADVERTISING</p>
+        <h1 id="page-title">광고학개론</h1>
+        <p class="lede">광고의 기본 개념과 흐름을 영상으로 학습합니다.<br>이 페이지는 수강생 전용입니다.</p>
+        <a class="scroll-cue" href="#lectures">강의 둘러보기 <span aria-hidden="true">↓</span></a>
+      </section>
+      <section class="lecture-section" id="lectures" aria-labelledby="lecture-title">
+        <div class="section-heading"><p class="section-label">CURRICULUM</p><h2 id="lecture-title">강의 영상</h2><p>3개의 강의 콘텐츠</p></div>
+        <ol class="lecture-grid">
+          <li>
+            <article>
+              <a class="thumbnail-link" href="https://youtu.be/xoZi1UOUUHY" target="_blank" rel="noopener noreferrer" aria-label="제1강 인트로 오버뷰 유튜브 영상 새 창에서 보기">
+                <img src="https://i.ytimg.com/vi/xoZi1UOUUHY/hqdefault.jpg" alt="제1강 인트로 오버뷰 영상 썸네일" loading="eager">
+              </a>
+              <div class="lecture-copy"><span class="number">제1강</span><h3><a href="https://youtu.be/xoZi1UOUUHY" target="_blank" rel="noopener noreferrer">인트로 오버뷰</a></h3></div>
+            </article>
+          </li>
+          <li>
+            <article>
+              <a class="thumbnail-link" href="https://youtu.be/df24v8YttNE" target="_blank" rel="noopener noreferrer" aria-label="제2강 광고의 역사와 이해 유튜브 영상 새 창에서 보기">
+                <img src="https://i.ytimg.com/vi/df24v8YttNE/hqdefault.jpg" alt="제2강 광고의 역사와 이해 영상 썸네일" loading="lazy">
+              </a>
+              <div class="lecture-copy"><span class="number">제2강</span><h3><a href="https://youtu.be/df24v8YttNE" target="_blank" rel="noopener noreferrer">1장·2장 광고의 역사와 이해</a></h3></div>
+            </article>
+          </li>
+          <li>
+            <article>
+              <a class="thumbnail-link" href="https://youtu.be/q9lNV3iViLo" target="_blank" rel="noopener noreferrer" aria-label="제3강 광고산업과 마케팅 유튜브 영상 새 창에서 보기">
+                <img src="https://i.ytimg.com/vi/q9lNV3iViLo/hqdefault.jpg" alt="제3강 광고산업과 마케팅 영상 썸네일" loading="lazy">
+              </a>
+              <div class="lecture-copy"><span class="number">제3강</span><h3><a href="https://youtu.be/q9lNV3iViLo" target="_blank" rel="noopener noreferrer">3장·4장 광고산업과 마케팅 1</a></h3></div>
+            </article>
+          </li>
+        </ol>
+      </section>
+    </main>
+    <footer><p>광고학개론 · Lee Hyun Goo</p><a href="../../">홈페이지로 돌아가기 <span aria-hidden="true">→</span></a></footer>
+  </div>
+  <script src="access.js"></script>
+</body>
+</html>
