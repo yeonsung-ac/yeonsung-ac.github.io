@@ -79,6 +79,14 @@ const state = {
   intros: [],        // 교수만 채운다
   pickedPhoto: null, // 아직 안 올린 사진 (줄여 놓은 것)
   pickedType: null,  // 그 사진의 종류
+  introQ: "",        // 이름·학번 찾기
+  introSort: "sid",  // sid | name | new
+  introPage: 0,
+  spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
+  introQ: "",        // 이름·학번 찾기
+  introSort: "sid",  // sid | new | name
+  introPage: 0,
+  spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
 };
 
 /* ── 작은 도우미 ──────────────────────────── */
@@ -222,9 +230,15 @@ $("qr-x").addEventListener("click", () => { $("qr-full").hidden = true; });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("qr-full").hidden) $("qr-full").hidden = true;
 });
+/* 접었으면 펼 수도 있어야 한다. 새로고침해야만 돌아온다면 그것은 길이 아니다. */
 $("qr-hide").addEventListener("click", () => {
   $("qr-band").classList.add("folded");
-  toast("QR 을 접었습니다. 새로고침하면 다시 보입니다.");
+  $("qr-open").hidden = false;
+  toast("QR 을 접었습니다");
+});
+$("qr-open").addEventListener("click", () => {
+  $("qr-band").classList.remove("folded");
+  $("qr-open").hidden = true;
 });
 $("qr-copy").addEventListener("click", async () => {
   const url = "https://yeonsung-ac.github.io/courses/01-management/";
@@ -408,6 +422,7 @@ function render() {
   // QR 은 강의실 스크린에 띄우는 물건이다. 학생은 그것을 찍고 들어온 사람이라
   // 다시 보여 줄 까닭이 없다. 좁은 폰 화면에서 첫 판을 통째로 차지해 버린다.
   $("qr-band").hidden = !state.isProfessor;
+  $("qr-open").hidden = !state.isProfessor || !$("qr-band").classList.contains("folded");
 
   const open = state.quizzes.filter((q) => q.state === "open");
   const liveOne = open.find((q) => q.mode === "live" && !state.mine[q.id]);
@@ -1078,6 +1093,7 @@ $("intro-form").addEventListener("submit", async (e) => {
       text: say,
       photoUrl: url,
       photoPath: path,
+      createdAt: state.intro?.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
 
@@ -1099,66 +1115,217 @@ $("intro-form").addEventListener("submit", async (e) => {
 /* 교수 화면 — 누가 냈는지 훑어보는 곳.
    여기서 한 명을 누르면 발표 화면이 열린다. 수업에서는 이 화면을 강의실
    스크린에 띄워 놓고 학생이 발표하는 동안 그 사진을 크게 보여 준다. */
+const PER = 30;                       // 한 판에 서른 줄
+const SPOKE = "mgmt-spoken";          // 발표를 마친 사람. 이 컴퓨터에만 남는다.
+
+function loadSpoken() {
+  try { state.spoken = JSON.parse(localStorage.getItem(SPOKE)) || {}; } catch { state.spoken = {}; }
+}
+function saveSpoken() {
+  try { localStorage.setItem(SPOKE, JSON.stringify(state.spoken)); } catch { /* 그만 */ }
+}
+loadSpoken();
+
+const when = (v) => (v && v.toDate ? v.toDate() : null);
+const pad = (n) => String(n).padStart(2, "0");
+const stamp = (d) => (d
+  ? pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes())
+  : "");
+
+/* 늘어놓을 줄. 찾기와 정렬까지 마친 것이다.
+   발표 화면도 이 순서를 그대로 따라가야 화면과 손이 어긋나지 않는다. */
 function introRows() {
-  return [...state.intros].sort((a, b) => String(a.sid).localeCompare(String(b.sid)));
+  const q = state.introQ.trim().toLowerCase();
+  const rows = state.intros.filter((r) => !q
+    || String(r.name || "").toLowerCase().includes(q)
+    || String(r.sid || "").toLowerCase().includes(q));
+
+  const how = {
+    sid: (a, b) => String(a.sid).localeCompare(String(b.sid)),
+    name: (a, b) => String(a.name).localeCompare(String(b.name), "ko"),
+    new: (a, b) => ((when(b.updatedAt) || 0) - (when(a.updatedAt) || 0)),
+  }[state.introSort];
+  return rows.sort(how);
+}
+
+/* 같은 학번이 둘 이상이면 알려 준다. 폰을 바꾸거나 브라우저 기록이 지워지면
+   같은 학생이 두 번 낼 수 있다. 발표 때 헷갈리기 전에 눈에 띄게 해 둔다. */
+function sidCount() {
+  const seen = new Map();
+  state.intros.forEach((r) => seen.set(r.sid, (seen.get(r.sid) || 0) + 1));
+  return seen;
 }
 
 function renderIntroAll() {
-  const rows = introRows();
   const body = $("prof-body");
-  if (!rows.length) {
-    body.innerHTML = `<p class="empty">아직 낸 학생이 없습니다.</p>`;
-    return;
-  }
-  body.innerHTML = `<div class="intro-bar">
-      <p class="prof-count">${rows.length}명이 냈습니다</p>
-      <button class="btn-go" id="show-start" type="button">발표 화면으로 띄우기</button>
-    </div>
-    <div class="cards">${rows.map((r, i) => `
-      <div class="card-wrap">
-        <button class="card" type="button" data-i="${i}">
-          ${r.photoUrl ? `<img src="${esc(r.photoUrl)}" alt="" loading="lazy">` : `<span class="card-none"></span>`}
-          <span class="card-say">
-            <span class="card-who"><b>${esc(r.name)}</b> ${esc(r.sid)}</span>
-            <span class="card-text">${esc(r.text)}</span>
-          </span>
-        </button>
-        <button class="card-x" type="button" data-del="${esc(r.id)}"
-                title="${esc(r.name)} 학생이 낸 것을 지웁니다" aria-label="지우기">×</button>
-      </div>`).join("")}</div>`;
+  const all = introRows();
+  const dup = sidCount();
+  const done = all.filter((r) => state.spoken[r.id]).length;
 
-  $("show-start").addEventListener("click", () => openShow(0));
+  const pages = Math.max(1, Math.ceil(all.length / PER));
+  if (state.introPage >= pages) state.introPage = pages - 1;
+  const from = state.introPage * PER;
+  const page = all.slice(from, from + PER);
+
+  const bar = '<div class="lst-bar">'
+    + '<p class="lst-count"><b>' + state.intros.length + '명</b>이 냈습니다'
+    + (done ? ' · 발표 마침 <b>' + done + '</b>' : "")
+    + (state.introQ ? ' · 찾은 것 <b>' + all.length + '</b>' : "")
+    + '</p><div class="lst-tools">'
+    + '<input class="lst-find" id="lst-find" type="search" placeholder="성명 · 학번 찾기" value="'
+    + esc(state.introQ) + '">'
+    + '<select class="lst-sort" id="lst-sort">'
+    + '<option value="sid"' + (state.introSort === "sid" ? " selected" : "") + '>학번 순</option>'
+    + '<option value="name"' + (state.introSort === "name" ? " selected" : "") + '>이름 순</option>'
+    + '<option value="new"' + (state.introSort === "new" ? " selected" : "") + '>늦게 낸 순</option>'
+    + '</select>'
+    + '<button class="btn-go" id="show-start" type="button">발표 화면</button>'
+    + '<button class="btn-line" id="lst-csv" type="button">CSV</button>'
+    + '</div></div>';
+
+  let list;
+  if (!all.length) {
+    list = '<p class="empty">' + (state.introQ ? "찾는 학생이 없습니다." : "아직 낸 학생이 없습니다.") + '</p>';
+  } else {
+    list = '<ul class="lst">' + page.map((r, k) => {
+      const i = from + k;
+      const made = when(r.createdAt) || when(r.updatedAt);
+      const fixed = when(r.updatedAt);
+      const edited = made && fixed && fixed - made > 60000;
+      const tags = (dup.get(r.sid) > 1 ? '<span class="tag warn">학번 중복</span>' : "")
+        + (edited ? '<span class="tag">고침</span>' : "")
+        + (state.spoken[r.id] ? '<span class="tag ok">발표함</span>' : "");
+      return '<li class="lst-row' + (state.spoken[r.id] ? " spoke" : "") + '">'
+        + '<span class="lst-no">' + (i + 1) + '</span>'
+        + '<button class="lst-open" type="button" data-i="' + i + '" title="발표 화면으로 띄웁니다">'
+        + (r.photoUrl
+            ? '<img src="' + esc(r.photoUrl) + '" alt="" loading="lazy">'
+            : '<span class="lst-nophoto">사진<br>없음</span>')
+        + '<span class="lst-body"><span class="lst-who"><b>' + esc(r.name) + '</b>'
+        + '<span class="lst-sid">' + esc(r.sid) + '</span>' + tags + '</span>'
+        + '<span class="lst-text">' + esc(r.text) + '</span></span>'
+        + '<span class="lst-when">' + stamp(made) + '</span>'
+        + '</button>'
+        + '<span class="lst-acts">'
+        + '<button class="lst-mark" type="button" data-mark="' + esc(r.id) + '" title="발표 마침으로 표시">'
+        + (state.spoken[r.id] ? "\u21ba" : "\u2713") + '</button>'
+        + '<button class="lst-del" type="button" data-del="' + esc(r.id) + '" title="지우기">\u00d7</button>'
+        + '</span></li>';
+    }).join("") + '</ul>';
+
+    if (pages > 1) {
+      list += '<div class="pager">'
+        + '<button class="btn-line" id="pg-prev" type="button"' + (state.introPage === 0 ? " disabled" : "") + '>\u2190 앞</button>'
+        + '<span>' + (state.introPage + 1) + ' / ' + pages + ' 판 · '
+        + (from + 1) + '\u2013' + Math.min(from + PER, all.length) + '번</span>'
+        + '<button class="btn-line" id="pg-next" type="button"' + (state.introPage >= pages - 1 ? " disabled" : "") + '>뒤 \u2192</button>'
+        + '</div>';
+    }
+  }
+
+  body.innerHTML = bar + list;
+
+  const find = $("lst-find");
+  if (find) {
+    find.addEventListener("input", (e) => {
+      state.introQ = e.target.value;
+      state.introPage = 0;
+      renderIntroAll();
+      const f2 = $("lst-find");
+      f2.focus();
+      f2.setSelectionRange(f2.value.length, f2.value.length);
+    });
+  }
+
+  const sort = $("lst-sort");
+  if (sort) {
+    sort.addEventListener("change", (e) => {
+      state.introSort = e.target.value;
+      state.introPage = 0;
+      renderIntroAll();
+    });
+  }
+
+  const go = $("show-start");
+  if (go) go.addEventListener("click", () => openShow(0));
+
+  const csv = $("lst-csv");
+  if (csv) csv.addEventListener("click", introCsv);
+
+  const turn = (d) => {
+    state.introPage += d;
+    renderIntroAll();
+    $("prof-body").scrollIntoView({ block: "start" });
+  };
+  const prev = $("pg-prev");
+  if (prev) prev.addEventListener("click", () => turn(-1));
+  const next = $("pg-next");
+  if (next) next.addEventListener("click", () => turn(1));
+
   body.querySelectorAll("[data-i]").forEach((el) => {
     el.addEventListener("click", () => openShow(Number(el.dataset.i)));
+  });
+  body.querySelectorAll("[data-mark]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.mark;
+      if (state.spoken[id]) delete state.spoken[id]; else state.spoken[id] = 1;
+      saveSpoken();
+      renderIntroAll();
+    });
   });
   body.querySelectorAll("[data-del]").forEach((el) => {
     el.addEventListener("click", () => dropIntro(el.dataset.del));
   });
 }
 
+$("p-intro").addEventListener("click", () => {
+  state.view = "intro";
+  renderIntroAll();
+});
+
 /* 시험 삼아 넣은 것, 잘못 낸 것을 교수가 치운다.
    장부와 창고 양쪽에서 지운다. 장부만 지우면 사진이 창고에 남아 쌓인다. */
 async function dropIntro(id) {
   const r = state.intros.find((x) => x.id === id);
   if (!r) return;
-  if (!confirm(`${r.name} (${r.sid}) 학생이 낸 자기소개를 지웁니다.
-되돌릴 수 없습니다.`)) return;
+  if (!confirm(r.name + " (" + r.sid + ") 학생이 낸 자기소개를 지웁니다.\n되돌릴 수 없습니다.")) return;
   try {
     if (r.photoPath) {
       try { await deleteObject(storageRef(store, r.photoPath)); }
       catch { /* 사진이 이미 없어도 장부는 지운다 */ }
     }
     await deleteDoc(doc(db, INTROS, id));
+    delete state.spoken[id];
+    saveSpoken();
     toast("지웠습니다");
   } catch (e) {
     toast("지우지 못했습니다 (" + (e.code || e.message) + ")", true);
   }
 }
 
-$("p-intro").addEventListener("click", () => {
-  state.view = "intro";
-  renderIntroAll();
-});
+/* 소개 글까지 통째로 내려받는다. 사진은 주소만 담는다. */
+function introCsv() {
+  const rows = introRows();
+  if (!rows.length) { toast("내려받을 것이 없습니다", true); return; }
+  const head = ["번호", "성명", "학번", "제출", "수정", "발표함", "소개 글", "사진 주소"];
+  const body = rows.map((r, i) => [
+    i + 1, r.name, r.sid,
+    (when(r.createdAt) || "") && when(r.createdAt).toLocaleString("ko-KR"),
+    (when(r.updatedAt) || "") && when(r.updatedAt).toLocaleString("ko-KR"),
+    state.spoken[r.id] ? "O" : "",
+    r.text, r.photoUrl || "",
+  ]);
+  const csv = [head, ...body]
+    .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(","))
+    .join("\r\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "경영학원론_자기소개_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(rows.length + "명 내려받았습니다");
+}
 
 /* ── 발표 화면 ────────────────────────────────
    강의실 스크린용이라 사진을 화면 높이에 맞춰 크게 놓고 글씨를 키웠다.
