@@ -968,10 +968,11 @@ $("intro-say").addEventListener("input", (e) => {
   $("intro-n").textContent = String(e.target.value.length);
 });
 
-$("intro-album").addEventListener("click", () => $("intro-file").click());
-$("intro-cam-go").addEventListener("click", () => $("intro-cam").click());
+// 상자를 누르면 앨범이 열린다.
+// 카메라로 바로 찍는 길(capture)은 기기마다 탈이 나서 뺐다. 폰 카메라로 찍은
+// 사진도 앨범에 남으므로, 앨범 한 길만 두는 편이 학생에게 헷갈리지 않는다.
+$("intro-pick").addEventListener("click", () => $("intro-file").click());
 $("intro-file").addEventListener("change", (e) => takePhoto(e));
-$("intro-cam").addEventListener("change", (e) => takePhoto(e));
 
 /* 사진을 받는다.
    줄여서 올리는 것이 본래 길이다. 그런데 기기와 사진 형식은 가지가지라
@@ -1029,6 +1030,7 @@ async function takePhoto(e) {
   pv.hidden = false;
   say.hidden = true;
   say.innerHTML = wasSaid;
+  $("intro-pick").classList.add("filled");
   $("intro-next").hidden = false;
   $("intro-pick").classList.remove("busy");
   toast(`사진 준비 끝 · ${Math.round(blob.size / 1024)}KB`);

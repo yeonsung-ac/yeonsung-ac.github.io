@@ -128,25 +128,17 @@
         </div>
 
         <form class="intro-form" id="intro-form" hidden>
-          <p class="intro-lede">사진 한 장과 소개 글을 남겨 주세요.
-            담당 교수만 봅니다. 다른 학생에게는 보이지 않습니다.</p>
+          <p class="intro-lede">담당 교수만 봅니다. 다른 학생에게는 보이지 않습니다.</p>
 
-          <div class="intro-pick" id="intro-pick">
+          <button class="intro-pick" id="intro-pick" type="button">
             <img class="intro-preview" id="intro-preview" alt="" hidden>
             <span class="intro-pick-say" id="intro-pick-say">
-              <b>사진을 넣어 주세요</b>
-              <small>아래 두 단추 중 하나를 누르세요</small>
+              <b>자기를 소개할 수 있는 사진을 올리세요</b>
+              <small>프로필 사진이 아니어도 상관없습니다</small>
+              <em>눌러서 고르기</em>
             </span>
-          </div>
-
-          <div class="intro-picks">
-            <button class="btn-line" id="intro-album" type="button">앨범에서 고르기</button>
-            <button class="btn-line" id="intro-cam-go" type="button">사진 찍기</button>
-          </div>
+          </button>
           <input id="intro-file" type="file" accept="image/*" hidden>
-          <input id="intro-cam" type="file" accept="image/*" capture="environment" hidden>
-
-          <p class="intro-tip">자기를 소개할 수 있는 사진(프로필 사진이 아니어도 상관없음)을 올리세요</p>
 
           <p class="intro-next" id="intro-next" hidden>
             사진이 들어갔습니다. 이제 아래에 소개 글을 적고 <b>제출하기</b> 를 누르세요. ↓
