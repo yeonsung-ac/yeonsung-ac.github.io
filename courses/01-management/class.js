@@ -868,8 +868,30 @@ $("p-roster").addEventListener("click", () => {
    강의실 와이파이에 서른 명이 한꺼번에 올리면 그대로 멈춘다.
    브라우저에서 긴 변 1200px 로 줄여 보내면 대개 200KB 안쪽이 된다. */
 
-/* 사진을 캔버스에 다시 그려 줄인다. 요즘 브라우저는 EXIF 회전을 알아서 맞춘다. */
+/* 사진을 줄인다.
+   폰 카메라 사진은 1200만 화소가 예사라, 통째로 Image 로 띄우면 기기에 따라
+   메모리가 모자라 브라우저가 페이지를 통째로 새로 고쳐 버린다. 그래서
+   createImageBitmap 으로 디코딩하면서 바로 줄이는 길을 먼저 쓴다. */
 async function shrink(file) {
+  // 1) 되도록 이 길로. 디코딩하면서 줄이므로 큰 사진을 통째로 펼치지 않는다.
+  if (typeof createImageBitmap === "function") {
+    try {
+      const probe = await createImageBitmap(file);
+      const s = Math.min(1, PHOTO_MAX / Math.max(probe.width, probe.height));
+      const w = Math.max(1, Math.round(probe.width * s));
+      const h = Math.max(1, Math.round(probe.height * s));
+      probe.close?.();
+      const bmp = await createImageBitmap(file, { resizeWidth: w, resizeHeight: h, resizeQuality: "high" });
+      const cv = document.createElement("canvas");
+      cv.width = w;
+      cv.height = h;
+      cv.getContext("2d").drawImage(bmp, 0, 0);
+      bmp.close?.();
+      return await toJpeg(cv);
+    } catch { /* 아래 길로 간다 */ }
+  }
+
+  // 2) 옛 길. 요즘 브라우저는 EXIF 회전을 알아서 맞춘다.
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise((ok, no) => {
@@ -885,11 +907,23 @@ async function shrink(file) {
     cv.width = w;
     cv.height = h;
     cv.getContext("2d").drawImage(img, 0, 0, w, h);
-    return await new Promise((ok, no) => cv.toBlob(
-      (b) => (b ? ok(b) : no(new Error("사진을 줄이지 못했습니다"))), "image/jpeg", 0.85));
+    return await toJpeg(cv);
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+function toJpeg(cv) {
+  return new Promise((ok, no) => cv.toBlob(
+    (b) => (b ? ok(b) : no(new Error("사진을 줄이지 못했습니다"))), "image/jpeg", 0.85));
+}
+
+/* 아무리 기다려도 끝나지 않는 일이 있다. 그냥 두면 화면이 조용히 굳는다. */
+function within(ms, work, whine) {
+  return Promise.race([
+    work,
+    new Promise((_, no) => setTimeout(() => no(new Error(whine)), ms)),
+  ]);
 }
 
 function renderIntro() {
@@ -937,29 +971,41 @@ $("intro-file").addEventListener("change", async (e) => {
   e.target.value = "";                       // 같은 사진을 다시 골라도 반응하도록
   if (!f) return;
   const err = $("intro-error");
+  const say = $("intro-pick-say");
   err.hidden = true;
 
-  if (!String(f.type || "").startsWith("image/")) {
-    err.textContent = "사진 파일만 됩니다."; err.hidden = false; return;
-  }
+  const fail = (m) => { err.textContent = m; err.hidden = false; };
+
+  // 카메라로 막 찍은 파일은 type 이 비어 오는 기기가 있다. 이름으로도 봐 준다.
+  const looksImage = String(f.type || "").startsWith("image/")
+    || /\.(jpe?g|png|gif|webp|heic|heif|bmp)$/i.test(f.name || "");
+  if (!looksImage) return fail("사진 파일만 됩니다. 앨범에서 골라 보세요.");
+
   if (f.size > PHOTO_RAW_MB * 1024 * 1024) {
-    err.textContent = `사진이 너무 큽니다. ${PHOTO_RAW_MB}MB 아래로 골라 주세요.`;
-    err.hidden = false; return;
+    return fail(`사진이 너무 큽니다 (${(f.size / 1024 / 1024).toFixed(1)}MB). ${PHOTO_RAW_MB}MB 아래로 골라 주세요.`);
   }
 
+  // 무엇이든 하고 있다는 것을 보여 준다. 조용히 흐려지기만 하면 멈춘 줄 안다.
+  const wasSaid = say.innerHTML;
+  say.hidden = false;
+  say.innerHTML = "<b>사진을 준비하는 중…</b><small>잠시만요</small>";
   $("intro-pick").classList.add("busy");
+
   try {
-    state.pickedPhoto = await shrink(f);
+    state.pickedPhoto = await within(25000, shrink(f),
+      "사진을 준비하다 시간이 지났습니다");
     const pv = $("intro-preview");
     if (pv.dataset.blob) URL.revokeObjectURL(pv.src);
     pv.src = URL.createObjectURL(state.pickedPhoto);
     pv.dataset.blob = "1";
     pv.hidden = false;
-    $("intro-pick-say").hidden = true;
+    say.hidden = true;
+    say.innerHTML = wasSaid;
+    toast(`사진 준비 끝 · ${Math.round(state.pickedPhoto.size / 1024)}KB`);
   } catch (ex) {
     state.pickedPhoto = null;
-    err.textContent = ex.message + ". 다른 사진으로 해 보세요.";
-    err.hidden = false;
+    say.innerHTML = wasSaid;
+    fail(ex.message + ". 앨범에 저장한 뒤 그 사진을 골라 보세요.");
   } finally {
     $("intro-pick").classList.remove("busy");
   }
