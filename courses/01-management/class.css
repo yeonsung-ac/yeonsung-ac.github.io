@@ -247,7 +247,7 @@
 
 .intro-pick{
   display:grid;place-items:center;position:relative;
-  width:100%;aspect-ratio:4/3;margin:0 0 18px;overflow:hidden;
+  width:100%;aspect-ratio:16/10;max-height:44vh;margin:0 0 18px;overflow:hidden;
   border:2px dashed var(--card-line);border-radius:13px;background:var(--soft);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
@@ -362,4 +362,14 @@ body.showing{overflow:hidden}
   .show-stage img{max-height:80vh;max-width:52vw}
   .show-stage figcaption{max-width:none;text-align:left}
   .show-who{justify-content:flex-start}
+}
+
+/* 사진 넣는 자리를 두 단추로 나눴다. 폰에서 카메라와 앨범을 헷갈리지 않게,
+   그리고 한쪽이 안 될 때 다른 쪽으로 갈 수 있게 하려는 것이다. */
+.intro-picks{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 18px}
+.intro-picks .btn-line{min-height:50px;font-size:.95rem}
+.intro-pick{cursor:default;margin-bottom:11px}
+.intro-next{
+  margin:0 0 18px;padding:12px 14px;border-radius:9px;
+  background:#e8f4ec;color:#1f6b45;font-size:.88rem;line-height:1.6;
 }

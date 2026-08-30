@@ -78,6 +78,7 @@ const state = {
   intro: null,       // 내 자기소개
   intros: [],        // 교수만 채운다
   pickedPhoto: null, // 아직 안 올린 사진 (줄여 놓은 것)
+  pickedType: null,  // 그 사진의 종류
 };
 
 /* ── 작은 도우미 ──────────────────────────── */
@@ -958,6 +959,7 @@ $("intro-edit").addEventListener("click", () => {
     pv.hidden = false;
     $("intro-pick-say").hidden = true;
   }
+  $("intro-next").hidden = true;
   renderIntro();
   $("intro-form").scrollIntoView({ behavior: "smooth", block: "start" });
 });
@@ -966,7 +968,16 @@ $("intro-say").addEventListener("input", (e) => {
   $("intro-n").textContent = String(e.target.value.length);
 });
 
-$("intro-file").addEventListener("change", async (e) => {
+$("intro-album").addEventListener("click", () => $("intro-file").click());
+$("intro-cam-go").addEventListener("click", () => $("intro-cam").click());
+$("intro-file").addEventListener("change", (e) => takePhoto(e));
+$("intro-cam").addEventListener("change", (e) => takePhoto(e));
+
+/* 사진을 받는다.
+   줄여서 올리는 것이 본래 길이다. 그런데 기기와 사진 형식은 가지가지라
+   줄이는 데 실패하는 일이 있다. 그때 손을 놓아 버리면 학생은 아무것도 못 낸다.
+   그래서 못 줄이면 원본 그대로라도 올린다. 안 되는 것보다 무거운 편이 낫다. */
+async function takePhoto(e) {
   const f = e.target.files?.[0];
   e.target.value = "";                       // 같은 사진을 다시 골라도 반응하도록
   if (!f) return;
@@ -985,31 +996,53 @@ $("intro-file").addEventListener("change", async (e) => {
     return fail(`사진이 너무 큽니다 (${(f.size / 1024 / 1024).toFixed(1)}MB). ${PHOTO_RAW_MB}MB 아래로 골라 주세요.`);
   }
 
-  // 무엇이든 하고 있다는 것을 보여 준다. 조용히 흐려지기만 하면 멈춘 줄 안다.
   const wasSaid = say.innerHTML;
   say.hidden = false;
   say.innerHTML = "<b>사진을 준비하는 중…</b><small>잠시만요</small>";
   $("intro-pick").classList.add("busy");
 
+  let blob = null;
+  let type = "image/jpeg";
   try {
-    state.pickedPhoto = await within(25000, shrink(f),
-      "사진을 준비하다 시간이 지났습니다");
-    const pv = $("intro-preview");
-    if (pv.dataset.blob) URL.revokeObjectURL(pv.src);
-    pv.src = URL.createObjectURL(state.pickedPhoto);
-    pv.dataset.blob = "1";
-    pv.hidden = false;
-    say.hidden = true;
-    say.innerHTML = wasSaid;
-    toast(`사진 준비 끝 · ${Math.round(state.pickedPhoto.size / 1024)}KB`);
-  } catch (ex) {
-    state.pickedPhoto = null;
-    say.innerHTML = wasSaid;
-    fail(ex.message + ". 앨범에 저장한 뒤 그 사진을 골라 보세요.");
-  } finally {
-    $("intro-pick").classList.remove("busy");
+    blob = await within(25000, shrink(f), "시간이 지났습니다");
+  } catch {
+    // 줄이지 못했다. 원본을 그대로 쓴다. 창고 규칙이 5MB 까지 받는다.
+    if (f.size <= 5 * 1024 * 1024) {
+      blob = f;
+      type = String(f.type || "").startsWith("image/") ? f.type : guessType(f.name);
+    }
   }
-});
+
+  if (!blob) {
+    say.innerHTML = wasSaid;
+    $("intro-pick").classList.remove("busy");
+    return fail("이 사진은 처리하지 못했습니다. 앨범에서 다른 사진을 골라 보세요.");
+  }
+
+  state.pickedPhoto = blob;
+  state.pickedType = type;
+
+  const pv = $("intro-preview");
+  if (pv.dataset.blob) URL.revokeObjectURL(pv.src);
+  pv.src = URL.createObjectURL(blob);
+  pv.dataset.blob = "1";
+  pv.hidden = false;
+  say.hidden = true;
+  say.innerHTML = wasSaid;
+  $("intro-next").hidden = false;
+  $("intro-pick").classList.remove("busy");
+  toast(`사진 준비 끝 · ${Math.round(blob.size / 1024)}KB`);
+}
+
+/* 파일 이름만 보고 종류를 짐작한다. 창고 규칙이 image/ 로 시작하기를 요구한다. */
+function guessType(name) {
+  const e = String(name || "").toLowerCase();
+  if (e.endsWith(".png")) return "image/png";
+  if (e.endsWith(".gif")) return "image/gif";
+  if (e.endsWith(".webp")) return "image/webp";
+  if (e.endsWith(".heic") || e.endsWith(".heif")) return "image/heic";
+  return "image/jpeg";
+}
 
 $("intro-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1031,7 +1064,8 @@ $("intro-form").addEventListener("submit", async (e) => {
     if (state.pickedPhoto) {
       path = `${INTROS}/${state.uid}/photo.jpg`;
       const r = storageRef(store, path);
-      await uploadBytes(r, state.pickedPhoto, { contentType: "image/jpeg" });
+      await uploadBytes(r, state.pickedPhoto,
+        { contentType: state.pickedType || "image/jpeg" });
       url = await getDownloadURL(r);
     }
 
@@ -1047,6 +1081,8 @@ $("intro-form").addEventListener("submit", async (e) => {
 
     writeLog({ kind: "intro", sid: state.me.sid, name: state.me.name });
     state.pickedPhoto = null;
+    state.pickedType = null;
+    $("intro-next").hidden = true;
     $("intro").dataset.editing = "";
     toast("자기소개를 냈습니다");
     renderIntro();
