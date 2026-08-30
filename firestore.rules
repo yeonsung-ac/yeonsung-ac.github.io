@@ -7,7 +7,7 @@ rules_version = '2';
 //   applications - 부트캠프 간편 신청  (yeonsung-ac.github.io/YouthLeap/)
 //   secrets      - 비밀글 본문         (게시판의 상담 분류 전용)
 //   submissions  - 과제 제출함         (yeonsung-ac.github.io/submit/)
-//   mgmt_quizzes / mgmt_answers / mgmt_log - 경영학원론 수업 퀴즈 (courses/01-management/)
+//   mgmt_quizzes / mgmt_answers / mgmt_log / mgmt_intros - 경영학원론 수업 (courses/01-management/)
 //
 // 이 파일 전체를 Firebase 콘솔 > Firestore Database > 규칙 탭에 붙여넣고 게시하세요.
 // 일부만 넣으면 나머지가 동작하지 않습니다.
@@ -165,6 +165,34 @@ service cloud.firestore {
       allow update: if false;
 
       allow delete: if isProfessor();
+    }
+
+    // 자기소개. 사진 한 장과 소개 글이다. 문서 이름이 곧 uid 라 한 사람이 하나만 갖는다.
+    // 답안과 달리 고칠 수 있게 열어 둔다. 성적이 아니라 소개라 오타를 스스로 고치는 편이 낫다.
+    // 학생끼리는 서로 못 본다. 낸 사람과 교수만 읽는다.
+    match /mgmt_intros/{introId} {
+      // 문서 이름이 곧 uid 라 이름만 봐도 주인을 안다. resource.data 를 보면
+      // 아직 내지 않은 학생은 문서가 없어 읽기가 막히고, 그 순간 화면이 굳는다.
+      allow read: if request.auth != null
+        && (introId == request.auth.uid || isProfessor());
+
+      allow create, update: if request.auth != null
+        && introId == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.sid is string
+        && request.resource.data.sid.size() > 0
+        && request.resource.data.sid.size() <= 20
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.photoUrl is string
+        && request.resource.data.photoUrl.size() <= 700;
+
+      allow delete: if isProfessor()
+        || (request.auth != null && introId == request.auth.uid);
     }
 
     match /mgmt_log/{logId} {

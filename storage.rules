@@ -35,6 +35,20 @@ service firebase.storage {
         || (request.auth != null && request.auth.uid == ownerId && withinSizeLimit());
     }
 
+    // mgmt_intros/{학생UID}/photo.jpg - 경영학원론 자기소개 사진.
+    // 브라우저에서 긴 변 1600px JPEG 으로 줄여 올리므로 한 장이 1MB 를 넘지 않는다.
+    // 넉넉히 5MB 까지만 받는다. 낸 사람과 교수만 본다.
+    match /mgmt_intros/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
     // 위에서 허용하지 않은 경로는 전부 막는다.
     match /{allPaths=**} {
       allow read, write: if false;

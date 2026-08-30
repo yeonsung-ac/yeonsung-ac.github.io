@@ -226,3 +226,129 @@
 .logtable td.n{font-variant-numeric:tabular-nums}
 .logtable td.dim{color:#9aa29a;font-size:.78rem}
 .logtable tr.odd{background:#fff8f6}
+
+/* ── 문패의 교수 통로 ─────────────────────── */
+.gate-prof{
+  margin:16px 0 0;padding-top:15px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.86rem;text-align:center;
+}
+.gate-prof button{
+  margin-left:6px;padding:8px 14px;min-height:40px;
+  border:1px solid var(--line);border-radius:999px;background:#fff;
+  color:inherit;font:inherit;font-weight:700;cursor:pointer;
+}
+.gate-prof button:hover{border-color:var(--navy);color:var(--navy)}
+
+/* ── 자기소개 ─────────────────────────────────
+   학생은 거의 다 휴대폰이다. 한 줄로 세우고, 손가락이 닿는 크기로 둔다.
+   입력칸 글씨는 16px 밑으로 내리지 않는다. iOS 가 화면을 확대해 버린다. */
+.intro{margin:0 0 34px}
+.intro-lede{margin:0 0 16px;color:var(--muted);font-size:.9rem;line-height:1.6}
+
+.intro-pick{
+  display:grid;place-items:center;position:relative;
+  width:100%;aspect-ratio:4/3;margin:0 0 18px;overflow:hidden;
+  border:2px dashed var(--card-line);border-radius:13px;background:var(--soft);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.intro-pick:hover,.intro-pick:focus-within{border-color:var(--navy)}
+.intro-pick.busy{opacity:.55;pointer-events:none}
+.intro-preview{width:100%;height:100%;object-fit:cover;display:block}
+.intro-pick-say{display:grid;gap:5px;justify-items:center;text-align:center;padding:20px}
+.intro-pick-say b{font-size:1.02rem}
+.intro-pick-say small{color:var(--muted);font-size:.82rem}
+
+.intro-label{display:block;margin:0 0 7px;font-weight:700;font-size:.9rem}
+.intro-form textarea{
+  width:100%;box-sizing:border-box;padding:14px;
+  border:1px solid var(--card-line);border-radius:11px;background:#fff;
+  font:inherit;font-size:16px;line-height:1.65;resize:vertical;
+}
+.intro-form textarea:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:transparent}
+.intro-count{margin:7px 0 0;text-align:right;color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.intro-error{margin:12px 0 0;padding:11px 14px;border-radius:9px;background:#fdecea;color:#a2321f;font-size:.88rem}
+.intro-form .btn-go{margin-top:16px;min-height:52px;font-size:1rem}
+
+.intro-done{display:grid;grid-template-columns:132px 1fr;gap:16px;align-items:start;
+  padding:16px;border:1px solid var(--card-line);border-radius:13px;background:#fff}
+.intro-photo{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block}
+.intro-tag{margin:0 0 6px;color:var(--ok);font:700 .74rem/1 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.intro-text{margin:0 0 10px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.intro-when{margin:0 0 12px;color:var(--muted);font-size:.79rem}
+@media(max-width:520px){
+  .intro-done{grid-template-columns:1fr;gap:13px}
+  .intro-photo{max-width:180px}
+}
+
+/* ── 교수 화면: 낸 사람 훑어보기 ──────────── */
+.intro-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:0 0 16px}
+.prof-count{margin:0;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:13px}
+.cards .card{
+  display:grid;gap:9px;padding:11px;text-align:left;cursor:pointer;
+  border:1px solid var(--card-line);border-radius:12px;background:#fff;font:inherit;
+}
+.cards .card:hover{border-color:var(--navy);box-shadow:0 3px 14px rgba(15,26,42,.09)}
+.cards .card img,.card-none{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;display:block;background:var(--soft)}
+.card-say{display:grid;gap:4px;min-width:0}
+.card-who{font-size:.92rem}
+.card-who b{letter-spacing:-.02em}
+.card-text{color:var(--muted);font-size:.8rem;line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ── 발표 화면 ────────────────────────────────
+   강의실 스크린에 띄운다. 뒷자리에서도 읽혀야 하므로 글씨를 화면 폭에 맞춰 키운다. */
+body.showing{overflow:hidden}
+.show{
+  position:fixed;inset:0;z-index:100;background:#0f1a2a;color:#fff;
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+  gap:clamp(8px,2vw,28px);padding:clamp(14px,3vh,34px);
+}
+.show-stage{margin:0;display:grid;gap:clamp(12px,2.4vh,26px);justify-items:center;min-width:0}
+.show-stage img{
+  max-width:100%;max-height:64vh;object-fit:contain;display:block;
+  border-radius:12px;background:#1a2740;box-shadow:0 10px 40px rgba(0,0,0,.45);
+}
+.show-stage figcaption{max-width:min(1100px,92vw);text-align:center}
+.show-who{margin:0 0 clamp(6px,1.2vh,14px);display:flex;gap:.6em;justify-content:center;align-items:baseline;flex-wrap:wrap}
+.show-who b{font-size:clamp(1.5rem,3.6vw,3rem);letter-spacing:-.04em}
+.show-who span{color:#8fa3c0;font-size:clamp(.9rem,1.6vw,1.4rem);font-variant-numeric:tabular-nums}
+.show-text{margin:0;color:#dfe7f2;line-height:1.65;white-space:pre-wrap;word-break:break-word;
+  font-size:clamp(.95rem,1.8vw,1.7rem)}
+
+.show-arm{
+  width:clamp(46px,5vw,72px);height:clamp(46px,5vw,72px);
+  border:0;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;
+  font-size:clamp(26px,3vw,40px);line-height:1;cursor:pointer;
+}
+.show-arm:hover:not(:disabled){background:rgba(255,255,255,.22)}
+.show-arm:disabled{opacity:.2;cursor:default}
+.show-x{
+  position:absolute;top:clamp(10px,2vh,22px);right:clamp(12px,2vw,26px);
+  width:46px;height:46px;border:0;border-radius:50%;
+  background:rgba(255,255,255,.1);color:#fff;font-size:26px;line-height:1;cursor:pointer;
+}
+.show-x:hover{background:rgba(255,255,255,.22)}
+.show-n{
+  position:absolute;left:0;right:0;bottom:clamp(8px,1.6vh,18px);margin:0;
+  text-align:center;color:#7e93b2;font-size:.9rem;font-variant-numeric:tabular-nums;
+}
+@media(max-width:640px){
+  .show{grid-template-columns:1fr;grid-template-rows:1fr auto;padding:16px 14px 54px}
+  .show-stage img{max-height:46vh}
+  .show-arm{position:absolute;bottom:40px}
+  .show-arm.prev{left:16px}
+  .show-arm.next{right:16px}
+}
+
+/* 강의실 스크린은 대개 16:9 가로다. 사진을 가운데 세워 두면 좌우가 크게 남는다.
+   넓은 화면에서는 사진을 왼쪽에 키워 놓고 글을 오른쪽에 세운다. */
+@media(min-width:1000px) and (orientation:landscape){
+  .show-stage{
+    grid-template-columns:auto minmax(280px,1fr);align-items:center;
+    gap:clamp(24px,3vw,52px);width:100%;max-width:1700px;margin:0 auto;
+  }
+  .show-stage img{max-height:80vh;max-width:52vw}
+  .show-stage figcaption{max-width:none;text-align:left}
+  .show-who{justify-content:flex-start}
+}

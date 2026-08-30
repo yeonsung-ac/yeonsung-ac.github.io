@@ -32,16 +32,28 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
+
 import { firebaseConfig } from "./firebase-config.js";
 import { isProfessorUser } from "../../professor.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const store = getStorage(app);
 
 const QUIZZES = "mgmt_quizzes";
 const ANSWERS = "mgmt_answers";
 const LOGS = "mgmt_log";
+const INTROS = "mgmt_intros";        // 자기소개. 문서 이름이 곧 uid 라 한 사람 한 장이다.
+const PHOTO_MAX = 1600;              // 긴 변. 강의실 스크린(1920)에 띄워도 견딘다
+const PHOTO_RAW_MB = 15;             // 고르기 전 원본이 이보다 크면 받지 않는다
+const SAY_MAX = 500;
 const PASS = "0909";                 // 문패다. 소스에 드러나므로 성적의 자물쇠로 쓰지 않는다.
 const KEY = "mgmt-who";
 const SIDS = "mgmt-sids";            // 이 기기가 지금까지 쓴 학번들
@@ -62,6 +74,9 @@ const state = {
   solving: null,
   making: false,
   logs: [],
+  intro: null,       // 내 자기소개
+  intros: [],        // 교수만 채운다
+  pickedPhoto: null, // 아직 안 올린 사진 (줄여 놓은 것)
 };
 
 /* ── 작은 도우미 ──────────────────────────── */
@@ -157,7 +172,27 @@ $("gate-form").addEventListener("submit", (e) => {
   enterRoom();
 });
 
-$("who-out").addEventListener("click", () => {
+/* 교수는 학생 칸을 채우지 않는다. 구글 로그인만으로 지나간다.
+   암호를 하나 더 만들어 봐야 학생도 아는 값이 되고, 서버 규칙은 어차피
+   구글 이메일만 본다. 그래서 문패 옆에 통로를 따로 낸다. */
+$("gate-prof").addEventListener("click", async () => {
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (e) {
+    const err = $("gate-error");
+    err.textContent = e.code === "auth/popup-closed-by-user"
+      ? "로그인 창을 닫으셨습니다." : "로그인하지 못했습니다.";
+    err.hidden = false;
+  }
+});
+
+$("who-out").addEventListener("click", async () => {
+  if (state.me?.prof) {
+    if (!confirm("교수 로그인을 풉니다.")) return;
+    await signOut(auth);
+    location.reload();
+    return;
+  }
   if (!confirm("나가면 다음에 이름과 학번을 다시 넣어야 합니다.")) return;
   try { localStorage.removeItem(KEY); } catch { /* 그만 */ }
   state.me = null;
@@ -225,8 +260,16 @@ onAuthStateChanged(auth, async (user) => {
   $("prof").hidden = !state.isProfessor;
   $("prof-login").hidden = state.isProfessor;
   if (state.isProfessor) $("prof-who").textContent = user.email;
+  // 교수는 문패를 지나지 않고 바로 들어온다. 강의실 컴퓨터에 이름이 남지
+  // 않도록 이 이름표는 localStorage 에 저장하지 않는다.
+  if (state.isProfessor && !state.me) {
+    state.me = { name: user.displayName || "교수", sid: "담당", prof: true };
+    enterRoom();
+  }
+
   watchQuizzes();
   watchAnswers();
+  watchIntros();
   if (state.isProfessor) watchLogs();
   render();
 });
@@ -260,6 +303,31 @@ function watchAnswers() {
       render();
     },
     () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
+  );
+}
+
+/* 자기소개.
+   학생은 규칙상 남의 것을 목록으로 못 읽는다. 그래서 학생은 자기 문서 하나만,
+   교수는 컬렉션 전체를 지켜본다. 질의를 나누지 않으면 학생 쪽이 통째로 막힌다. */
+let stopIntros = null;
+
+function watchIntros() {
+  if (stopIntros) stopIntros();
+  if (state.isProfessor) {
+    stopIntros = onSnapshot(
+      collection(db, INTROS),
+      (snap) => {
+        state.intros = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (state.view === "intro") renderIntroAll();
+      },
+      () => { /* 그만 */ }
+    );
+    return;
+  }
+  stopIntros = onSnapshot(
+    doc(db, INTROS, state.uid),
+    (snap) => { state.intro = snap.exists() ? snap.data() : null; renderIntro(); },
+    () => { /* 아직 없거나 못 읽는 것은 정상이다 */ }
   );
 }
 
@@ -335,6 +403,10 @@ function render() {
   $("room").hidden = false;
   $("solve").hidden = true;
 
+  // QR 은 강의실 스크린에 띄우는 물건이다. 학생은 그것을 찍고 들어온 사람이라
+  // 다시 보여 줄 까닭이 없다. 좁은 폰 화면에서 첫 판을 통째로 차지해 버린다.
+  $("qr-band").hidden = !state.isProfessor;
+
   const open = state.quizzes.filter((q) => q.state === "open");
   const liveOne = open.find((q) => q.mode === "live" && !state.mine[q.id]);
 
@@ -366,6 +438,8 @@ function render() {
       ${pill}
     </button>`;
   }).join("");
+
+  renderIntro();
 
   if (state.isProfessor) renderProf();
 }
@@ -784,6 +858,252 @@ $("p-roster").addEventListener("click", () => {
   const list = [...who.entries()].sort((a, b) => a[0].localeCompare(b[0]))
     .map(([sid, name]) => `${sid}  ${name}`).join("\n");
   alert(`참여자 ${who.size}명\n\n${list}`);
+});
+
+
+/* ── 자기소개 ─────────────────────────────────
+   사진 한 장과 소개 글. 학생은 거의 다 휴대폰으로 들어오므로
+   사진은 원본 그대로 올리지 않는다. 요즘 폰 사진은 한 장에 5MB 를 넘고,
+   강의실 와이파이에 서른 명이 한꺼번에 올리면 그대로 멈춘다.
+   브라우저에서 긴 변 1200px 로 줄여 보내면 대개 200KB 안쪽이 된다. */
+
+/* 사진을 캔버스에 다시 그려 줄인다. 요즘 브라우저는 EXIF 회전을 알아서 맞춘다. */
+async function shrink(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => no(new Error("사진을 읽지 못했습니다"));
+      i.src = url;
+    });
+    const s = Math.min(1, PHOTO_MAX / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * s));
+    const h = Math.max(1, Math.round(img.height * s));
+    const cv = document.createElement("canvas");
+    cv.width = w;
+    cv.height = h;
+    cv.getContext("2d").drawImage(img, 0, 0, w, h);
+    return await new Promise((ok, no) => cv.toBlob(
+      (b) => (b ? ok(b) : no(new Error("사진을 줄이지 못했습니다"))), "image/jpeg", 0.85));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function renderIntro() {
+  const box = $("intro");
+  if (!box) return;
+
+  // 교수는 낼 것이 없다. 모아보기로 본다.
+  if (!state.me || state.isProfessor) { box.hidden = true; return; }
+  box.hidden = false;
+
+  const got = state.intro;
+  const editing = box.dataset.editing === "1";
+  $("intro-done").hidden = !got || editing;
+  $("intro-form").hidden = Boolean(got) && !editing;
+
+  if (got && !editing) {
+    $("intro-photo").src = got.photoUrl || "";
+    $("intro-photo").hidden = !got.photoUrl;
+    $("intro-text").textContent = got.text || "";
+    const when = got.updatedAt?.toDate ? got.updatedAt.toDate() : null;
+    $("intro-when").textContent = when ? when.toLocaleString("ko-KR") + " 에 냈습니다" : "";
+  }
+}
+
+$("intro-edit").addEventListener("click", () => {
+  $("intro").dataset.editing = "1";
+  $("intro-say").value = state.intro?.text || "";
+  $("intro-n").textContent = String($("intro-say").value.length);
+  const pv = $("intro-preview");
+  if (state.intro?.photoUrl) {
+    pv.src = state.intro.photoUrl;
+    pv.hidden = false;
+    $("intro-pick-say").hidden = true;
+  }
+  renderIntro();
+  $("intro-form").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+$("intro-say").addEventListener("input", (e) => {
+  $("intro-n").textContent = String(e.target.value.length);
+});
+
+$("intro-file").addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";                       // 같은 사진을 다시 골라도 반응하도록
+  if (!f) return;
+  const err = $("intro-error");
+  err.hidden = true;
+
+  if (!String(f.type || "").startsWith("image/")) {
+    err.textContent = "사진 파일만 됩니다."; err.hidden = false; return;
+  }
+  if (f.size > PHOTO_RAW_MB * 1024 * 1024) {
+    err.textContent = `사진이 너무 큽니다. ${PHOTO_RAW_MB}MB 아래로 골라 주세요.`;
+    err.hidden = false; return;
+  }
+
+  $("intro-pick").classList.add("busy");
+  try {
+    state.pickedPhoto = await shrink(f);
+    const pv = $("intro-preview");
+    if (pv.dataset.blob) URL.revokeObjectURL(pv.src);
+    pv.src = URL.createObjectURL(state.pickedPhoto);
+    pv.dataset.blob = "1";
+    pv.hidden = false;
+    $("intro-pick-say").hidden = true;
+  } catch (ex) {
+    state.pickedPhoto = null;
+    err.textContent = ex.message + ". 다른 사진으로 해 보세요.";
+    err.hidden = false;
+  } finally {
+    $("intro-pick").classList.remove("busy");
+  }
+});
+
+$("intro-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("intro-error");
+  const btn = $("intro-send");
+  const say = $("intro-say").value.trim().slice(0, SAY_MAX);
+  const fail = (m) => { err.textContent = m; err.hidden = false; };
+  err.hidden = true;
+
+  if (!state.uid) return fail("아직 연결 중입니다. 잠시 뒤에 다시 눌러 주세요.");
+  if (!state.pickedPhoto && !state.intro?.photoUrl) return fail("사진을 한 장 골라 주세요.");
+  if (say.length < 10) return fail("소개 글을 열 글자 이상 적어 주세요.");
+
+  btn.disabled = true;
+  btn.textContent = "보내는 중…";
+  try {
+    let url = state.intro?.photoUrl || "";
+    let path = state.intro?.photoPath || "";
+    if (state.pickedPhoto) {
+      path = `${INTROS}/${state.uid}/photo.jpg`;
+      const r = storageRef(store, path);
+      await uploadBytes(r, state.pickedPhoto, { contentType: "image/jpeg" });
+      url = await getDownloadURL(r);
+    }
+
+    await setDoc(doc(db, INTROS, state.uid), {
+      uid: state.uid,
+      name: state.me.name,
+      sid: state.me.sid,
+      text: say,
+      photoUrl: url,
+      photoPath: path,
+      updatedAt: serverTimestamp(),
+    });
+
+    writeLog({ kind: "intro", sid: state.me.sid, name: state.me.name });
+    state.pickedPhoto = null;
+    $("intro").dataset.editing = "";
+    toast("자기소개를 냈습니다");
+    renderIntro();
+  } catch (ex) {
+    fail("보내지 못했습니다. 연결을 확인하고 다시 눌러 주세요. (" + (ex.code || ex.message) + ")");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "제출하기";
+  }
+});
+
+/* 교수 화면 — 누가 냈는지 훑어보는 곳.
+   여기서 한 명을 누르면 발표 화면이 열린다. 수업에서는 이 화면을 강의실
+   스크린에 띄워 놓고 학생이 발표하는 동안 그 사진을 크게 보여 준다. */
+function introRows() {
+  return [...state.intros].sort((a, b) => String(a.sid).localeCompare(String(b.sid)));
+}
+
+function renderIntroAll() {
+  const rows = introRows();
+  const body = $("prof-body");
+  if (!rows.length) {
+    body.innerHTML = `<p class="empty">아직 낸 학생이 없습니다.</p>`;
+    return;
+  }
+  body.innerHTML = `<div class="intro-bar">
+      <p class="prof-count">${rows.length}명이 냈습니다</p>
+      <button class="btn-go" id="show-start" type="button">발표 화면으로 띄우기</button>
+    </div>
+    <div class="cards">${rows.map((r, i) => `
+      <button class="card" type="button" data-i="${i}">
+        ${r.photoUrl ? `<img src="${esc(r.photoUrl)}" alt="" loading="lazy">` : `<span class="card-none"></span>`}
+        <span class="card-say">
+          <span class="card-who"><b>${esc(r.name)}</b> ${esc(r.sid)}</span>
+          <span class="card-text">${esc(r.text)}</span>
+        </span>
+      </button>`).join("")}</div>`;
+
+  $("show-start").addEventListener("click", () => openShow(0));
+  body.querySelectorAll("[data-i]").forEach((el) => {
+    el.addEventListener("click", () => openShow(Number(el.dataset.i)));
+  });
+}
+
+$("p-intro").addEventListener("click", () => {
+  state.view = "intro";
+  renderIntroAll();
+});
+
+/* ── 발표 화면 ────────────────────────────────
+   강의실 스크린용이라 사진을 화면 높이에 맞춰 크게 놓고 글씨를 키웠다.
+   진행은 화살표 키로 한다. 발표 중에 마우스를 찾는 것보다 그쪽이 빠르다. */
+let showAt = 0;
+
+function openShow(i) {
+  const rows = introRows();
+  if (!rows.length) { toast("아직 낸 학생이 없습니다", true); return; }
+  showAt = Math.max(0, Math.min(i, rows.length - 1));
+  $("show").hidden = false;
+  document.body.classList.add("showing");
+  paintShow();
+}
+
+function paintShow() {
+  const rows = introRows();
+  const r = rows[showAt];
+  if (!r) { closeShow(); return; }
+  const img = $("show-photo");
+  img.src = r.photoUrl || "";
+  img.hidden = !r.photoUrl;
+  img.alt = r.name + " 학생이 낸 사진";
+  $("show-name").textContent = r.name;
+  $("show-sid").textContent = r.sid;
+  $("show-text").textContent = r.text || "";
+  $("show-n").textContent = `${showAt + 1} / ${rows.length}`;
+  $("show-prev").disabled = showAt === 0;
+  $("show-next").disabled = showAt >= rows.length - 1;
+}
+
+function stepShow(d) {
+  const rows = introRows();
+  const next = showAt + d;
+  if (next < 0 || next >= rows.length) return;
+  showAt = next;
+  paintShow();
+}
+
+function closeShow() {
+  $("show").hidden = true;
+  document.body.classList.remove("showing");
+}
+
+$("show-x").addEventListener("click", closeShow);
+$("show-prev").addEventListener("click", () => stepShow(-1));
+$("show-next").addEventListener("click", () => stepShow(1));
+
+document.addEventListener("keydown", (e) => {
+  if ($("show").hidden) return;
+  if (e.key === "Escape") { closeShow(); return; }
+  if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
+    e.preventDefault(); stepShow(1);
+  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    e.preventDefault(); stepShow(-1);
+  }
 });
 
 /* ── 시작 ─────────────────────────────────── */
