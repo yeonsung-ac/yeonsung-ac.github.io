@@ -373,3 +373,4 @@ body.showing{overflow:hidden}
   margin:0 0 18px;padding:12px 14px;border-radius:9px;
   background:#e8f4ec;color:#1f6b45;font-size:.88rem;line-height:1.6;
 }
+.intro-tip{margin:0 0 18px;color:var(--muted);font-size:.86rem;line-height:1.6}
