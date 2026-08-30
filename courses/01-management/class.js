@@ -37,6 +37,7 @@ import {
   ref as storageRef,
   uploadBytes,
   getDownloadURL,
+  deleteObject,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -1030,18 +1031,44 @@ function renderIntroAll() {
       <button class="btn-go" id="show-start" type="button">발표 화면으로 띄우기</button>
     </div>
     <div class="cards">${rows.map((r, i) => `
-      <button class="card" type="button" data-i="${i}">
-        ${r.photoUrl ? `<img src="${esc(r.photoUrl)}" alt="" loading="lazy">` : `<span class="card-none"></span>`}
-        <span class="card-say">
-          <span class="card-who"><b>${esc(r.name)}</b> ${esc(r.sid)}</span>
-          <span class="card-text">${esc(r.text)}</span>
-        </span>
-      </button>`).join("")}</div>`;
+      <div class="card-wrap">
+        <button class="card" type="button" data-i="${i}">
+          ${r.photoUrl ? `<img src="${esc(r.photoUrl)}" alt="" loading="lazy">` : `<span class="card-none"></span>`}
+          <span class="card-say">
+            <span class="card-who"><b>${esc(r.name)}</b> ${esc(r.sid)}</span>
+            <span class="card-text">${esc(r.text)}</span>
+          </span>
+        </button>
+        <button class="card-x" type="button" data-del="${esc(r.id)}"
+                title="${esc(r.name)} 학생이 낸 것을 지웁니다" aria-label="지우기">×</button>
+      </div>`).join("")}</div>`;
 
   $("show-start").addEventListener("click", () => openShow(0));
   body.querySelectorAll("[data-i]").forEach((el) => {
     el.addEventListener("click", () => openShow(Number(el.dataset.i)));
   });
+  body.querySelectorAll("[data-del]").forEach((el) => {
+    el.addEventListener("click", () => dropIntro(el.dataset.del));
+  });
+}
+
+/* 시험 삼아 넣은 것, 잘못 낸 것을 교수가 치운다.
+   장부와 창고 양쪽에서 지운다. 장부만 지우면 사진이 창고에 남아 쌓인다. */
+async function dropIntro(id) {
+  const r = state.intros.find((x) => x.id === id);
+  if (!r) return;
+  if (!confirm(`${r.name} (${r.sid}) 학생이 낸 자기소개를 지웁니다.
+되돌릴 수 없습니다.`)) return;
+  try {
+    if (r.photoPath) {
+      try { await deleteObject(storageRef(store, r.photoPath)); }
+      catch { /* 사진이 이미 없어도 장부는 지운다 */ }
+    }
+    await deleteDoc(doc(db, INTROS, id));
+    toast("지웠습니다");
+  } catch (e) {
+    toast("지우지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
 }
 
 $("p-intro").addEventListener("click", () => {
