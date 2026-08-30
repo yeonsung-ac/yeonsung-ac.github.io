@@ -1,24 +1,19 @@
 rules_version = '2';
 
 // 연성대학교 이현구 교수 홈페이지 Storage 규칙
-//
 // 과제 제출함(yeonsung-ac.github.io/submit/)이 쓰는 파일 보관 규칙이다.
-// 이 파일 전체를 Firebase 콘솔 > Storage > 규칙 탭에 붙여넣고 게시하세요.
-//
-// 교수 판별은 구글 로그인 이메일로 한다. 아래 isProfessor() 의 주소 목록과
-// professor.js 의 PROFESSOR_EMAILS 가 같아야 한다. 계정을 추가하려면 양쪽에 함께 적는다.
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // 구글이 확인해 준 이메일만 인정한다.
+    // 교수 판별은 구글 로그인 이메일로 한다. professor.js 의 목록과 같아야 한다.
     function isProfessor() {
       return request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.email in ['dasahee@yeonsung.ac.kr'];
     }
 
-    // 파일 하나당 최대 크기. submit/settings.js 의 MAX_FILE_MB 와 같은 값이어야 한다.
+    // 파일 하나당 최대 50MB. submit/settings.js 의 MAX_FILE_MB 와 같은 값이어야 한다.
     function withinSizeLimit() {
       return request.resource == null || request.resource.size <= 50 * 1024 * 1024;
     }
