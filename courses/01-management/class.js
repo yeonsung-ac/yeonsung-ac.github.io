@@ -1416,12 +1416,23 @@ function renderFilms() {
   });
 }
 
+/* 누르는 순간 화면부터 바꾼다.
+   서버에 다녀오기를 기다리면 강의실 회선에서 반 박자씩 늦게 반응해,
+   눌린 것인지 아닌지 알 수 없어 두 번 세 번 누르게 된다.
+   먼저 바꿔 보여 주고, 서버가 거절하면 되돌린다. */
 async function flipFilm(id) {
-  const now = state.films[id]?.open !== false;
+  const was = state.films[id];
+  const now = was?.open !== false;
+
+  state.films[id] = { ...(was || {}), open: !now };
+  renderFilms();
+
   try {
     await setDoc(doc(db, FILMS_C, id), { open: !now, at: serverTimestamp() });
     toast(now ? "학생에게 감췄습니다" : "학생에게 공개했습니다");
   } catch (e) {
+    if (was === undefined) delete state.films[id]; else state.films[id] = was;
+    renderFilms();
     toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true);
   }
 }
@@ -1429,12 +1440,19 @@ async function flipFilm(id) {
 async function flipAll(open) {
   const word = open ? "모두 공개" : "모두 비공개";
   if (!confirm(`${FILMS.length}강을 ${word}로 바꿉니다.`)) return;
+
+  const was = { ...state.films };
+  FILMS.forEach((f, i) => { state.films[filmId(i)] = { open }; });
+  renderFilms();
+
   try {
     for (let i = 0; i < FILMS.length; i++) {
       await setDoc(doc(db, FILMS_C, filmId(i)), { open, at: serverTimestamp() });
     }
     toast(word + "로 바꿨습니다");
   } catch (e) {
+    state.films = was;
+    renderFilms();
     toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true);
   }
 }

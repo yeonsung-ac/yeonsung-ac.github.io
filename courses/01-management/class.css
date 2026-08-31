@@ -489,3 +489,6 @@ body.showing{overflow:hidden}
   .film-acts{padding:0 10px 0 4px}
   .film-eye{min-width:62px;padding:8px 9px;font-size:.74rem}
 }
+/* 눌린 것이 손끝에도 보이게. 색만 바뀌면 놓치기 쉽다. */
+.film-eye{transition:background .14s,border-color .14s,color .14s,transform .08s}
+.film-eye:active{transform:scale(.94)}
