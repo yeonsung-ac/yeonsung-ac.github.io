@@ -492,3 +492,18 @@ body.showing{overflow:hidden}
 /* 눌린 것이 손끝에도 보이게. 색만 바뀌면 놓치기 쉽다. */
 .film-eye{transition:background .14s,border-color .14s,color .14s,transform .08s}
 .film-eye:active{transform:scale(.94)}
+/* 출석 안내.
+   놓치면 학생이 출석을 잃는 말이라 눈에 걸려야 한다. 다만 붉은색은 이 화면에서
+   '제출 실패', '학번 중복' 같은 잘못을 가리키는 데 쓰고 있어 여기 쓰면 그 신호가
+   흐려진다. 밝은 카드가 늘어선 사이에 어두운 판 하나를 놓으면 붉은색 못지않게
+   걸리면서, 오류가 아니라 안내로 읽힌다. */
+.films-warn{
+  margin:0 0 16px;padding:16px 20px;border-radius:11px;
+  background:var(--navy);color:#dfe7f2;
+}
+.films-warn p{margin:0;font-size:.9rem;line-height:1.7}
+.films-warn b{color:#fff;font-weight:700}
+.films-warn-tag{
+  margin:0 0 5px !important;color:var(--lime);
+  font:700 .68rem/1 Arial,sans-serif;letter-spacing:.14em;
+}
