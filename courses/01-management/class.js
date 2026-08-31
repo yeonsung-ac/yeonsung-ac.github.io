@@ -51,7 +51,26 @@ const store = getStorage(app);
 const QUIZZES = "mgmt_quizzes";
 const ANSWERS = "mgmt_answers";
 const LOGS = "mgmt_log";
-const INTROS = "mgmt_intros";        // 자기소개. 문서 이름이 곧 uid 라 한 사람 한 장이다.
+const FILMS_C = "mgmt_films";       // 강의 영상의 공개 여부. 교수만 고친다.
+const INTROS = "mgmt_intros";
+
+/* 강의 영상. 번호가 곧 순서이고, 썸네일 파일 이름(thumbs/01.jpg)도 이 순서를 따른다.
+   영상을 더하거나 뺄 때는 이 목록과 thumbs/make_thumbs.py 의 목록을 함께 고친다. */
+const FILMS = [
+  { v: "Ms46Os7YDOU", t: "경영학이란?" },
+  { v: "F5ssIeGTQRw", t: "기업이란?" },
+  { v: "mrqMTf_mxQE", t: "시장이란 무엇인가?" },
+  { v: "3rTdcbIeaqE", t: "고객과 소비자에 대한 이해" },
+  { v: "aSrDWh-61Gg", t: "시장과 고객에 대한 접근" },
+  { v: "cnCaVcOEPP0", t: "동기부여와 리더십" },
+  { v: "lD-CYKQug9k", t: "인적자원관리" },
+  { v: "Yl3SX1CfsQQ", t: "조직의 이해와 설계" },
+  { v: "ciev4GvU4gM", t: "회계와 재무의 이해" },
+  { v: "CBhGGjzyoGM", t: "금융시스템과 증권시장" },
+  { v: "rV7JOPq532o", t: "경영 전략의 이해" },
+  { v: "1BAEEq-wj5s", t: "글로벌 경영" },
+  { v: "1yBLCXtmRC4", t: "기업윤리와 책임" },
+];        // 자기소개. 문서 이름이 곧 uid 라 한 사람 한 장이다.
 const PHOTO_MAX = 1600;              // 긴 변. 강의실 스크린(1920)에 띄워도 견딘다
 const PHOTO_RAW_MB = 15;             // 고르기 전 원본이 이보다 크면 받지 않는다
 const SAY_MAX = 500;
@@ -83,10 +102,7 @@ const state = {
   introSort: "sid",  // sid | name | new
   introPage: 0,
   spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
-  introQ: "",        // 이름·학번 찾기
-  introSort: "sid",  // sid | new | name
-  introPage: 0,
-  spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
+  films: {},         // 강의 영상 공개 여부. 없으면 공개로 본다.
 };
 
 /* ── 작은 도우미 ──────────────────────────── */
@@ -286,6 +302,7 @@ onAuthStateChanged(auth, async (user) => {
   watchQuizzes();
   watchAnswers();
   watchIntros();
+  watchFilms();
   if (state.isProfessor) watchLogs();
   render();
 });
@@ -344,6 +361,25 @@ function watchIntros() {
     doc(db, INTROS, state.uid),
     (snap) => { state.intro = snap.exists() ? snap.data() : null; renderIntro(); },
     () => { /* 아직 없거나 못 읽는 것은 정상이다 */ }
+  );
+}
+
+/* 강의 영상 공개 여부.
+   문서가 없으면 공개로 본다. 열세 개를 일일이 켜 두어야 보이는 것보다,
+   기본은 보이고 감출 것만 꺼 두는 편이 손이 덜 간다. */
+let stopFilms = null;
+
+function watchFilms() {
+  if (stopFilms) return;
+  stopFilms = onSnapshot(
+    collection(db, FILMS_C),
+    (snap) => {
+      const got = {};
+      snap.docs.forEach((d) => { got[d.id] = d.data(); });
+      state.films = got;
+      renderFilms();
+    },
+    () => { /* 못 읽어도 기본값(공개)으로 보여 준다 */ }
   );
 }
 
@@ -457,6 +493,7 @@ function render() {
   }).join("");
 
   renderIntro();
+  renderFilms();
 
   if (state.isProfessor) renderProf();
 }
@@ -1326,6 +1363,84 @@ function introCsv() {
   URL.revokeObjectURL(a.href);
   toast(rows.length + "명 내려받았습니다");
 }
+
+
+/* ── 강의 영상 ────────────────────────────────
+   한 줄에 한 편. 썸네일에 제목이 들어 있고, 교수에게는 오른쪽에 공개 스위치가 붙는다.
+   학생에게는 공개된 것만 보인다. */
+const filmId = (i) => String(i + 1).padStart(2, "0");
+const filmOpen = (i) => state.films[filmId(i)]?.open !== false;
+
+function renderFilms() {
+  const box = $("films");
+  if (!box || !state.me) return;
+
+  const prof = state.isProfessor;
+  const seen = FILMS.map((f, i) => ({ ...f, i })).filter((f) => prof || filmOpen(f.i));
+  const shown = FILMS.filter((f, i) => filmOpen(i)).length;
+
+  box.hidden = seen.length === 0;
+  $("films-tools").hidden = !prof;
+  $("films-sub").textContent = prof
+    ? `모두 ${FILMS.length}강 · 학생에게 보이는 것 ${shown}강`
+    : `모두 ${seen.length}강 · 눌러서 유튜브에서 보기`;
+
+  $("film-list").innerHTML = seen.map((f) => {
+    const no = filmId(f.i);
+    const on = filmOpen(f.i);
+    return `<li class="film${prof && !on ? " off" : ""}">
+      <a class="film-go" href="https://youtu.be/${esc(f.v)}" target="_blank" rel="noopener noreferrer"
+         aria-label="제${f.i + 1}강 ${esc(f.t)} 유튜브에서 보기">
+        <span class="film-shot">
+          <img src="thumbs/${no}.jpg" alt="" loading="${f.i < 4 ? "eager" : "lazy"}"
+               width="800" height="450">
+          <span class="film-play" aria-hidden="true">▶</span>
+        </span>
+        <span class="film-copy">
+          <span class="film-no">제${f.i + 1}강</span>
+          <span class="film-title">${esc(f.t)}</span>
+        </span>
+      </a>
+      ${prof ? `<span class="film-acts">
+        <button class="film-eye${on ? " on" : ""}" type="button" data-film="${no}"
+                aria-pressed="${on}" title="${on ? "학생에게 보입니다" : "학생에게 감춰져 있습니다"}">
+          ${on ? "공개" : "비공개"}
+        </button>
+      </span>` : ""}
+    </li>`;
+  }).join("");
+
+  if (!prof) return;
+  $("film-list").querySelectorAll("[data-film]").forEach((el) => {
+    el.addEventListener("click", () => flipFilm(el.dataset.film));
+  });
+}
+
+async function flipFilm(id) {
+  const now = state.films[id]?.open !== false;
+  try {
+    await setDoc(doc(db, FILMS_C, id), { open: !now, at: serverTimestamp() });
+    toast(now ? "학생에게 감췄습니다" : "학생에게 공개했습니다");
+  } catch (e) {
+    toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+}
+
+async function flipAll(open) {
+  const word = open ? "모두 공개" : "모두 비공개";
+  if (!confirm(`${FILMS.length}강을 ${word}로 바꿉니다.`)) return;
+  try {
+    for (let i = 0; i < FILMS.length; i++) {
+      await setDoc(doc(db, FILMS_C, filmId(i)), { open, at: serverTimestamp() });
+    }
+    toast(word + "로 바꿨습니다");
+  } catch (e) {
+    toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+}
+
+$("films-all").addEventListener("click", () => flipAll(true));
+$("films-none").addEventListener("click", () => flipAll(false));
 
 /* ── 발표 화면 ────────────────────────────────
    강의실 스크린용이라 사진을 화면 높이에 맞춰 크게 놓고 글씨를 키웠다.

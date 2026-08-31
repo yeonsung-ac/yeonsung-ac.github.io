@@ -7,7 +7,7 @@ rules_version = '2';
 //   applications - 부트캠프 간편 신청  (yeonsung-ac.github.io/YouthLeap/)
 //   secrets      - 비밀글 본문         (게시판의 상담 분류 전용)
 //   submissions  - 과제 제출함         (yeonsung-ac.github.io/submit/)
-//   mgmt_quizzes / mgmt_answers / mgmt_log / mgmt_intros - 경영학원론 수업 (courses/01-management/)
+//   mgmt_quizzes / mgmt_answers / mgmt_log / mgmt_intros / mgmt_films - 경영학원론 수업 (courses/01-management/)
 //
 // 이 파일 전체를 Firebase 콘솔 > Firestore Database > 규칙 탭에 붙여넣고 게시하세요.
 // 일부만 넣으면 나머지가 동작하지 않습니다.
@@ -193,6 +193,18 @@ service cloud.firestore {
 
       allow delete: if isProfessor()
         || (request.auth != null && introId == request.auth.uid);
+    }
+
+    // 강의 영상의 공개 여부. 문서 이름은 강 번호(01~13)다.
+    // 목록 자체는 class.js 안에 있다. 여기에는 '학생에게 보일지'만 담는다.
+    // 문서가 없으면 화면은 공개로 본다. 열세 개를 일일이 켜 두게 하지 않으려는 것이다.
+    match /mgmt_films/{filmId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if isProfessor()
+        && request.resource.data.open is bool;
+
+      allow delete: if isProfessor();
     }
 
     match /mgmt_log/{logId} {
