@@ -427,3 +427,42 @@ body.showing{overflow:hidden}
   .lst-when{flex-basis:100%;order:3;padding-left:62px}
   .lst-acts{padding-right:7px}
 }
+
+/* ── 강의 영상 ────────────────────────────────
+   썸네일은 유튜브에서 바로 끌어온다. 영상 대표 이미지를 바꾸면 여기도 따라 바뀐다.
+   유튜브 썸네일은 4:3 안에 16:9 그림이 들어 있고 위아래에 검은 띠가 있다.
+   그 띠를 잘라내야 화면이 깔끔하다. */
+.films{margin:0 0 34px}
+.films-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+.films-head .block-title{margin:0}
+.films-sub{margin:0;color:var(--muted);font-size:.85rem}
+
+.film-list{list-style:none;display:grid;gap:16px;margin:0;padding:0;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.vid{display:grid;gap:9px;text-decoration:none;color:inherit}
+.vid-shot{
+  position:relative;display:block;overflow:hidden;
+  aspect-ratio:16/9;border-radius:11px;background:#0f1a2a;
+}
+/* 우리가 그린 그림이라 16:9 그대로다. 유튜브 것처럼 검은 띠를 밀어낼 일이 없다. */
+.vid-shot img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
+.vid:hover .vid-shot img,.vid:focus-visible .vid-shot img{transform:scale(1.05)}
+/* 그림 한가운데에 두면 제목을 가린다. 제목은 왼쪽 아래에 앉으므로
+   재생 표시는 오른쪽 아래 모서리로 비켜 둔다. */
+.vid-play{
+  position:absolute;right:10px;bottom:10px;
+  width:38px;height:38px;display:grid;place-items:center;border-radius:50%;
+  background:rgba(255,255,255,.16);color:#fff;font-size:12px;padding-left:2px;
+  backdrop-filter:blur(2px);transition:background .18s;
+}
+.vid:hover .vid-play{background:#c8462f}
+.vid-shot{isolation:isolate}
+.vid-copy{display:grid;gap:3px}
+.vid-no{color:#7c8a76;font:700 .7rem/1 Arial,sans-serif;letter-spacing:.12em}
+.vid-title{font-weight:700;font-size:.95rem;line-height:1.45;letter-spacing:-.02em}
+.vid:hover .vid-title{text-decoration:underline;text-underline-offset:3px}
+@media(max-width:520px){
+  .film-list{grid-template-columns:1fr 1fr;gap:13px}
+  .vid-title{font-size:.86rem}
+  .vid-play{width:30px;height:30px;font-size:10px;right:7px;bottom:7px}
+}
