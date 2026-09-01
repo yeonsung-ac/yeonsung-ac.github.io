@@ -2089,45 +2089,80 @@ $("tv-send").addEventListener("click", async () => {
 });
 
 /* 교수: 과제 만들기와 고치기.
-   묻는 것이 같으므로 한 통로로 둔다. 고칠 때는 지금 값을 먼저 채워 보여 준다. */
-async function askTask(old) {
-  const week = prompt("몇 주차 과제인가요?", old ? old.week : String(state.tasks.length + 1));
-  if (week === null) return null;
-  const title = prompt("과제 제목", old ? old.title : "");
-  if (title === null || !title.trim()) return null;
-  const guide = prompt("학생에게 보일 안내 (없으면 비워 두세요)", old ? (old.guide || "") : "");
-  if (guide === null) return null;
-  const due = prompt("마감일 (2026-09-15 처럼. 없으면 비워 두세요)", old ? (old.due || "") : "");
-  if (due === null) return null;
-  return {
-    week: String(week).trim(), title: title.trim(),
-    guide: guide.trim(), due: due.trim(),
-  };
+   창을 네 번 띄워 하나씩 묻지 않는다. 한 화면에서 다 넣고, 날짜는 달력에서 고른다.
+   손으로 치면 형식이 틀리기 쉽고, 틀리면 마감이 없는 것으로 넘어가 버린다. */
+let taskEditing = null;
+
+function openSheet(t) {
+  taskEditing = t;
+  $("tsheet-title").textContent = t ? "과제 고치기" : "과제 내기";
+  $("ts-save").textContent = t ? "고치기" : "만들기";
+  $("ts-week").value = t ? t.week : String(state.tasks.length + 1);
+  $("ts-title").value = t ? t.title : "";
+  $("ts-guide").value = t ? (t.guide || "") : "";
+  $("ts-due").value = t ? (t.due || "") : "";
+  $("ts-nodue").checked = t ? !t.due : false;
+  $("ts-due").disabled = $("ts-nodue").checked;
+  $("ts-error").hidden = true;
+  $("tsheet").hidden = false;
+  setTimeout(() => $("ts-title").focus(), 60);
 }
 
-$("p-task-new").addEventListener("click", async () => {
-  const got = await askTask(null);
-  if (!got) return;
+function closeSheet() {
+  $("tsheet").hidden = true;
+  taskEditing = null;
+}
+
+$("ts-cancel").addEventListener("click", closeSheet);
+$("tsheet").addEventListener("click", (e) => { if (e.target.id === "tsheet") closeSheet(); });
+$("ts-nodue").addEventListener("change", (e) => {
+  $("ts-due").disabled = e.target.checked;
+  if (e.target.checked) $("ts-due").value = "";
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("tsheet").hidden) closeSheet();
+});
+
+$("tsheet-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("ts-error");
+  const btn = $("ts-save");
+  const fail = (m) => { err.textContent = m; err.hidden = false; };
+  err.hidden = true;
+
+  const week = String($("ts-week").value).trim();
+  const title = $("ts-title").value.trim();
+  const guide = $("ts-guide").value.trim();
+  const due = $("ts-nodue").checked ? "" : $("ts-due").value.trim();
+
+  if (!week) return fail("몇 주차인지 넣어 주세요.");
+  if (!title) return fail("제목을 넣어 주세요.");
+
+  btn.disabled = true;
   try {
-    await addDoc(collection(db, TASKS), { ...got, open: true, at: serverTimestamp() });
-    toast("과제를 냈습니다");
-  } catch (e) {
-    toast("만들지 못했습니다 (" + (e.code || e.message) + ")", true);
+    if (taskEditing) {
+      // open 은 건드리지 않는다. 고친다고 열리거나 닫히면 놀란다.
+      await setDoc(doc(db, TASKS, taskEditing.id),
+                   { week, title, guide, due, at: serverTimestamp() }, { merge: true });
+      toast("과제를 고쳤습니다");
+    } else {
+      await addDoc(collection(db, TASKS),
+                   { week, title, guide, due, open: true, at: serverTimestamp() });
+      toast("과제를 냈습니다");
+    }
+    closeSheet();
+  } catch (ex) {
+    fail((taskEditing ? "고치지" : "만들지") + " 못했습니다 (" + (ex.code || ex.message) + ")");
+  } finally {
+    btn.disabled = false;
   }
 });
 
-async function editTask(id) {
+$("p-task-new").addEventListener("click", () => openSheet(null));
+
+function editTask(id) {
   const t = state.tasks.find((x) => x.id === id);
-  if (!t) return;
-  const got = await askTask(t);
-  if (!got) return;
-  try {
-    // open 은 건드리지 않는다. 고친다고 열리거나 닫히면 놀란다.
-    await setDoc(doc(db, TASKS, id), { ...got, at: serverTimestamp() }, { merge: true });
-    toast("과제를 고쳤습니다");
-  } catch (e) {
-    toast("고치지 못했습니다 (" + (e.code || e.message) + ")", true);
-  }
+  if (t) openSheet(t);
 }
 
 /* 교수: 낸 과제 모아보기. 발표에도 쓴다. */

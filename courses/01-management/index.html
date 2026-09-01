@@ -298,6 +298,43 @@
     <p class="show-n" id="show-n"></p>
   </div>
 
+  <!-- 과제 만들기·고치기 (교수) -->
+  <div class="sheet" id="tsheet" hidden>
+    <form class="sheet-card" id="tsheet-form" autocomplete="off">
+      <h2 id="tsheet-title">과제 내기</h2>
+
+      <div class="sheet-row narrow">
+        <label for="ts-week">주차</label>
+        <input id="ts-week" type="number" min="1" max="20" inputmode="numeric" required>
+      </div>
+
+      <div class="sheet-row">
+        <label for="ts-title">제목</label>
+        <input id="ts-title" type="text" maxlength="60" required
+               placeholder="예) 광고 하나 분석하기">
+      </div>
+
+      <div class="sheet-row">
+        <label for="ts-guide">안내 <span>학생에게 보입니다. 없어도 됩니다.</span></label>
+        <textarea id="ts-guide" rows="3" maxlength="600"
+                  placeholder="무엇을 어떻게 해 오면 되는지 적어 주세요."></textarea>
+      </div>
+
+      <div class="sheet-row">
+        <label for="ts-due">마감일</label>
+        <input id="ts-due" type="date">
+        <label class="sheet-check"><input id="ts-nodue" type="checkbox"> 마감 없음</label>
+        <p class="sheet-note">마감이 지나도 낼 수는 있습니다. 늦은 것으로 표시만 됩니다.</p>
+      </div>
+
+      <p class="sheet-error" id="ts-error" role="alert" hidden></p>
+      <div class="sheet-acts">
+        <button class="btn-line" id="ts-cancel" type="button">취소</button>
+        <button class="btn-go" id="ts-save" type="submit">만들기</button>
+      </div>
+    </form>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <footer>

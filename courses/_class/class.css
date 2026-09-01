@@ -626,3 +626,34 @@ body.showing{overflow:hidden}
 .tv-late{display:grid;gap:3px;margin:0 0 14px;padding:13px 16px;border-radius:10px;
   border-left:4px solid #c0392b;background:#fdecea;color:#a2321f;font-size:.88rem;line-height:1.6}
 .tv-late b{color:#8b2318}
+
+/* ── 창 (과제 내기·고치기) ────────────────────
+   창을 네 번 띄워 하나씩 묻는 것보다 한 화면에서 다 넣는 편이 빠르고,
+   날짜는 손으로 치지 않고 달력에서 고르게 한다. */
+.sheet{position:fixed;inset:0;z-index:96;display:grid;place-items:center;
+  padding:20px;background:rgba(15,26,42,.5);overflow:auto}
+.sheet-card{width:100%;max-width:460px;background:#fff;border-radius:16px;padding:26px 24px;
+  display:grid;gap:16px;max-height:calc(100vh - 40px);overflow:auto}
+.sheet-card h2{margin:0;font-size:1.35rem;letter-spacing:-.04em}
+.sheet-row{display:grid;gap:6px}
+.sheet-row.narrow{max-width:130px}
+.sheet-row label{font-weight:700;font-size:.85rem}
+.sheet-row label span{color:var(--muted);font-weight:400;font-size:.78rem;margin-left:5px}
+.sheet-row input,.sheet-row textarea{
+  width:100%;box-sizing:border-box;padding:12px 13px;
+  border:1px solid var(--card-line);border-radius:10px;background:#fff;
+  font:inherit;font-size:16px;line-height:1.6;resize:vertical;
+}
+.sheet-row input:focus,.sheet-row textarea:focus{outline:2px solid var(--navy);outline-offset:1px}
+.sheet-check{display:flex;align-items:center;gap:7px;font-weight:400 !important;font-size:.86rem}
+.sheet-check input{width:auto}
+.sheet-note{margin:0;color:var(--muted);font-size:.78rem;line-height:1.6}
+.sheet-error{margin:0;padding:11px 14px;border-radius:9px;background:#fdecea;color:#a2321f;font-size:.87rem}
+.sheet-acts{display:flex;gap:9px;justify-content:flex-end;margin-top:4px}
+.sheet-acts .btn-go,.sheet-acts .btn-line{min-height:46px;padding:0 20px}
+@media(max-width:520px){
+  .sheet{padding:12px}
+  .sheet-card{padding:20px 18px}
+  .sheet-acts{flex-direction:column-reverse}
+  .sheet-acts .btn-go,.sheet-acts .btn-line{width:100%}
+}
