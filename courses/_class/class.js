@@ -1,5 +1,9 @@
 /**
- * 경영학원론 수업 도우미
+ * 수업 도우미 - 과목 공용 몸통
+ *
+ * 과목마다 달라지는 것(이름, 암호, 컬렉션 이름, 강의 영상, 자기소개 질문)은
+ * 각 과목 폴더의 course.js 에 있다. 이 파일은 그것을 읽어 움직인다.
+ * 고칠 일이 생기면 여기 한 곳만 고치면 모든 과목에 반영된다.
  *
  * 학생은 가입하지 않는다. QR 을 찍고 성명·학번·암호만 넣으면 들어온다.
  * 다만 서버가 "누가 보냈는지" 구분하지 못하면 남의 답을 고칠 수 있으므로,
@@ -48,35 +52,25 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const store = getStorage(app);
 
-const QUIZZES = "mgmt_quizzes";
-const ANSWERS = "mgmt_answers";
-const LOGS = "mgmt_log";
-const FILMS_C = "mgmt_films";       // 강의 영상의 공개 여부. 교수만 고친다.
-const INTROS = "mgmt_intros";
+/* 과목 설정. index.html 이 course.js 를 먼저 읽어 window.COURSE 에 담아 둔다. */
+const C = window.COURSE;
 
-/* 강의 영상. 번호가 곧 순서이고, 썸네일 파일 이름(thumbs/01.jpg)도 이 순서를 따른다.
-   영상을 더하거나 뺄 때는 이 목록과 thumbs/make_thumbs.py 의 목록을 함께 고친다. */
-const FILMS = [
-  { v: "Ms46Os7YDOU", t: "경영학이란?" },
-  { v: "F5ssIeGTQRw", t: "기업이란?" },
-  { v: "mrqMTf_mxQE", t: "시장이란 무엇인가?" },
-  { v: "3rTdcbIeaqE", t: "고객과 소비자에 대한 이해" },
-  { v: "aSrDWh-61Gg", t: "시장과 고객에 대한 접근" },
-  { v: "cnCaVcOEPP0", t: "동기부여와 리더십" },
-  { v: "lD-CYKQug9k", t: "인적자원관리" },
-  { v: "Yl3SX1CfsQQ", t: "조직의 이해와 설계" },
-  { v: "CBhGGjzyoGM", t: "금융시스템과 증권시장" },
-  { v: "ciev4GvU4gM", t: "회계와 재무의 이해" },
-  { v: "rV7JOPq532o", t: "경영 전략의 이해" },
-  { v: "1BAEEq-wj5s", t: "글로벌 경영" },
-  { v: "1yBLCXtmRC4", t: "기업윤리와 책임" },
-];        // 자기소개. 문서 이름이 곧 uid 라 한 사람 한 장이다.
+const QUIZZES = C.id + "_quizzes";
+const ANSWERS = C.id + "_answers";
+const LOGS = C.id + "_log";
+const FILMS_C = C.id + "_films";    // 강의 영상의 공개 여부. 교수만 고친다.
+const INTROS = C.id + "_intros";
+
+/* 강의 영상. 목록은 과목 설정에 있다. 썸네일 파일 이름(thumbs/01.jpg)이
+   이 순서를 따르므로, 순서를 바꾸면 썸네일도 다시 그려야 한다. */
+const FILMS = C.films || [];
+       // 자기소개. 문서 이름이 곧 uid 라 한 사람 한 장이다.
 const PHOTO_MAX = 1600;              // 긴 변. 강의실 스크린(1920)에 띄워도 견딘다
 const PHOTO_RAW_MB = 15;             // 고르기 전 원본이 이보다 크면 받지 않는다
-const SAY_MAX = 500;
-const PASS = "0909";                 // 문패다. 소스에 드러나므로 성적의 자물쇠로 쓰지 않는다.
-const KEY = "mgmt-who";
-const SIDS = "mgmt-sids";            // 이 기기가 지금까지 쓴 학번들
+const SAY_MAX = C.intro.max || 500;
+const PASS = C.pass;                 // 문패다. 소스에 드러나므로 성적의 자물쇠로 쓰지 않는다.
+const KEY = C.id + "-who";
+const SIDS = C.id + "-sids";         // 이 기기가 지금까지 쓴 학번들
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
@@ -257,7 +251,7 @@ $("qr-open").addEventListener("click", () => {
   $("qr-open").hidden = true;
 });
 $("qr-copy").addEventListener("click", async () => {
-  const url = "https://yeonsung-ac.github.io/courses/01-management/";
+  const url = C.url;
   try {
     await navigator.clipboard.writeText(url);
     toast("주소를 복사했습니다");
@@ -869,7 +863,7 @@ function downloadLog() {
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `경영학원론_제출기록_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `${C.name}_제출기록_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
   toast(`${rows.length}건 내려받았습니다`);
@@ -898,7 +892,7 @@ $("p-csv").addEventListener("click", () => {
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `경영학원론_퀴즈결과_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `${C.name}_퀴즈결과_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
   toast(`${rows.length}건 내려받았습니다`);
@@ -979,7 +973,52 @@ function within(ms, work, whine) {
   ]);
 }
 
+/* 자기소개 칸. 과목마다 묻는 것이 다르므로 설정을 보고 그린다.
+   경영학원론은 한 칸, 소비자행동론은 세 칸이다. */
+const ASKS = C.intro.fields;
+
+function drawFields() {
+  const box = $("intro-fields");
+  if (!box || box.dataset.done === "1") return;
+  box.innerHTML =
+    (C.intro.prompt ? `<p class="intro-ask">${esc(C.intro.prompt)}</p>` : "") +
+    ASKS.map((f, i) => `
+      <label class="intro-label" for="intro-f${i}">${esc(f.label)}</label>
+      <textarea id="intro-f${i}" maxlength="${SAY_MAX}" rows="${ASKS.length > 1 ? 3 : 6}"
+                placeholder="${esc(f.ph || "")}"></textarea>
+      <p class="intro-count"><span id="intro-n${i}">0</span> / ${SAY_MAX}자</p>`).join("");
+
+  ASKS.forEach((f, i) => {
+    $("intro-f" + i).addEventListener("input", (e) => {
+      $("intro-n" + i).textContent = String(e.target.value.length);
+    });
+  });
+  box.dataset.done = "1";
+}
+
+/* 낸 것을 읽고 쓰는 통로. 한 칸짜리든 세 칸짜리든 같은 모양으로 다룬다. */
+function readAsks() {
+  return ASKS.map((f, i) => $("intro-f" + i).value.trim().slice(0, SAY_MAX));
+}
+function fillAsks(parts) {
+  ASKS.forEach((f, i) => {
+    const v = (parts && parts[i]) || "";
+    $("intro-f" + i).value = v;
+    $("intro-n" + i).textContent = String(v.length);
+  });
+}
+/* 옛 자료는 parts 가 없고 text 한 덩어리만 있다. 그것도 읽을 수 있어야 한다. */
+const partsOf = (r) => (Array.isArray(r.parts) && r.parts.length ? r.parts : [r.text || ""]);
+function saidHtml(r) {
+  const parts = partsOf(r);
+  if (ASKS.length === 1) return `<span class="said-one">${esc(parts[0])}</span>`;
+  return parts.map((v, i) => `<span class="said-row">
+    <b>${esc((ASKS[i] || {}).label || "")}</b><span>${esc(v)}</span></span>`).join("");
+}
+const saidText = (r) => partsOf(r).join(" / ");
+
 function renderIntro() {
+  drawFields();
   const box = $("intro");
   if (!box) return;
 
@@ -995,7 +1034,7 @@ function renderIntro() {
   if (got && !editing) {
     $("intro-photo").src = got.photoUrl || "";
     $("intro-photo").hidden = !got.photoUrl;
-    $("intro-text").textContent = got.text || "";
+    $("intro-text").innerHTML = saidHtml(got);
     const when = got.updatedAt?.toDate ? got.updatedAt.toDate() : null;
     $("intro-when").textContent = when ? when.toLocaleString("ko-KR") + " 에 냈습니다" : "";
   }
@@ -1003,8 +1042,8 @@ function renderIntro() {
 
 $("intro-edit").addEventListener("click", () => {
   $("intro").dataset.editing = "1";
-  $("intro-say").value = state.intro?.text || "";
-  $("intro-n").textContent = String($("intro-say").value.length);
+  drawFields();
+  fillAsks(state.intro ? partsOf(state.intro) : []);
   const pv = $("intro-preview");
   if (state.intro?.photoUrl) {
     pv.src = state.intro.photoUrl;
@@ -1014,10 +1053,6 @@ $("intro-edit").addEventListener("click", () => {
   $("intro-next").hidden = true;
   renderIntro();
   $("intro-form").scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-$("intro-say").addEventListener("input", (e) => {
-  $("intro-n").textContent = String(e.target.value.length);
 });
 
 // 상자를 누르면 앨범이 열린다.
@@ -1102,13 +1137,15 @@ $("intro-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const err = $("intro-error");
   const btn = $("intro-send");
-  const say = $("intro-say").value.trim().slice(0, SAY_MAX);
+  const parts = readAsks();
+  const say = parts.join("\n");
   const fail = (m) => { err.textContent = m; err.hidden = false; };
   err.hidden = true;
 
   if (!state.uid) return fail("아직 연결 중입니다. 잠시 뒤에 다시 눌러 주세요.");
   if (!state.pickedPhoto && !state.intro?.photoUrl) return fail("사진을 한 장 골라 주세요.");
-  if (say.length < 10) return fail("소개 글을 열 글자 이상 적어 주세요.");
+  const thin = parts.findIndex((v) => v.length < 5);
+  if (thin >= 0) return fail(`${ASKS[thin].label} — 조금 더 적어 주세요.`);
 
   btn.disabled = true;
   btn.textContent = "보내는 중…";
@@ -1128,6 +1165,7 @@ $("intro-form").addEventListener("submit", async (e) => {
       name: state.me.name,
       sid: state.me.sid,
       text: say,
+      parts,
       photoUrl: url,
       photoPath: path,
       createdAt: state.intro?.createdAt || serverTimestamp(),
@@ -1153,7 +1191,7 @@ $("intro-form").addEventListener("submit", async (e) => {
    여기서 한 명을 누르면 발표 화면이 열린다. 수업에서는 이 화면을 강의실
    스크린에 띄워 놓고 학생이 발표하는 동안 그 사진을 크게 보여 준다. */
 const PER = 30;                       // 한 판에 서른 줄
-const SPOKE = "mgmt-spoken";          // 발표를 마친 사람. 이 컴퓨터에만 남는다.
+const SPOKE = C.id + "-spoken";       // 발표를 마친 사람. 이 컴퓨터에만 남는다.
 
 function loadSpoken() {
   try { state.spoken = JSON.parse(localStorage.getItem(SPOKE)) || {}; } catch { state.spoken = {}; }
@@ -1240,7 +1278,7 @@ function renderIntroAll() {
             : '<span class="lst-nophoto">사진<br>없음</span>')
         + '<span class="lst-body"><span class="lst-who"><b>' + esc(r.name) + '</b>'
         + '<span class="lst-sid">' + esc(r.sid) + '</span>' + tags + '</span>'
-        + '<span class="lst-text">' + esc(r.text) + '</span></span>'
+        + '<span class="lst-text">' + esc(saidText(r)) + '</span></span>'
         + '<span class="lst-when">' + stamp(made) + '</span>'
         + '</button>'
         + '<span class="lst-acts">'
@@ -1344,21 +1382,21 @@ async function dropIntro(id) {
 function introCsv() {
   const rows = introRows();
   if (!rows.length) { toast("내려받을 것이 없습니다", true); return; }
-  const head = ["번호", "성명", "학번", "제출", "수정", "발표함", "소개 글", "사진 주소"];
+  const head = ["번호", "성명", "학번", "제출", "수정", "발표함"]
+    .concat(ASKS.map((f) => f.label)).concat(["사진 주소"]);
   const body = rows.map((r, i) => [
     i + 1, r.name, r.sid,
     (when(r.createdAt) || "") && when(r.createdAt).toLocaleString("ko-KR"),
     (when(r.updatedAt) || "") && when(r.updatedAt).toLocaleString("ko-KR"),
     state.spoken[r.id] ? "O" : "",
-    r.text, r.photoUrl || "",
-  ]);
+  ].concat(ASKS.map((f, k) => partsOf(r)[k] || "")).concat([r.photoUrl || ""]));
   const csv = [head, ...body]
     .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(","))
     .join("\r\n");
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "경영학원론_자기소개_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.download = C.name + "_" + C.intro.title + "_" + new Date().toISOString().slice(0, 10) + ".csv";
   a.click();
   URL.revokeObjectURL(a.href);
   toast(rows.length + "명 내려받았습니다");
@@ -1484,7 +1522,7 @@ function paintShow() {
   img.alt = r.name + " 학생이 낸 사진";
   $("show-name").textContent = r.name;
   $("show-sid").textContent = r.sid;
-  $("show-text").textContent = r.text || "";
+  $("show-text").innerHTML = saidHtml(r);
   $("show-n").textContent = `${showAt + 1} / ${rows.length}`;
   $("show-prev").disabled = showAt === 0;
   $("show-next").disabled = showAt >= rows.length - 1;

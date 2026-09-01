@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스팀 리뷰 수집기 | 소비자행동론 · 이현구</title>
+<meta name="description" content="스팀 게임의 이용자 리뷰 현황을 미리 확인하고 원하는 조건으로 내려받는 소비자행동론 수업 도구.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="스팀 리뷰 수집기 | 소비자행동론">
+<meta property="og:description" content="게임을 고르기 전에 리뷰가 몇 건인지, 평가가 갈리는지 먼저 확인하고 조건에 맞게 내려받습니다.">
+<link rel="stylesheet" href="styles.css">
+<script src="gate.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+<header class="page-header">
+  <div class="header-top">
+    <a class="back" href="../../">← 이현구 홈</a>
+    <button id="theme" class="theme-toggle" type="button">밝게 / 어둡게</button>
+  </div>
+  <p class="section-label" style="color:var(--lime)">04 / 소비자행동론</p>
+  <h1>스팀 리뷰 수집기</h1>
+  <p>과제에 쓸 자료를 직접 모으는 도구입니다. <b>설치도 가입도 필요 없습니다.</b>
+     조건을 정해 스팀에서 열고, 복사해서 붙여넣으면 됩니다. 분석은 여러분의 몫입니다.</p>
+</header>
+
+<main id="main">
+
+  <!-- ── 1. 게임 고르기 ─────────────────────────────────── -->
+  <section class="panel">
+    <p class="section-label">Step 1</p>
+    <h2>게임과 조건 정하기</h2>
+    <p class="hint">앱 번호는 스팀 상점 주소에 있습니다.
+       <code>store.steampowered.com/app/<b>1091500</b>/Cyberpunk_2077</code> 이면 1091500 입니다.</p>
+
+    <div class="field-row">
+      <div class="field field-appid">
+        <label for="appid">앱 번호</label>
+        <input id="appid" type="text" inputmode="numeric" value="1091500" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="language">언어</label>
+        <select id="language">
+          <option value="koreana" selected>한국어</option>
+          <option value="english">영어</option>
+          <option value="all">전체</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="review_type">리뷰 유형</label>
+        <select id="review_type">
+          <option value="all" selected>추천 + 비추천</option>
+          <option value="positive">추천만</option>
+          <option value="negative">비추천만</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="purchase_type">구매 경로</label>
+        <select id="purchase_type">
+          <option value="all" selected>전체</option>
+          <option value="steam">스팀 구매만</option>
+          <option value="non_steam_purchase">외부 키 등록</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sort">정렬</label>
+        <select id="sort">
+          <option value="recent" selected>최신순</option>
+          <option value="updated">수정순</option>
+          <option value="all">유용성순</option>
+        </select>
+      </div>
+      <div class="field" id="field-day-range" hidden>
+        <label for="day_range">기간(일)</label>
+        <select id="day_range">
+          <option value="30">최근 30일</option>
+          <option value="90">최근 90일</option>
+          <option value="365" selected>최근 1년</option>
+        </select>
+      </div>
+      <div class="field" id="field-limit">
+        <label for="limit">최대 수집</label>
+        <select id="limit">
+          <option value="100">100건</option>
+          <option value="500" selected>500건</option>
+          <option value="1000">1,000건</option>
+          <option value="3000">3,000건</option>
+          <option value="5000">5,000건</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="presets">
+      <button type="button" data-appid="1091500">Cyberpunk 2077</button>
+      <button type="button" data-appid="730">Counter-Strike 2</button>
+      <button type="button" data-appid="578080">PUBG</button>
+      <button type="button" data-appid="1245620">ELDEN RING</button>
+      <button type="button" data-appid="292030">The Witcher 3</button>
+      <button type="button" data-appid="271590">GTA V</button>
+      <button type="button" data-appid="1172470">Apex Legends</button>
+      <button type="button" data-appid="413150">Stardew Valley</button>
+    </div>
+
+    <div class="field-row" style="margin-top:20px">
+      <button id="btn-check-status" class="act" type="button">① 리뷰 현황만 확인 ↗</button>
+      <button id="btn-open-steam" class="act ghost" type="button">② 리뷰 받아오기 ↗</button>
+      <button id="btn-precheck" class="act ghost" type="button" hidden>리뷰 현황 확인</button>
+      <button id="btn-collect" class="act" type="button" hidden disabled>이 조건으로 수집</button>
+    </div>
+
+    <div id="notice" class="notice info" hidden></div>
+  </section>
+
+  <!-- ── Step 2. 붙여넣기 ──────────────────────────────── -->
+  <section class="panel">
+    <p class="section-label">Step 2</p>
+    <h2>복사해서 붙여넣기</h2>
+    <details id="bm-box" style="margin:0 0 20px">
+      <summary style="cursor:pointer;color:var(--ink-2);font-weight:700;font-size:.88rem;padding:6px 0">
+        복사·붙여넣기가 번거롭다면 — 한 번만 준비하면 클릭 한 번으로 끝납니다
+      </summary>
+      <div style="margin-top:12px">
+        <p style="margin:0 0 12px;color:var(--ink-2);font-size:.88rem;line-height:1.85">
+          아래 파란 딱지를 <b>브라우저 즐겨찾기 막대로 끌어다 놓으세요.</b> 딱 한 번만 하면 됩니다.
+          (즐겨찾기 막대가 안 보이면 <b>Ctrl+Shift+B</b>)</p>
+        <p style="margin:0 0 14px">
+          <a class="bookmarklet" href="javascript:(function(){try{var t=document.body.innerText;if(!t||t.indexOf('query_summary')<0){alert('스팀 리뷰 자료 화면이 아닙니다.');return;}if(!window.opener){alert('수집기에서 연 창에서만 동작합니다.');return;}window.opener.postMessage({type:'steam-reviews',payload:t},'*');window.close();}catch(e){alert('오류: '+e.message);}})();"
+             onclick="alert('누르지 말고 즐겨찾기 막대로 끌어다 놓으세요.');return false;">📥 스팀 자료 가져오기</a>
+        </p>
+        <p style="margin:0;color:var(--ink-2);font-size:.88rem;line-height:1.85">
+          그다음부터는 스팀 창이 열리면 <b>즐겨찾기의 그 딱지를 한 번 누르기만</b> 하면 됩니다.
+          자료가 이 화면으로 넘어오고 스팀 창은 저절로 닫힙니다. 복사도 붙여넣기도 필요 없습니다.</p>
+      </div>
+    </details>
+
+    <p class="hint">북마클릿을 쓰지 않는다면, 새 탭에 뜬 내용을 <b>Ctrl+A</b> 로 전체 선택하고
+       <b>Ctrl+C</b> 로 복사해 아래 칸에 붙여넣으면 됩니다.
+       <b>①</b> 을 눌렀다면 한 줄짜리라 금방 끝나고 현황만 나옵니다.
+       <b>②</b> 를 눌렀다면 글자가 아주 많은데, 그게 리뷰 100건입니다.</p>
+    <div class="notice info" style="margin:0 0 16px">
+      <b>많이 모을 때</b>
+      <span>스팀은 한 번에 <b>100건까지만</b> 줍니다. 그래서 여러 번 받아야 하는데, 반복은 이렇게 줄였습니다.
+        <b>①</b> 스팀 탭은 계속 같은 탭을 다시 씁니다(탭이 쌓이지 않습니다).
+        <b>②</b> 이 화면 아무 데서나 <b>Ctrl+V</b> 만 누르면 읽습니다(칸을 클릭할 필요 없습니다).
+        <b>③</b> 읽고 나면 다음 묶음을 자동으로 열어 둡니다.
+        그래서 한 묶음당 <b>Ctrl+A → Ctrl+C → 탭 전환 → Ctrl+V</b> 네 동작이면 됩니다.</span>
+    </div>
+    <div class="notice info" style="margin:0 0 16px">
+      <b>게임 고를 때</b>
+      <span>먼저 <b>①</b> 로 여러 게임의 현황만 빠르게 확인하세요. 확인한 게임은 아래 비교표에 쌓입니다.
+        분석할 게임을 정한 다음에 <b>②</b> 로 실제 리뷰를 받으면 됩니다.</span>
+    </div>
+
+    <textarea id="paste-json" rows="5" placeholder="새 탭에서 복사한 내용을 여기에 붙여넣으세요"
+      style="width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;resize:vertical"></textarea>
+    <div class="field-row" style="margin-top:12px">
+      <button id="btn-paste" class="act" type="button">붙여넣은 내용 읽기</button>
+      <label style="display:flex;align-items:center;gap:7px;color:var(--ink-2);font-size:.84rem;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="auto-next" checked style="width:16px;height:16px;accent-color:var(--series-1)">
+        붙여넣으면 다음 묶음 자동으로 열기
+      </label>
+    </div>
+
+    <div id="precheck" class="precheck"></div>
+    <div id="paste-next"></div>
+
+    <p class="hint" style="margin-top:14px">한 번에 100건씩 받습니다. 읽고 나면 <b>다음 100건 열기</b> 버튼이
+       생기니 필요한 만큼 반복하면 계속 쌓입니다. 같은 리뷰는 자동으로 한 번만 셉니다.</p>
+
+    <div id="progress" class="progress">
+      <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+      <p id="progress-text" class="progress-text"></p>
+    </div>
+  </section>
+
+  <!-- ── 게임 비교 ─────────────────────────────────────── -->
+  <section id="compare" class="panel" hidden></section>
+
+  <!-- ── 2. 내려받기 ───────────────────────────────────── -->
+  <section id="summary" class="panel" hidden>
+    <p class="section-label">Step 3</p>
+    <h2>모은 자료 내려받기</h2>
+    <p class="hint" id="summary-label"></p>
+    <div id="summary-tiles" class="tiles"></div>
+    <div class="field-row" style="margin-top:20px">
+      <button id="dl-csv" class="act dl" type="button" disabled>CSV 내려받기 (엑셀용)</button>
+      <button id="dl-json" class="act ghost dl" type="button" disabled>JSON 내려받기</button>
+    </div>
+    <div class="notice info" style="margin-top:18px">
+      <b>파일 안내</b>
+      <span>CSV 는 엑셀에서 바로 열립니다. 추천 여부, 유용성 투표, 플레이타임(시간), 작성일, 리뷰 길이,
+        본문이 열로 들어 있습니다. 작성자 계정 정보(스팀 ID·닉네임·프로필 주소)는 포함하지 않습니다.</span>
+    </div>
+  </section>
+
+  <!-- ── 안내 ──────────────────────────────────────────── -->
+  <section class="panel">
+    <h2>과제 안내</h2>
+    <ol style="margin:14px 0 0;padding-left:20px;color:var(--ink-2);font-size:.92rem;line-height:1.9">
+      <li>관심 있는 게임을 <b>두 개 이상</b> 골라 현황을 확인하고, 비교표를 보며 분석할 게임을 정합니다.</li>
+      <li>왜 그 게임을 골랐는지 한 문단으로 적습니다. 리뷰 수, 추천률, 평가가 갈리는 정도를 근거로 쓰세요.</li>
+      <li>필요한 만큼 반복해 모은 뒤 CSV 로 내려받습니다. 어떤 조건으로 받았는지 반드시 기록하세요.</li>
+      <li>엑셀이나 원하는 도구로 직접 분석합니다. 표와 그래프는 여러분이 만듭니다.</li>
+    </ol>
+    <div class="notice warn" style="margin-top:18px">
+      <b>표본 주의</b>
+      <span>스팀 리뷰는 무작위 표본이 아닙니다. 리뷰를 남기는 사람은 아주 만족했거나 아주 실망한 쪽으로
+        기울어 있습니다(자기선택 편향). 최신순으로 받으면 최근 패치의 영향이, 유용성순으로 받으면
+        오래되고 많이 읽힌 리뷰가 과대 대표됩니다. 결론에 반드시 함께 적으세요.</span>
+    </div>
+    <div class="notice info" style="margin-top:12px">
+      <b>먼저 볼 것</b>
+      <span>수업 시간에 함께 본 분석 결과를 <a href="analysis/" style="text-decoration:underline"><b>여기</b></a>에
+        올려 두었습니다. 어떤 질문을 어떤 그림으로 답했는지 보고 시작하면 방향을 잡기 쉽습니다.</span>
+    </div>
+    <div class="notice info" style="margin-top:12px">
+      <b>본문 정제</b>
+      <span>리뷰 본문에는 스팀 서식 태그([b], [h1] 등), 욕설, 의미 없는 반복 문자가 섞여 있습니다.
+        어떻게 정제했는지도 과제의 평가 대상입니다.</span>
+    </div>
+  </section>
+</main>
+
+<footer class="page-footer">
+  <p>소비자행동론 · 연성대학교 경영학과 이현구 &nbsp;|&nbsp;
+     자료 출처: Steam Store API (appreviews) &nbsp;|&nbsp;
+     이 도구는 교육 목적으로만 사용합니다.</p>
+</footer>
+
+<script src="common.js"></script>
+<script src="collect.js"></script>
+</body>
+</html>

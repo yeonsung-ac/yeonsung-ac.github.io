@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://yeonsung-ac.github.io/assets/social-thumbnail.png">
   <link rel="canonical" href="https://yeonsung-ac.github.io/courses/01-management/">
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="class.css">
+  <link rel="stylesheet" href="../_class/class.css">
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 바로가기</a>
@@ -146,10 +146,8 @@
             사진이 들어갔습니다. 이제 아래에 소개 글을 적고 <b>제출하기</b> 를 누르세요. ↓
           </p>
 
-          <label class="intro-label" for="intro-say">자기소개 및 사진 설명을 간략하게 하세요.</label>
-          <textarea id="intro-say" maxlength="500" rows="6"
-                    placeholder="어떤 사진인지, 그리고 자신을 짧게 소개해 주세요."></textarea>
-          <p class="intro-count"><span id="intro-n">0</span> / 500자</p>
+          <div id="intro-fields"></div>
+
 
           <p class="intro-error" id="intro-error" role="alert" hidden></p>
           <button class="btn-go wide" id="intro-send" type="submit">제출하기</button>
@@ -251,6 +249,7 @@
     <p class="copyright">© 2026 이현구 · 연성대학교 경영학과</p>
   </footer>
 
-  <script type="module" src="class.js"></script>
+  <script src="course.js"></script>
+  <script type="module" src="../_class/class.js"></script>
 </body>
 </html>
