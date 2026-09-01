@@ -1001,6 +1001,16 @@ $("p-csv").addEventListener("click", () => {
   toast(`${rows.length}건 내려받았습니다`);
 });
 
+/* 화면에 나오는 이름은 과목 설정을 따라간다.
+   경영학원론은 '자기소개', 소비자행동론은 '소비 되돌아보기' 다. */
+{
+  const b = $("p-intro");
+  // 제목을 그대로 붙이면 "소비 되돌아보기 모아보기" 처럼 어색해진다.
+  if (b) b.textContent = C.intro.button || (C.intro.title + " 모아보기");
+  const h = document.querySelector("#intro .block-title");
+  if (h) h.textContent = C.intro.title;
+}
+
 /* ── 자기소개 ─────────────────────────────────
    사진 한 장과 소개 글. 학생은 거의 다 휴대폰으로 들어오므로
    사진은 원본 그대로 올리지 않는다. 요즘 폰 사진은 한 장에 5MB 를 넘고,
@@ -1269,7 +1279,7 @@ $("intro-form").addEventListener("submit", async (e) => {
     state.pickedType = null;
     $("intro-next").hidden = true;
     $("intro").dataset.editing = "";
-    toast("자기소개를 냈습니다");
+    toast(C.intro.title + "를 냈습니다");
     renderIntro();
   } catch (ex) {
     fail("보내지 못했습니다. 연결을 확인하고 다시 눌러 주세요. (" + (ex.code || ex.message) + ")");
@@ -1589,7 +1599,7 @@ $("p-intro").addEventListener("click", () => {
 async function dropIntro(id) {
   const r = state.intros.find((x) => x.id === id);
   if (!r) return;
-  if (!confirm(r.name + " (" + r.sid + ") 학생이 낸 자기소개를 지웁니다.\n되돌릴 수 없습니다.")) return;
+  if (!confirm(r.name + " (" + r.sid + ") 학생이 낸 " + C.intro.title + " 를 지웁니다.\n되돌릴 수 없습니다.")) return;
   try {
     if (r.photoPath) {
       try { await deleteObject(storageRef(store, r.photoPath)); }

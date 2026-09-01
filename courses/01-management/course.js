@@ -15,6 +15,7 @@ window.COURSE = {
 
   intro: {
     title: "자기소개",
+    button: "자기소개 모아보기",
     max: 500,
     prompt: "",
     fields: [
