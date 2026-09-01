@@ -1503,13 +1503,33 @@ async function uploadRoster(file) {
     .filter((r) => r.name && r.sid);
   if (!list.length) throw new Error("읽을 수 있는 줄이 없습니다");
 
+  // 수강 정정 기간에는 명단이 자주 바뀐다. 무엇이 달라졌는지 말해 주고,
+  // 빠진 사람은 물어본 뒤에 지운다. 말없이 지우면 이미 낸 것과 어긋난다.
+  const had = new Set(state.roster.map((r) => String(r.sid)));
+  const now = new Set(list.map((r) => r.sid));
+  const added = list.filter((r) => !had.has(r.sid));
+  const gone = state.roster.filter((r) => !now.has(String(r.sid)));
+
   for (const r of list) {
     await setDoc(doc(db, ROSTER, r.sid), { name: r.name, at: serverTimestamp() });
     if (r.tel) {
       await setDoc(doc(db, PHONE, r.sid), { name: r.name, tel: r.tel, at: serverTimestamp() });
     }
   }
-  return list.length;
+
+  let removed = 0;
+  if (gone.length) {
+    const who = gone.map((r) => `${r.name} (${r.sid})`).join("\n");
+    if (confirm(`새 명단에 없는 ${gone.length}명을 명단에서 뺄까요?\n\n${who}\n\n`
+              + "뺀 사람이 이미 낸 것은 지워지지 않습니다. 문패로 들어오지 못하게만 됩니다.")) {
+      for (const r of gone) {
+        await deleteDoc(doc(db, ROSTER, String(r.sid)));
+        try { await deleteDoc(doc(db, PHONE, String(r.sid))); } catch { /* 없을 수 있다 */ }
+        removed++;
+      }
+    }
+  }
+  return { total: list.length, added: added.length, removed };
 }
 
 $("p-roster-up")?.addEventListener("click", () => $("roster-file").click());
@@ -1519,8 +1539,11 @@ $("roster-file")?.addEventListener("change", async (e) => {
   if (!f) return;
   toast("명단을 읽는 중…");
   try {
-    const n = await uploadRoster(f);
-    toast(`${n}명 올렸습니다`);
+    const r = await uploadRoster(f);
+    const bits = [`${r.total}명`];
+    if (r.added) bits.push(`새로 ${r.added}명`);
+    if (r.removed) bits.push(`뺀 사람 ${r.removed}명`);
+    toast(bits.join(" · ") + " 올렸습니다");
   } catch (ex) {
     toast("올리지 못했습니다 — " + (ex.message || ex.code), true);
   }
