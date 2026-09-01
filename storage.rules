@@ -70,6 +70,43 @@ service firebase.storage {
                     && request.resource.contentType.matches('image/.*'))));
     }
 
+
+    // 경영학원론 주간 과제 사진. 낸 사람과 교수만 본다.
+    match /mgmt_works/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+    // 소비자행동론 주간 과제 사진. 낸 사람과 교수만 본다.
+    match /cb_works/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+    // 광고학개론 주간 과제 사진. 낸 사람과 교수만 본다.
+    match /ad_works/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
     // 위에서 허용하지 않은 경로는 전부 막는다.
     match /{allPaths=**} {
       allow read, write: if false;

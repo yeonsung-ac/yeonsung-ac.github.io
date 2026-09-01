@@ -61,6 +61,9 @@ const ANSWERS = C.id + "_answers";
 const LOGS = C.id + "_log";
 const FILMS_C = C.id + "_films";    // 강의 영상의 공개 여부. 교수만 고친다.
 const INTROS = C.id + "_intros";
+const TASKS = C.id + "_tasks";      // 주간 과제. 교수가 낸다.
+const WORKS = C.id + "_works";      // 낸 과제. 사진 한 장과 글.
+const SCORES = C.id + "_scores";    // 과제 점수. 교수가 매긴다.
 const ROSTER = C.id + "_roster";    // 수강생 명단. 이름·학번만. 로그인하면 읽힌다.
 const PHONE = C.id + "_phone";      // 전화번호. 교수만 읽는다.
 
@@ -103,6 +106,12 @@ const state = {
   roster: [],        // 수강생 명단 (이름·학번)
   rosterState: "wait",  // wait | ready | fail. 비었는지 못 읽었는지 가려 말해 주려는 것이다.
   pick: null,        // 문패에서 고른 사람
+  tasks: [],         // 주간 과제
+  works: {},         // 내가 낸 과제  taskId -> 자료
+  allWorks: [],      // 교수만 채운다
+  taskNow: null,     // 지금 내고 있는 과제
+  taskPhoto: null,   // 아직 안 올린 과제 사진
+  scores: {},        // 과제 점수  '과제ID_uid' -> { score, memo }
 };
 
 /* ── 작은 도우미 ──────────────────────────── */
@@ -372,6 +381,9 @@ onAuthStateChanged(auth, async (user) => {
   watchQuizzes();
   watchAnswers();
   watchIntros();
+  watchTasks();
+  watchWorks();
+  watchScores();
   watchFilms();
   if (USE_ROSTER) watchRoster();
   if (state.isProfessor) watchLogs();
@@ -441,6 +453,58 @@ function watchIntros() {
 /* 수강생 명단.
    문패에서 이름을 고르게 하려면 화면이 목록을 갖고 있어야 한다.
    전화번호는 여기 없다. 교수 화면에서 따로 읽는다. */
+/* 주간 과제. 열린 것만 학생에게 보인다. */
+let stopTasks = null;
+let stopWorks = null;
+
+function watchTasks() {
+  if (stopTasks) return;
+  stopTasks = onSnapshot(
+    query(collection(db, TASKS), orderBy("week", "asc")),
+    (snap) => {
+      state.tasks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderTasks();
+    },
+    () => { /* 아직 없을 수 있다 */ }
+  );
+}
+
+function watchWorks() {
+  if (stopWorks) stopWorks();
+  // 학생은 규칙상 자기 것만 읽힌다. 교수는 전부 읽힌다. 질의는 같다.
+  stopWorks = onSnapshot(
+    collection(db, WORKS),
+    (snap) => {
+      const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      state.allWorks = rows;
+      state.works = {};
+      rows.forEach((r) => { if (r.uid === state.uid) state.works[r.taskId] = r; });
+      renderTasks();
+      if (state.view === "works") renderWorksAll();
+    },
+    () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
+  );
+}
+
+/* 과제 점수.
+   낸 과제 문서 안에 두면 학생이 자기 점수를 고칠 수 있다. 그래서 따로 둔다.
+   학생은 자기 것만, 교수는 전부 읽힌다. 질의는 같다. */
+let stopScores = null;
+
+function watchScores() {
+  if (stopScores) stopScores();
+  stopScores = onSnapshot(
+    collection(db, SCORES),
+    (snap) => {
+      state.scores = {};
+      snap.docs.forEach((d) => { state.scores[d.id] = d.data(); });
+      renderTasks();
+      if (state.view === "works") renderWorksAll();
+    },
+    () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
+  );
+}
+
 let stopRoster = null;
 
 function watchRoster() {
@@ -590,6 +654,7 @@ function render() {
   }).join("");
 
   renderIntro();
+  renderTasks();
   renderFilms();
 
   if (state.isProfessor) renderProf();
@@ -1767,12 +1832,384 @@ async function flipAll(open) {
 $("films-all").addEventListener("click", () => flipAll(true));
 $("films-none").addEventListener("click", () => flipAll(false));
 
+
+/* ── 주간 과제 ────────────────────────────────
+   사진 한 장과 글 3,000자. 매주 하나씩 열린다.
+   발표까지 쓰므로 교수 화면에서 사진을 화면 가득 띄울 수 있어야 한다. */
+const WORK_MAX = 3000;
+const dueOf = (t) => (t.due ? new Date(t.due + "T23:59:59") : null);
+const isLate = (t, at) => {
+  const d = dueOf(t);
+  return Boolean(d && at && at > d);
+};
+const dueText = (t) => {
+  const d = dueOf(t);
+  if (!d) return "마감 없음";
+  const left = Math.ceil((d - new Date()) / 86400000);
+  if (left < 0) return `마감 지남 (${t.due})`;
+  if (left === 0) return `오늘까지 (${t.due})`;
+  return `${t.due}까지 · ${left}일 남음`;
+};
+
+function renderTasks() {
+  const box = $("tasks");
+  if (!box || !state.me) return;
+  const prof = state.isProfessor;
+  const seen = prof ? state.tasks : state.tasks.filter((t) => t.open !== false);
+
+  box.hidden = !prof && !seen.length;
+  $("tasks-tools").hidden = !prof;
+  $("tasks-sub").textContent = prof
+    ? `모두 ${state.tasks.length}개 · 학생에게 열린 것 ${state.tasks.filter((t) => t.open !== false).length}개`
+    : `${seen.length}개`;
+
+  if (!seen.length) {
+    $("task-list").innerHTML = `<p class="empty">아직 낸 과제가 없습니다.</p>`;
+    return;
+  }
+
+  $("task-list").innerHTML = seen.map((t) => {
+    const mine = state.works[t.id];
+    const late = mine && isLate(t, mine.updatedAt?.toDate ? mine.updatedAt.toDate() : null);
+    const shut = dueOf(t) && dueOf(t) < new Date();
+    const sc = mine ? state.scores[`${t.id}_${state.uid}`] : null;
+    const pill = mine
+      ? (sc && sc.score !== "" && sc.score != null
+          ? `<span class="pill score">${esc(String(sc.score))}점</span>`
+          : `<span class="pill done">냈음${late ? " · 늦음" : ""}</span>`)
+      : shut ? `<span class="pill shut">마감</span>`
+        : `<span class="pill open">내야 함</span>`;
+    return `<li class="task${t.open === false ? " off" : ""}">
+      <button class="task-go" type="button" data-task="${esc(t.id)}">
+        <span class="task-body">
+          <span class="task-head"><b>${esc(t.week)}주차</b>
+            <span class="task-title">${esc(t.title)}</span></span>
+          <span class="task-due">${esc(dueText(t))}</span>
+        </span>
+        ${pill}
+      </button>
+      ${prof ? `<span class="task-acts">
+        <button class="film-eye${t.open !== false ? " on" : ""}" type="button" data-topen="${esc(t.id)}">
+          ${t.open !== false ? "열림" : "닫힘"}</button>
+        <button class="lst-del" type="button" data-tdel="${esc(t.id)}" title="지우기">×</button>
+      </span>` : ""}
+    </li>`;
+  }).join("");
+
+  $("task-list").querySelectorAll("[data-task]").forEach((el) => {
+    el.addEventListener("click", () => openTask(el.dataset.task));
+  });
+  if (!prof) return;
+  $("task-list").querySelectorAll("[data-topen]").forEach((el) => {
+    el.addEventListener("click", async () => {
+      const t = state.tasks.find((x) => x.id === el.dataset.topen);
+      try { await setDoc(doc(db, TASKS, t.id), { ...t, open: t.open === false }, { merge: true }); }
+      catch (e) { toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true); }
+    });
+  });
+  $("task-list").querySelectorAll("[data-tdel]").forEach((el) => {
+    el.addEventListener("click", async () => {
+      const t = state.tasks.find((x) => x.id === el.dataset.tdel);
+      if (!confirm(`${t.week}주차 "${t.title}" 과제를 지웁니다.` + "\n"
+                 + "학생이 낸 것은 지워지지 않습니다.")) return;
+      try { await deleteDoc(doc(db, TASKS, t.id)); toast("지웠습니다"); }
+      catch (e) { toast("지우지 못했습니다 (" + (e.code || e.message) + ")", true); }
+    });
+  });
+}
+
+/* 학생이 과제를 내는 화면 */
+function openTask(id) {
+  const t = state.tasks.find((x) => x.id === id);
+  if (!t) return;
+  state.taskNow = t;
+  state.taskPhoto = null;
+  state.view = "task";
+
+  const mine = state.works[t.id];
+  $("room").hidden = true;
+  $("taskview").hidden = false;
+  $("tv-week").textContent = `${t.week}주차`;
+  $("tv-title").textContent = t.title;
+  $("tv-guide").textContent = t.guide || "";
+  $("tv-guide").hidden = !t.guide;
+  $("tv-due").textContent = dueText(t);
+
+  const pv = $("tv-preview");
+  pv.src = mine?.photoUrl || "";
+  pv.hidden = !mine?.photoUrl;
+  $("tv-pick-say").hidden = Boolean(mine?.photoUrl);
+  $("tv-text").value = mine?.text || "";
+  $("tv-n").textContent = String(($("tv-text").value || "").length);
+  $("tv-error").hidden = true;
+
+  // 점수가 매겨졌으면 보여 준다. 남의 점수는 서버가 막아 읽히지 않는다.
+  const sc = state.scores[`${t.id}_${state.uid}`];
+  const box = $("tv-score");
+  const has = sc && sc.score !== "" && sc.score != null;
+  box.hidden = !has;
+  if (has) {
+    $("tv-score-n").textContent = String(sc.score);
+    $("tv-score-memo").textContent = sc.memo || "";
+    $("tv-score-memo").hidden = !sc.memo;
+  }
+  window.scrollTo({ top: 0 });
+}
+
+$("tv-back").addEventListener("click", () => {
+  state.view = "room";
+  $("taskview").hidden = true;
+  $("room").hidden = false;
+  render();
+});
+
+$("tv-text").addEventListener("input", (e) => {
+  $("tv-n").textContent = String(e.target.value.length);
+});
+
+$("tv-pick").addEventListener("click", () => $("tv-file").click());
+$("tv-file").addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";
+  if (!f) return;
+  const err = $("tv-error");
+  err.hidden = true;
+  const say = $("tv-pick-say");
+  const was = say.innerHTML;
+  say.hidden = false;
+  say.innerHTML = "<b>사진을 준비하는 중…</b>";
+  try {
+    let blob;
+    try { blob = await within(25000, shrink(f), "시간이 지났습니다"); }
+    catch { if (f.size <= 5 * 1024 * 1024) blob = f; }
+    if (!blob) throw new Error("이 사진은 처리하지 못했습니다");
+    state.taskPhoto = blob;
+    const pv = $("tv-preview");
+    if (pv.dataset.blob) URL.revokeObjectURL(pv.src);
+    pv.src = URL.createObjectURL(blob);
+    pv.dataset.blob = "1";
+    pv.hidden = false;
+    say.hidden = true;
+    toast(`사진 준비 끝 · ${Math.round(blob.size / 1024)}KB`);
+  } catch (ex) {
+    err.textContent = ex.message + ". 앨범에서 다른 사진을 골라 보세요.";
+    err.hidden = false;
+  } finally {
+    say.innerHTML = was;
+  }
+});
+
+$("tv-send").addEventListener("click", async () => {
+  const t = state.taskNow;
+  const err = $("tv-error");
+  const btn = $("tv-send");
+  const text = $("tv-text").value.trim().slice(0, WORK_MAX);
+  const fail = (m) => { err.textContent = m; err.hidden = false; };
+  err.hidden = true;
+
+  const mine = state.works[t.id];
+  if (!state.uid) return fail("아직 연결 중입니다. 잠시 뒤에 다시 눌러 주세요.");
+  if (!state.taskPhoto && !mine?.photoUrl) return fail("사진을 한 장 골라 주세요.");
+  if (text.length < 10) return fail("글을 열 글자 이상 적어 주세요.");
+
+  btn.disabled = true;
+  btn.textContent = "보내는 중…";
+  try {
+    let url = mine?.photoUrl || "";
+    let path = mine?.photoPath || "";
+    if (state.taskPhoto) {
+      path = `${WORKS}/${state.uid}/${t.id}.jpg`;
+      const r = storageRef(store, path);
+      await uploadBytes(r, state.taskPhoto, { contentType: "image/jpeg" });
+      url = await getDownloadURL(r);
+    }
+    await setDoc(doc(db, WORKS, `${t.id}_${state.uid}`), {
+      taskId: t.id, uid: state.uid,
+      name: state.me.name, sid: state.me.sid,
+      text, photoUrl: url, photoPath: path,
+      createdAt: mine?.createdAt || serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    writeLog({ kind: "work", taskId: t.id, sid: state.me.sid, name: state.me.name });
+    state.taskPhoto = null;
+    toast("과제를 냈습니다");
+  } catch (ex) {
+    fail("보내지 못했습니다. 연결을 확인하고 다시 눌러 주세요. (" + (ex.code || ex.message) + ")");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "제출하기";
+  }
+});
+
+/* 교수: 과제 만들기 */
+$("p-task-new").addEventListener("click", async () => {
+  const week = prompt("몇 주차 과제인가요?", String(state.tasks.length + 1));
+  if (!week) return;
+  const title = prompt("과제 제목");
+  if (!title) return;
+  const guide = prompt("학생에게 보일 안내 (없으면 비워 두세요)") || "";
+  const due = prompt("마감일 (2026-09-15 처럼. 없으면 비워 두세요)") || "";
+  try {
+    await addDoc(collection(db, TASKS), {
+      week: String(week).trim(), title: title.trim(), guide: guide.trim(),
+      due: due.trim(), open: true, at: serverTimestamp(),
+    });
+    toast("과제를 냈습니다");
+  } catch (e) {
+    toast("만들지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+});
+
+/* 교수: 낸 과제 모아보기. 발표에도 쓴다. */
+function workRows() {
+  const t = state.taskPick || (state.tasks[0] || {});
+  return state.allWorks
+    .filter((w) => w.taskId === t.id)
+    .sort((a, b) => String(a.sid).localeCompare(String(b.sid)));
+}
+
+const sc = (workId) => state.scores[workId] || {};
+
+/* 점수를 매긴다. 빈칸으로 두면 점수를 지운다. */
+async function putScore(workId, raw) {
+  const w = state.allWorks.find((x) => x.id === workId);
+  if (!w) return;
+  const v = String(raw).trim();
+  try {
+    if (v === "") {
+      await deleteDoc(doc(db, SCORES, workId));
+      toast("점수를 지웠습니다");
+      return;
+    }
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0 || n > 100) { toast("0 에서 100 사이로 넣어 주세요", true); return; }
+    await setDoc(doc(db, SCORES, workId), {
+      uid: w.uid, taskId: w.taskId, sid: w.sid, name: w.name,
+      score: n, memo: sc(workId).memo || "", at: serverTimestamp(),
+    });
+    toast(`${w.name} ${n}점`);
+  } catch (e) {
+    toast("매기지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+}
+
+function renderWorksAll() {
+  const body = $("prof-body");
+  if (!state.tasks.length) {
+    body.innerHTML = `<p class="empty">아직 낸 과제가 없습니다.</p>`;
+    return;
+  }
+  if (!state.taskPick) state.taskPick = state.tasks[0];
+  const rows = workRows();
+  const gave = new Set(rows.map((r) => String(r.sid)));
+  const miss = state.roster.filter((r) => !gave.has(String(r.sid)));
+
+  body.innerHTML = `<div class="lst-bar">
+      <p class="lst-count"><b>${rows.length}명</b>이 냈습니다`
+      + (state.roster.length ? ` · 안 낸 사람 <b>${miss.length}</b>` : "") + `</p>
+      <div class="lst-tools">
+        <select class="lst-sort" id="wk-pick">${state.tasks.map((t) =>
+          `<option value="${esc(t.id)}"${t.id === state.taskPick.id ? " selected" : ""}>
+            ${esc(t.week)}주차 · ${esc(t.title)}</option>`).join("")}</select>
+        <button class="btn-go" id="wk-show" type="button">발표 화면</button>
+        <button class="btn-line" id="wk-csv" type="button">CSV</button>
+      </div>
+    </div>`
+    + (rows.length ? `<ul class="lst">${rows.map((r, i) => {
+      const late = isLate(state.taskPick, r.updatedAt?.toDate ? r.updatedAt.toDate() : null);
+      return `<li class="lst-row">
+        <span class="lst-no">${i + 1}</span>
+        <button class="lst-open" type="button" data-wi="${i}">
+          ${r.photoUrl ? `<img src="${esc(r.photoUrl)}" alt="" loading="lazy">`
+                       : `<span class="lst-nophoto">사진<br>없음</span>`}
+          <span class="lst-body"><span class="lst-who">
+            <b>${esc(r.name)}</b><span class="lst-sid">${esc(r.sid)}</span>
+            ${late ? `<span class="tag warn">늦음</span>` : ""}</span>
+            <span class="lst-text">${esc(r.text)}</span></span>
+          <span class="lst-when">${stamp(when(r.updatedAt))}</span>
+        </button>
+        <span class="lst-acts">
+          <input class="wk-score" type="number" min="0" max="100" inputmode="numeric"
+                 data-score="${esc(r.id)}" value="${esc(String(sc(r.id).score ?? ""))}"
+                 placeholder="점수" title="점수를 넣고 화면 밖을 누르면 저장됩니다">
+        </span>
+      </li>`;
+    }).join("")}</ul>` : `<p class="empty">이 과제는 아직 아무도 내지 않았습니다.</p>`);
+
+  body.querySelectorAll("[data-score]").forEach((el) => {
+    el.addEventListener("change", () => putScore(el.dataset.score, el.value));
+  });
+
+  $("wk-pick").addEventListener("change", (e) => {
+    state.taskPick = state.tasks.find((t) => t.id === e.target.value);
+    renderWorksAll();
+  });
+  $("wk-show").addEventListener("click", () => openWorkShow(0));
+  $("wk-csv").addEventListener("click", worksCsv);
+  body.querySelectorAll("[data-wi]").forEach((el) => {
+    el.addEventListener("click", () => openWorkShow(Number(el.dataset.wi)));
+  });
+}
+
+$("p-works").addEventListener("click", () => {
+  state.view = "works";
+  renderWorksAll();
+});
+
+function worksCsv() {
+  const rows = workRows();
+  if (!rows.length) { toast("내려받을 것이 없습니다", true); return; }
+  const t = state.taskPick;
+  const head = ["번호", "이름", "학번", "제출", "늦음", "점수", "글", "사진 주소"];
+  const body = rows.map((r, i) => [i + 1, r.name, r.sid,
+    when(r.updatedAt) ? when(r.updatedAt).toLocaleString("ko-KR") : "",
+    isLate(t, when(r.updatedAt)) ? "O" : "",
+    sc(r.id).score ?? "", r.text, r.photoUrl || ""]);
+  const csv = [head, ...body]
+    .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '"' + '"') + '"').join(","))
+    .join("\r\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${C.name}_${t.week}주차_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* 과제 발표 화면. 자기소개 발표와 같은 자리를 쓴다. */
+let workAt = 0;
+function openWorkShow(i) {
+  const rows = workRows();
+  if (!rows.length) { toast("아직 낸 사람이 없습니다", true); return; }
+  state.showKind = "work";
+  workAt = Math.max(0, Math.min(i, rows.length - 1));
+  $("show").hidden = false;
+  document.body.classList.add("showing");
+  paintWork();
+}
+function paintWork() {
+  const rows = workRows();
+  const r = rows[workAt];
+  if (!r) { closeShow(); return; }
+  const img = $("show-photo");
+  img.src = r.photoUrl || "";
+  img.hidden = !r.photoUrl;
+  img.alt = r.name + " 학생이 낸 사진";
+  $("show-name").textContent = r.name;
+  $("show-sid").textContent = r.sid;
+  $("show-text").textContent = r.text || "";
+  $("show-n").textContent = `${workAt + 1} / ${rows.length}`;
+  $("show-prev").disabled = workAt === 0;
+  $("show-next").disabled = workAt >= rows.length - 1;
+}
+
 /* ── 발표 화면 ────────────────────────────────
    강의실 스크린용이라 사진을 화면 높이에 맞춰 크게 놓고 글씨를 키웠다.
    진행은 화살표 키로 한다. 발표 중에 마우스를 찾는 것보다 그쪽이 빠르다. */
 let showAt = 0;
 
 function openShow(i) {
+  state.showKind = "intro";
   const rows = introRows();
   if (!rows.length) { toast("아직 낸 학생이 없습니다", true); return; }
   showAt = Math.max(0, Math.min(i, rows.length - 1));
@@ -1798,6 +2235,14 @@ function paintShow() {
 }
 
 function stepShow(d) {
+  if (state.showKind === "work") {
+    const rows = workRows();
+    const next = workAt + d;
+    if (next < 0 || next >= rows.length) return;
+    workAt = next;
+    paintWork();
+    return;
+  }
   const rows = introRows();
   const next = showAt + d;
   if (next < 0 || next >= rows.length) return;

@@ -558,3 +558,61 @@ body.showing{overflow:hidden}
 .gate-again{padding:0;border:0;background:none;color:var(--muted);
   font:inherit;font-size:.8rem;text-decoration:underline;cursor:pointer}
 .gate-again:hover{color:var(--navy)}
+
+/* ── 주간 과제 ────────────────────────────────
+   한 줄에 하나. 눌러서 내러 들어간다. 교수는 오른쪽에서 열고 닫는다. */
+.tasks{margin:38px 0 34px;padding-top:32px;border-top:2px solid var(--card-line)}
+.task-list{list-style:none;margin:0;padding:0;
+  border:1px solid var(--card-line);border-radius:12px;overflow:hidden;background:#fff}
+.task{display:flex;align-items:stretch;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0}
+.task:nth-child(even){background:#fcfdfb}
+.task.off{background:#f6f7f5}
+.task.off .task-go{opacity:.5}
+.task-go{
+  flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:14px;justify-content:space-between;
+  padding:15px 16px;border:0;background:none;font:inherit;text-align:left;cursor:pointer;
+}
+.task-go:hover{background:rgba(15,26,42,.04)}
+.task-body{display:grid;gap:4px;min-width:0}
+.task-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.task-head b{color:#7c8a76;font:700 .74rem/1 Arial,sans-serif;letter-spacing:.1em}
+.task-title{font-weight:700;font-size:1rem;letter-spacing:-.02em}
+.task-due{color:var(--muted);font-size:.8rem}
+.task-acts{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:0 12px 0 4px}
+.pill.score{background:var(--navy);color:#fff}
+
+/* 과제 내는 화면 */
+.taskview{max-width:var(--max);margin:0 auto;padding:44px 22px 90px}
+.taskview h1{margin:8px 0 6px;font-size:clamp(1.7rem,4vw,2.4rem);letter-spacing:-.045em}
+.tv-guide{margin:0 0 10px;color:var(--muted);line-height:1.75;white-space:pre-wrap}
+.tv-due{margin:0 0 20px;color:var(--muted);font-size:.86rem}
+.taskview .intro-pick{max-width:520px}
+.taskview textarea{
+  width:100%;box-sizing:border-box;padding:14px;max-width:760px;
+  border:1px solid var(--card-line);border-radius:11px;background:#fff;
+  font:inherit;font-size:16px;line-height:1.75;resize:vertical;
+}
+.taskview textarea:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:transparent}
+.taskview .intro-count{max-width:760px}
+.taskview .btn-go{margin-top:16px;min-height:52px;font-size:1rem}
+
+/* 점수 — 당사자와 교수만 본다 */
+.tv-score{margin:0 0 22px;padding:16px 20px;border-radius:11px;background:var(--navy);color:#dfe7f2}
+.tv-score-tag{margin:0 0 4px;color:var(--lime);font:700 .68rem/1 Arial,sans-serif;letter-spacing:.14em}
+.tv-score-n{margin:0;font:700 2rem/1.1 inherit;color:#fff;letter-spacing:-.03em}
+.tv-score-n:after{content:"점";margin-left:3px;font-size:1rem;font-weight:400;color:#9fb0c4}
+.tv-score-memo{margin:8px 0 0;font-size:.9rem;line-height:1.7;white-space:pre-wrap}
+
+.wk-score{
+  width:66px;padding:8px 9px;border:1px solid var(--card-line);border-radius:8px;
+  background:#fff;font:inherit;font-size:.86rem;text-align:center;
+}
+.wk-score:focus{outline:2px solid var(--navy);outline-offset:1px}
+
+@media(max-width:640px){
+  .tasks{margin-top:30px;padding-top:24px}
+  .task-go{padding:13px 12px;gap:10px}
+  .task-title{font-size:.92rem}
+  .taskview{padding:30px 18px 80px}
+}
