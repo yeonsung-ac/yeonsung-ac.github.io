@@ -13,6 +13,7 @@ window.COURSE = {
   pass: "0909",
   url: "https://yeonsung-ac.github.io/courses/04-consumer-behavior/",
   unit: "장",                       // 강의 단위. 이 과목은 교재 장을 따라간다
+  gate: "roster",                   // 문패에서 명단의 이름을 고른다. 암호는 그대로 쓴다.
 
   intro: {
     title: "소비 되돌아보기",

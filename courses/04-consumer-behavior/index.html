@@ -36,18 +36,21 @@
         <p class="gate-kicker">소비자행동론</p>
         <h1>수업 도우미</h1>
         <p class="gate-lede">수업 중 퀴즈에 참여하는 곳입니다.<br>
-          가입은 없습니다. 아래만 채우면 바로 들어갑니다.</p>
+          명단에서 이름을 고르고 암호를 넣으면 들어갑니다.</p>
 
         <form id="gate-form" autocomplete="off">
-          <div class="gate-row">
-            <label for="g-name">성명</label>
-            <input id="g-name" name="name" type="text" maxlength="20" required
-                   placeholder="홍길동" autocomplete="name">
+          <div class="gate-row" id="gate-find-row">
+            <label for="g-find">이름</label>
+            <input id="g-find" type="search" maxlength="20" autocomplete="off"
+                   placeholder="이름을 한두 글자 넣으세요">
+            <div class="gate-picks" id="gate-picks"></div>
           </div>
-          <div class="gate-row">
-            <label for="g-sid">학번</label>
-            <input id="g-sid" name="sid" type="text" inputmode="numeric" maxlength="20" required
-                   placeholder="20260000">
+
+          <div class="gate-who" id="gate-who" hidden>
+            <p class="gate-who-line">
+              <b id="gate-who-name"></b><span id="gate-who-sid"></span>
+            </p>
+            <button class="gate-again" id="gate-again" type="button">다른 사람 고르기</button>
           </div>
           <div class="gate-row">
             <label for="g-pw">입장 암호</label>
@@ -205,7 +208,9 @@
           <button class="btn-go" id="p-new" type="button">＋ 문제 만들기</button>
           <button class="btn-line" id="p-csv" type="button">결과 내려받기 (CSV)</button>
           <button class="btn-line" id="p-intro" type="button">자기소개 모아보기</button>
-          <button class="btn-line" id="p-roster" type="button">참여자 명단</button>
+          <button class="btn-line" id="p-roster" type="button">수강생 명단</button>
+          <button class="btn-line" id="p-roster-up" type="button">명단 올리기</button>
+          <input id="roster-file" type="file" accept=".xlsx,.xls,.csv" hidden>
           <button class="btn-line" id="p-log" type="button">제출 기록 · 살펴볼 것</button>
         </div>
         <div class="prof-body" id="prof-body"></div>

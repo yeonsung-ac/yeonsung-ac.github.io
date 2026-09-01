@@ -536,3 +536,25 @@ body.showing{overflow:hidden}
   .intro-count{max-width:640px}
   .intro-next{max-width:640px}
 }
+
+/* ── 문패: 명단에서 이름 고르기 ───────────────
+   서른 명을 통째로 늘어놓으면 오히려 찾기 어렵다. 친 글자에 맞는 것만 보여 준다. */
+.gate-picks{display:grid;gap:6px;margin:9px 0 0}
+.gate-pick{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:12px 14px;min-height:46px;border:1px solid var(--card-line);border-radius:10px;
+  background:#fff;font:inherit;text-align:left;cursor:pointer;
+}
+.gate-pick:hover{border-color:var(--navy);background:var(--soft)}
+.gate-pick b{font-size:1rem}
+.gate-pick span{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.gate-none{margin:9px 0 0;color:var(--muted);font-size:.83rem;line-height:1.6}
+
+.gate-who{margin:0 0 14px;padding:14px 16px;border-radius:11px;background:var(--soft);
+  border:1px solid var(--card-line)}
+.gate-who-line{margin:0 0 8px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.gate-who-line b{font-size:1.12rem;letter-spacing:-.03em}
+.gate-who-line span{color:var(--muted);font-size:.84rem;font-variant-numeric:tabular-nums}
+.gate-again{padding:0;border:0;background:none;color:var(--muted);
+  font:inherit;font-size:.8rem;text-decoration:underline;cursor:pointer}
+.gate-again:hover{color:var(--navy)}

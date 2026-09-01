@@ -319,6 +319,31 @@ service cloud.firestore {
       allow delete: if isProfessor();
     }
 
+    // ---------- 수강생 명단 ----------
+    // 문패에서 이름을 고르게 하려면 화면이 이름 목록을 읽을 수 있어야 한다.
+    // 그래서 이름과 학번은 로그인한 사람이면 읽힌다. 페이지를 여는 사람은
+    // 익명으로라도 로그인하므로, 사실상 '이 페이지를 아는 사람'까지 열린 셈이다.
+    // 한 반 이름 명단이라 그 정도로 둔다.
+    //
+    // 전화번호는 다르다. 아래 따로 두고 교수만 읽는다.
+    match /cb_roster/{sid} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isProfessor();
+    }
+
+    match /cb_phone/{sid} {
+      allow read, create, update, delete: if isProfessor();
+    }
+
+    match /mgmt_roster/{sid} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isProfessor();
+    }
+
+    match /mgmt_phone/{sid} {
+      allow read, create, update, delete: if isProfessor();
+    }
+
     // ---------- 과제 제출함 ----------
     // 학생은 자기가 낸 것만 보고, 교수만 전체를 본다.
     // 학생 화면은 where('ownerId','==',내UID) 로 질의하기 때문에 아래 read 규칙을 통과한다.

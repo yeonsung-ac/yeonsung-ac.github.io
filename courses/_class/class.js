@@ -34,6 +34,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  getDocs,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
 import {
@@ -60,6 +61,8 @@ const ANSWERS = C.id + "_answers";
 const LOGS = C.id + "_log";
 const FILMS_C = C.id + "_films";    // 강의 영상의 공개 여부. 교수만 고친다.
 const INTROS = C.id + "_intros";
+const ROSTER = C.id + "_roster";    // 수강생 명단. 이름·학번만. 로그인하면 읽힌다.
+const PHONE = C.id + "_phone";      // 전화번호. 교수만 읽는다.
 
 /* 강의 영상. 목록은 과목 설정에 있다. 썸네일 파일 이름(thumbs/01.jpg)이
    이 순서를 따르므로, 순서를 바꾸면 썸네일도 다시 그려야 한다. */
@@ -97,6 +100,8 @@ const state = {
   introPage: 0,
   spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
   films: {},         // 강의 영상 공개 여부. 없으면 공개로 본다.
+  roster: [],        // 수강생 명단 (이름·학번)
+  pick: null,        // 문패에서 고른 사람
 };
 
 /* ── 작은 도우미 ──────────────────────────── */
@@ -173,16 +178,78 @@ function saveWho(who) {
   try { localStorage.setItem(KEY, JSON.stringify(who)); } catch { /* 사생활 모드면 그만 */ }
 }
 
+/* 문패를 명단에서 고르는 방식으로 쓸지. 과목 설정에서 정한다. */
+const USE_ROSTER = C.gate === "roster";
+
+/* 이름으로 좁혀 보여 준다. 서른 명을 통째로 늘어놓으면 찾기가 더 어렵다.
+   두 글자만 쳐도 대개 한 사람으로 좁혀진다. */
+function drawPicks() {
+  const box = $("gate-picks");
+  if (!box) return;
+  const q = ($("g-find")?.value || "").trim();
+  const hit = q
+    ? state.roster.filter((r) => String(r.name).includes(q) || String(r.sid).includes(q))
+    : [];
+
+  if (!state.roster.length) {
+    box.innerHTML = `<p class="gate-none">명단을 불러오는 중입니다…</p>`;
+    return;
+  }
+  if (!q) {
+    box.innerHTML = `<p class="gate-none">이름을 한두 글자 넣으면 목록이 나옵니다.</p>`;
+    return;
+  }
+  if (!hit.length) {
+    box.innerHTML = `<p class="gate-none">명단에 없습니다. 담당 교수에게 말씀해 주세요.</p>`;
+    return;
+  }
+  box.innerHTML = hit.slice(0, 8).map((r) => `
+    <button class="gate-pick" type="button" data-sid="${esc(r.sid)}">
+      <b>${esc(r.name)}</b><span>${esc(String(r.sid).slice(-4))}</span>
+    </button>`).join("");
+  box.querySelectorAll("[data-sid]").forEach((el) => {
+    el.addEventListener("click", () => {
+      state.pick = state.roster.find((r) => String(r.sid) === el.dataset.sid) || null;
+      showPicked();
+    });
+  });
+}
+
+function showPicked() {
+  const who = $("gate-who");
+  if (!who) return;
+  who.hidden = !state.pick;
+  $("gate-find-row").hidden = Boolean(state.pick);
+  if (state.pick) {
+    $("gate-who-name").textContent = state.pick.name;
+    $("gate-who-sid").textContent = state.pick.sid;
+    setTimeout(() => $("g-pw")?.focus(), 60);
+  }
+  drawPicks();
+}
+
+if (USE_ROSTER) {
+  $("g-find").addEventListener("input", drawPicks);
+  $("gate-again").addEventListener("click", () => { state.pick = null; showPicked(); });
+}
+
 $("gate-form").addEventListener("submit", (e) => {
   e.preventDefault();
-  const name = cleanName($("g-name").value);
-  const sid = cleanSid($("g-sid").value);
-  const pw = $("g-pw").value.trim();
   const err = $("gate-error");
-
   const fail = (m) => { err.textContent = m; err.hidden = false; };
-  if (name.length < 2) return fail("성명을 두 글자 이상 넣어 주세요.");
-  if (sid.length < 4) return fail("학번을 확인해 주세요.");
+  const pw = $("g-pw").value.trim();
+
+  let name, sid;
+  if (USE_ROSTER) {
+    if (!state.pick) return fail("명단에서 이름을 골라 주세요.");
+    name = cleanName(state.pick.name);
+    sid = cleanSid(state.pick.sid);
+  } else {
+    name = cleanName($("g-name").value);
+    sid = cleanSid($("g-sid").value);
+    if (name.length < 2) return fail("성명을 두 글자 이상 넣어 주세요.");
+    if (sid.length < 4) return fail("학번을 확인해 주세요.");
+  }
   if (pw !== PASS) return fail("입장 암호가 다릅니다. 수업 시간에 알려 드린 숫자입니다.");
 
   err.hidden = true;
@@ -216,11 +283,13 @@ $("who-out").addEventListener("click", async () => {
   if (!confirm("나가면 다음에 이름과 학번을 다시 넣어야 합니다.")) return;
   try { localStorage.removeItem(KEY); } catch { /* 그만 */ }
   state.me = null;
+  state.pick = null;
   showGate();
 });
 
 function showGate() {
   $("gate").hidden = false;
+  if (USE_ROSTER) { showPicked(); }
   $("room").hidden = true;
   $("solve").hidden = true;
   $("g-pw").value = "";
@@ -297,6 +366,7 @@ onAuthStateChanged(auth, async (user) => {
   watchAnswers();
   watchIntros();
   watchFilms();
+  if (USE_ROSTER) watchRoster();
   if (state.isProfessor) watchLogs();
   render();
 });
@@ -361,6 +431,26 @@ function watchIntros() {
 /* 강의 영상 공개 여부.
    문서가 없으면 공개로 본다. 열세 개를 일일이 켜 두어야 보이는 것보다,
    기본은 보이고 감출 것만 꺼 두는 편이 손이 덜 간다. */
+/* 수강생 명단.
+   문패에서 이름을 고르게 하려면 화면이 목록을 갖고 있어야 한다.
+   전화번호는 여기 없다. 교수 화면에서 따로 읽는다. */
+let stopRoster = null;
+
+function watchRoster() {
+  if (stopRoster) return;
+  stopRoster = onSnapshot(
+    collection(db, ROSTER),
+    (snap) => {
+      state.roster = snap.docs
+        .map((d) => ({ sid: d.id, ...d.data() }))
+        .sort((a, b) => String(a.name).localeCompare(String(b.name), "ko"));
+      drawPicks();
+      render();
+    },
+    () => { /* 명단이 아직 없을 수 있다 */ }
+  );
+}
+
 let stopFilms = null;
 
 function watchFilms() {
@@ -898,17 +988,6 @@ $("p-csv").addEventListener("click", () => {
   toast(`${rows.length}건 내려받았습니다`);
 });
 
-/* 참여자 명단 */
-$("p-roster").addEventListener("click", () => {
-  const who = new Map();
-  state.all.forEach((a) => who.set(a.sid, a.name));
-  if (!who.size) { toast("아직 참여자가 없습니다", true); return; }
-  const list = [...who.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([sid, name]) => `${sid}  ${name}`).join("\n");
-  alert(`참여자 ${who.size}명\n\n${list}`);
-});
-
-
 /* ── 자기소개 ─────────────────────────────────
    사진 한 장과 소개 글. 학생은 거의 다 휴대폰으로 들어오므로
    사진은 원본 그대로 올리지 않는다. 요즘 폰 사진은 한 장에 5MB 를 넘고,
@@ -1352,6 +1431,140 @@ function renderIntroAll() {
     el.addEventListener("click", () => dropIntro(el.dataset.del));
   });
 }
+
+/* ── 명단 올리기 (교수) ───────────────────────
+   엑셀을 브라우저가 읽어 서버에 올린다. 학생 개인정보를 저장소에 두지 않으려는 것이다.
+   이름·학번은 명단 칸에, 전화번호는 교수만 읽는 칸에 따로 넣는다. */
+let sheetJs = null;
+async function loadSheet() {
+  if (sheetJs) return sheetJs;
+  await new Promise((ok, no) => {
+    const el = document.createElement("script");
+    el.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    el.onload = ok;
+    el.onerror = () => no(new Error("엑셀 읽는 도구를 불러오지 못했습니다"));
+    document.head.appendChild(el);
+  });
+  sheetJs = window.XLSX;
+  return sheetJs;
+}
+
+/* 열 이름이 조금씩 다르다. 뜻이 같은 것을 찾아 준다. */
+function pickCol(row, words) {
+  const keys = Object.keys(row);
+  for (const w of words) {
+    const k = keys.find((x) => String(x).replace(/\s/g, "").includes(w));
+    if (k) return k;
+  }
+  return null;
+}
+
+async function uploadRoster(file) {
+  const XLSX = await loadSheet();
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array" });
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
+  if (!rows.length) throw new Error("빈 표입니다");
+
+  const kName = pickCol(rows[0], ["이름", "성명"]);
+  const kSid = pickCol(rows[0], ["학번"]);
+  const kTel = pickCol(rows[0], ["휴대", "전화", "연락"]);
+  if (!kName || !kSid) throw new Error("'이름' 과 '학번' 열을 찾지 못했습니다");
+
+  const list = rows
+    .map((r) => ({
+      name: String(r[kName] || "").trim(),
+      sid: String(r[kSid] || "").trim(),
+      tel: kTel ? String(r[kTel] || "").trim() : "",
+    }))
+    .filter((r) => r.name && r.sid);
+  if (!list.length) throw new Error("읽을 수 있는 줄이 없습니다");
+
+  for (const r of list) {
+    await setDoc(doc(db, ROSTER, r.sid), { name: r.name, at: serverTimestamp() });
+    if (r.tel) {
+      await setDoc(doc(db, PHONE, r.sid), { name: r.name, tel: r.tel, at: serverTimestamp() });
+    }
+  }
+  return list.length;
+}
+
+$("p-roster-up")?.addEventListener("click", () => $("roster-file").click());
+$("roster-file")?.addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";
+  if (!f) return;
+  toast("명단을 읽는 중…");
+  try {
+    const n = await uploadRoster(f);
+    toast(`${n}명 올렸습니다`);
+  } catch (ex) {
+    toast("올리지 못했습니다 — " + (ex.message || ex.code), true);
+  }
+});
+
+/* 명단과 대조해 아직 안 낸 사람을 짚어 준다. 낸 사람만 세면 누가 빠졌는지 모른다. */
+function renderRoster() {
+  const body = $("prof-body");
+  if (!state.roster.length) {
+    body.innerHTML = `<p class="empty">명단이 아직 없습니다. 위 <b>명단 올리기</b> 로 엑셀을 올려 주세요.</p>`;
+    return;
+  }
+  const gave = new Set(state.intros.map((r) => String(r.sid)));
+  const done = state.roster.filter((r) => gave.has(String(r.sid)));
+  const miss = state.roster.filter((r) => !gave.has(String(r.sid)));
+
+  body.innerHTML = `<div class="lst-bar">
+      <p class="lst-count">명단 <b>${state.roster.length}명</b> ·
+        ${esc(C.intro.title)} 낸 사람 <b>${done.length}</b> ·
+        아직 <b>${miss.length}</b></p>
+      <div class="lst-tools"><button class="btn-line" id="ros-csv" type="button">CSV</button></div>
+    </div>
+    <ul class="lst">${state.roster.map((r, i) => {
+      const ok = gave.has(String(r.sid));
+      return `<li class="lst-row${ok ? " spoke" : ""}">
+        <span class="lst-no">${i + 1}</span>
+        <span class="lst-open" style="cursor:default">
+          <span class="lst-body"><span class="lst-who">
+            <b>${esc(r.name)}</b><span class="lst-sid">${esc(r.sid)}</span>
+            ${ok ? `<span class="tag ok">냈음</span>` : `<span class="tag warn">아직</span>`}
+          </span></span>
+          <span class="lst-when">${esc(state.tels?.[r.sid] || "")}</span>
+        </span>
+      </li>`;
+    }).join("")}</ul>`;
+
+  $("ros-csv")?.addEventListener("click", () => {
+    const head = ["번호", "이름", "학번", "전화번호", C.intro.title];
+    const rows = state.roster.map((r, i) => [i + 1, r.name, r.sid,
+      state.tels?.[r.sid] || "", gave.has(String(r.sid)) ? "O" : ""]);
+    const csv = [head, ...rows]
+      .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(","))
+      .join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = C.name + "_명단_" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+
+/* 전화번호는 교수가 명단을 열 때만 읽는다. 늘 켜 두면 굳이 볼 일 없는 자료를 계속 들고 있게 된다. */
+async function loadTels() {
+  try {
+    const snap = await getDocs(collection(db, PHONE));
+    state.tels = {};
+    snap.docs.forEach((d) => { state.tels[d.id] = d.data().tel || ""; });
+  } catch { state.tels = {}; }
+}
+
+$("p-roster")?.addEventListener("click", async () => {
+  state.view = "roster";
+  renderRoster();
+  await loadTels();
+  renderRoster();
+});
 
 $("p-intro").addEventListener("click", () => {
   state.view = "intro";
