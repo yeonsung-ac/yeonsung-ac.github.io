@@ -101,6 +101,7 @@ const state = {
   spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
   films: {},         // 강의 영상 공개 여부. 없으면 공개로 본다.
   roster: [],        // 수강생 명단 (이름·학번)
+  rosterState: "wait",  // wait | ready | fail. 비었는지 못 읽었는지 가려 말해 주려는 것이다.
   pick: null,        // 문패에서 고른 사람
 };
 
@@ -192,7 +193,13 @@ function drawPicks() {
     : [];
 
   if (!state.roster.length) {
-    box.innerHTML = `<p class="gate-none">명단을 불러오는 중입니다…</p>`;
+    const say = {
+      wait: "명단을 불러오는 중입니다…",
+      ready: "아직 명단이 올라오지 않았습니다. 담당 교수에게 말씀해 주세요.",
+      fail: "명단을 읽지 못했습니다. 담당 교수에게 말씀해 주세요." +
+            (state.rosterWhy ? ` (${state.rosterWhy})` : ""),
+    }[state.rosterState] || "";
+    box.innerHTML = `<p class="gate-none">${esc(say)}</p>`;
     return;
   }
   if (!q) {
@@ -444,10 +451,16 @@ function watchRoster() {
       state.roster = snap.docs
         .map((d) => ({ sid: d.id, ...d.data() }))
         .sort((a, b) => String(a.name).localeCompare(String(b.name), "ko"));
+      state.rosterState = "ready";
       drawPicks();
       render();
     },
-    () => { /* 명단이 아직 없을 수 있다 */ }
+    (e) => {
+      // 규칙이 아직 안 올라갔거나 로그인이 안 된 것이다. 그 말을 화면에 해 준다.
+      state.rosterState = "fail";
+      state.rosterWhy = e?.code || "";
+      drawPicks();
+    }
   );
 }
 
