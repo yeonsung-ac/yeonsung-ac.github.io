@@ -616,3 +616,9 @@ body.showing{overflow:hidden}
   .task-title{font-size:.92rem}
   .taskview{padding:30px 18px 80px}
 }
+/* 이미 낸 과제를 다시 열었을 때. 새로 내는 것과 헷갈리지 않게 밝혀 준다. */
+.tv-done{display:grid;gap:3px;margin:0 0 18px;padding:13px 16px;border-radius:10px;
+  border-left:4px solid var(--ok);background:#e8f4ec;color:#1f6b45;font-size:.88rem;line-height:1.6}
+.tv-done b{color:#155235}
+.tv-done span{color:#2f7a55}
+.lst-when small{color:#b3bab2;font-size:.7rem;line-height:1.5}

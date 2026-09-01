@@ -1884,7 +1884,7 @@ function renderTasks() {
         <span class="task-body">
           <span class="task-head"><b>${esc(t.week)}주차</b>
             <span class="task-title">${esc(t.title)}</span></span>
-          <span class="task-due">${esc(dueText(t))}</span>
+          <span class="task-due">${esc(dueText(t))}${mine ? " · 눌러서 고칠 수 있습니다" : ""}</span>
         </span>
         ${pill}
       </button>
@@ -1938,6 +1938,21 @@ function openTask(id) {
   $("tv-guide").textContent = t.guide || "";
   $("tv-guide").hidden = !t.guide;
   $("tv-due").textContent = dueText(t);
+
+  // 이미 낸 과제면 그 사실과 낸 때를 밝혀 준다. 화면만 봐서는 새로 내는 것인지
+  // 고치는 것인지 알 수 없어, 다시 낼 수 있다는 것을 모르고 지나친다.
+  const done = $("tv-done");
+  done.hidden = !mine;
+  if (mine) {
+    const made = when(mine.createdAt) || when(mine.updatedAt);
+    const fixed = when(mine.updatedAt);
+    const edited = made && fixed && fixed - made > 60000;
+    $("tv-done-when").textContent = !fixed ? ""
+      : edited
+        ? `${made.toLocaleString("ko-KR")} 에 내고, ${fixed.toLocaleString("ko-KR")} 에 고쳤습니다.`
+        : `${fixed.toLocaleString("ko-KR")} 에 냈습니다.`;
+  }
+  $("tv-send").textContent = mine ? "고쳐서 다시 내기" : "제출하기";
 
   const pv = $("tv-preview");
   pv.src = mine?.photoUrl || "";
@@ -2041,7 +2056,7 @@ $("tv-send").addEventListener("click", async () => {
     fail("보내지 못했습니다. 연결을 확인하고 다시 눌러 주세요. (" + (ex.code || ex.message) + ")");
   } finally {
     btn.disabled = false;
-    btn.textContent = "제출하기";
+    openTask(t.id);        // 낸 뒤 화면을 '고치는 중' 으로 되돌린다
   }
 });
 
@@ -2143,7 +2158,11 @@ function renderWorksAll() {
       </div>
     </div>`
     + (rows.length ? `<ul class="lst">${rows.map((r, i) => {
-      const late = isLate(state.taskPick, r.updatedAt?.toDate ? r.updatedAt.toDate() : null);
+      const made = when(r.createdAt) || when(r.updatedAt);
+      const fixed = when(r.updatedAt);
+      const edited = made && fixed && fixed - made > 60000;
+      // 늦었는지는 '마지막으로 낸 때' 로 따진다. 마감 뒤에 고친 것도 늦은 것이다.
+      const late = isLate(state.taskPick, fixed);
       return `<li class="lst-row">
         <span class="lst-no">${i + 1}</span>
         <button class="lst-open" type="button" data-wi="${i}">
@@ -2151,9 +2170,10 @@ function renderWorksAll() {
                        : `<span class="lst-nophoto">사진<br>없음</span>`}
           <span class="lst-body"><span class="lst-who">
             <b>${esc(r.name)}</b><span class="lst-sid">${esc(r.sid)}</span>
+            ${edited ? `<span class="tag">고침</span>` : ""}
             ${late ? `<span class="tag warn">늦음</span>` : ""}</span>
             <span class="lst-text">${esc(r.text)}</span></span>
-          <span class="lst-when">${stamp(when(r.updatedAt))}</span>
+          <span class="lst-when">${stamp(fixed)}${edited ? `<br><small>처음 ${stamp(made)}</small>` : ""}</span>
         </button>
         <span class="lst-acts">
           <input class="wk-score" type="number" min="0" max="100" inputmode="numeric"
@@ -2187,11 +2207,17 @@ function worksCsv() {
   const rows = workRows();
   if (!rows.length) { toast("내려받을 것이 없습니다", true); return; }
   const t = state.taskPick;
-  const head = ["번호", "이름", "학번", "제출", "늦음", "점수", "글", "사진 주소"];
-  const body = rows.map((r, i) => [i + 1, r.name, r.sid,
-    when(r.updatedAt) ? when(r.updatedAt).toLocaleString("ko-KR") : "",
-    isLate(t, when(r.updatedAt)) ? "O" : "",
-    sc(r.id).score ?? "", r.text, r.photoUrl || ""]);
+  const head = ["번호", "이름", "학번", "처음 낸 때", "마지막 수정", "고침", "늦음", "점수", "글", "사진 주소"];
+  const body = rows.map((r, i) => {
+    const made = when(r.createdAt) || when(r.updatedAt);
+    const fixed = when(r.updatedAt);
+    const edited = made && fixed && fixed - made > 60000;
+    return [i + 1, r.name, r.sid,
+      made ? made.toLocaleString("ko-KR") : "",
+      fixed ? fixed.toLocaleString("ko-KR") : "",
+      edited ? "O" : "", isLate(t, fixed) ? "O" : "",
+      sc(r.id).score ?? "", r.text, r.photoUrl || ""];
+  });
   const csv = [head, ...body]
     .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '"' + '"') + '"').join(","))
     .join("\r\n");
