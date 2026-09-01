@@ -507,3 +507,32 @@ body.showing{overflow:hidden}
   margin:0 0 5px !important;color:var(--lime);
   font:700 .68rem/1 Arial,sans-serif;letter-spacing:.14em;
 }
+/* 아직 영상이 올라오지 않은 강. 목록에는 두되 눌리지 않는다. */
+.film.soon .film-go{cursor:default}
+.film.soon .film-go:hover{background:none}
+.film.soon .film-shot img{opacity:.55}
+.film.soon .film-title{color:var(--muted)}
+.film-soon{
+  position:absolute;right:7px;bottom:7px;padding:4px 9px;border-radius:999px;
+  background:rgba(255,255,255,.16);color:#fff;font-size:.66rem;font-weight:700;
+}
+
+/* ── 과제 단 ──────────────────────────────────
+   수업 도구가 따로 있는 과목에서 그리로 가는 자리다. */
+.task{margin:38px 0 34px;padding-top:32px;border-top:2px solid var(--card-line)}
+.task-lede{margin:0 0 16px;color:var(--muted);font-size:.92rem;line-height:1.7}
+.task-go{display:inline-block;min-height:50px;line-height:50px;padding:0 24px;margin:0 0 20px;
+  border:0;border-radius:10px;text-decoration:none;font-weight:700}
+.task-steps{margin:0 0 18px;padding-left:20px;color:var(--muted);font-size:.9rem;line-height:1.9}
+.task-steps b{color:inherit}
+.task-warn{display:grid;gap:5px;padding:14px 17px;border-radius:10px;
+  border-left:4px solid #c98a15;background:#fff6e5;color:#7a5a10;font-size:.86rem;line-height:1.7}
+.task-warn b{color:#5f4508}
+/* 넓은 화면에서 사진 상자가 본문 폭을 다 먹으면 화면이 텅 비어 보인다.
+   글칸과 눈높이를 맞춰 적당한 크기로 세운다. */
+@media(min-width:760px){
+  .intro-pick{max-width:440px}
+  .intro-form textarea{max-width:640px}
+  .intro-count{max-width:640px}
+  .intro-next{max-width:640px}
+}

@@ -7,7 +7,9 @@ rules_version = '2';
 //   applications - 부트캠프 간편 신청  (yeonsung-ac.github.io/YouthLeap/)
 //   secrets      - 비밀글 본문         (게시판의 상담 분류 전용)
 //   submissions  - 과제 제출함         (yeonsung-ac.github.io/submit/)
-//   mgmt_quizzes / mgmt_answers / mgmt_log / mgmt_intros / mgmt_films - 경영학원론 수업 (courses/01-management/)
+//   mgmt_* - 경영학원론 수업   (courses/01-management/)
+//   cb_*   - 소비자행동론 수업 (courses/04-consumer-behavior/)
+//          두 과목이 같은 코드를 쓴다. 앞머리만 다르고 규칙 모양은 같다.
 //
 // 이 파일 전체를 Firebase 콘솔 > Firestore Database > 규칙 탭에 붙여넣고 게시하세요.
 // 일부만 넣으면 나머지가 동작하지 않습니다.
@@ -208,6 +210,99 @@ service cloud.firestore {
     }
 
     match /mgmt_log/{logId} {
+      // 제출 자취. 대리 제출을 가려내려고 남긴다. 교수만 읽는다.
+      // 학생 화면에서 IP 를 수집한다는 사실을 문패에 밝혀 두었다.
+      allow read: if isProfessor();
+
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.sid is string
+        && request.resource.data.sid.size() <= 20
+        && request.resource.data.ip is string
+        && request.resource.data.ip.size() <= 45;
+
+      // 남긴 자취는 아무도 못 고친다. 지우는 것은 교수만.
+      allow update: if false;
+      allow delete: if isProfessor();
+    }
+
+    // ---------- 소비자행동론 수업 도우미 ----------
+    // 경영학원론과 같은 얼개다. 코드가 한 벌이므로 규칙도 같아야 한다.
+    // 앞머리만 cb_ 로 다르다.
+
+    match /cb_quizzes/{quizId} {
+      // 문제를 읽을 수 있어야 풀 수 있다. 정답도 함께 실려 있으나,
+      // 어차피 제출하면 바로 보여 주는 값이라 감추지 않는다.
+      allow read: if request.auth != null;
+
+      allow create, update, delete: if isProfessor();
+    }
+
+    match /cb_answers/{answerId} {
+      // 자기 답만 읽는다. 교수는 전부 읽는다.
+      allow read: if request.auth != null
+        && (resource.data.uid == request.auth.uid || isProfessor());
+
+      // 문서 이름을 uid 로 묶어 남의 이름으로 내지 못하게 한다.
+      allow create: if request.auth != null
+        && answerId == request.resource.data.quizId + '_' + request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.sid is string
+        && request.resource.data.sid.size() > 0
+        && request.resource.data.sid.size() <= 20
+        && request.resource.data.picks is list
+        && request.resource.data.picks.size() <= 30;
+
+      // 한 번 낸 답은 본인도 못 고친다. 잘못 냈으면 교수가 지워 준다.
+      allow update: if false;
+
+      allow delete: if isProfessor();
+    }
+
+    // 자기소개. 사진 한 장과 소개 글이다. 문서 이름이 곧 uid 라 한 사람이 하나만 갖는다.
+    // 답안과 달리 고칠 수 있게 열어 둔다. 성적이 아니라 소개라 오타를 스스로 고치는 편이 낫다.
+    // 학생끼리는 서로 못 본다. 낸 사람과 교수만 읽는다.
+    match /cb_intros/{introId} {
+      // 문서 이름이 곧 uid 라 이름만 봐도 주인을 안다. resource.data 를 보면
+      // 아직 내지 않은 학생은 문서가 없어 읽기가 막히고, 그 순간 화면이 굳는다.
+      allow read: if request.auth != null
+        && (introId == request.auth.uid || isProfessor());
+
+      allow create, update: if request.auth != null
+        && introId == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.sid is string
+        && request.resource.data.sid.size() > 0
+        && request.resource.data.sid.size() <= 20
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.photoUrl is string
+        && request.resource.data.photoUrl.size() <= 700;
+
+      allow delete: if isProfessor()
+        || (request.auth != null && introId == request.auth.uid);
+    }
+
+    // 강의 영상의 공개 여부. 문서 이름은 강 번호(01~13)다.
+    // 목록 자체는 class.js 안에 있다. 여기에는 '학생에게 보일지'만 담는다.
+    // 문서가 없으면 화면은 공개로 본다. 열세 개를 일일이 켜 두게 하지 않으려는 것이다.
+    match /cb_films/{filmId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if isProfessor()
+        && request.resource.data.open is bool;
+
+      allow delete: if isProfessor();
+    }
+
+    match /cb_log/{logId} {
       // 제출 자취. 대리 제출을 가려내려고 남긴다. 교수만 읽는다.
       // 학생 화면에서 IP 를 수집한다는 사실을 문패에 밝혀 두었다.
       allow read: if isProfessor();

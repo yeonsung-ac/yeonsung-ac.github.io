@@ -1406,6 +1406,8 @@ function introCsv() {
 /* ── 강의 영상 ────────────────────────────────
    한 줄에 한 편. 썸네일에 제목이 들어 있고, 교수에게는 오른쪽에 공개 스위치가 붙는다.
    학생에게는 공개된 것만 보인다. */
+/* 강의 단위. 경영학원론은 "강", 소비자행동론은 교재를 따라 "장" 이다. */
+const UNIT = C.unit || "강";
 const filmId = (i) => String(i + 1).padStart(2, "0");
 const filmOpen = (i) => state.films[filmId(i)]?.open !== false;
 
@@ -1420,25 +1422,33 @@ function renderFilms() {
   box.hidden = seen.length === 0;
   $("films-tools").hidden = !prof;
   $("films-sub").textContent = prof
-    ? `모두 ${FILMS.length}강 · 학생에게 보이는 것 ${shown}강`
-    : `모두 ${seen.length}강 · 눌러서 유튜브에서 보기`;
+    ? `모두 ${FILMS.length}${UNIT} · 학생에게 보이는 것 ${shown}${UNIT}`
+    : (FILMS.every((f) => !f.v)
+      ? `모두 ${seen.length}${UNIT} · 영상은 준비 중입니다`
+      : `모두 ${seen.length}${UNIT} · 눌러서 유튜브에서 보기`);
 
   $("film-list").innerHTML = seen.map((f) => {
     const no = filmId(f.i);
     const on = filmOpen(f.i);
-    return `<li class="film${prof && !on ? " off" : ""}">
-      <a class="film-go" href="https://youtu.be/${esc(f.v)}" target="_blank" rel="noopener noreferrer"
-         aria-label="제${f.i + 1}강 ${esc(f.t)} 유튜브에서 보기">
+    // 아직 주소가 없는 강은 눌리지 않게 둔다. 목록에는 보이되 헛걸음을 만들지 않는다.
+    const ready = Boolean(f.v);
+    const head = ready
+      ? `<a class="film-go" href="https://youtu.be/${esc(f.v)}" target="_blank" rel="noopener noreferrer"
+           aria-label="제${f.i + 1}${UNIT} ${esc(f.t)} 유튜브에서 보기">`
+      : `<span class="film-go" aria-label="제${f.i + 1}${UNIT} ${esc(f.t)} 준비 중">`;
+    return `<li class="film${prof && !on ? " off" : ""}${ready ? "" : " soon"}">
+      ${head}
         <span class="film-shot">
           <img src="thumbs/${no}.jpg" alt="" loading="${f.i < 4 ? "eager" : "lazy"}"
                width="800" height="450">
-          <span class="film-play" aria-hidden="true">▶</span>
+          ${ready ? `<span class="film-play" aria-hidden="true">▶</span>`
+                  : `<span class="film-soon">준비 중</span>`}
         </span>
         <span class="film-copy">
-          <span class="film-no">제${f.i + 1}강</span>
+          <span class="film-no">제${f.i + 1}${UNIT}</span>
           <span class="film-title">${esc(f.t)}</span>
         </span>
-      </a>
+      ${ready ? "</a>" : "</span>"}
       ${prof ? `<span class="film-acts">
         <button class="film-eye${on ? " on" : ""}" type="button" data-film="${no}"
                 aria-pressed="${on}" title="${on ? "학생에게 보입니다" : "학생에게 감춰져 있습니다"}">
