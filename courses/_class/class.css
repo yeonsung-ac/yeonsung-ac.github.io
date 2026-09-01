@@ -622,3 +622,7 @@ body.showing{overflow:hidden}
 .tv-done b{color:#155235}
 .tv-done span{color:#2f7a55}
 .lst-when small{color:#b3bab2;font-size:.7rem;line-height:1.5}
+/* 마감 뒤 제출. 막지는 않지만 본인이 알아야 한다. */
+.tv-late{display:grid;gap:3px;margin:0 0 14px;padding:13px 16px;border-radius:10px;
+  border-left:4px solid #c0392b;background:#fdecea;color:#a2321f;font-size:.88rem;line-height:1.6}
+.tv-late b{color:#8b2318}

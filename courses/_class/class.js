@@ -1842,6 +1842,17 @@ const isLate = (t, at) => {
   const d = dueOf(t);
   return Boolean(d && at && at > d);
 };
+/* 며칠 늦었는지. 감점 폭을 정하실 때 쓰신다.
+   마감은 그날 밤 23:59:59 이므로, 하루가 꼬박 지나야 '1일' 이다. */
+const lateDays = (t, at) => {
+  const d = dueOf(t);
+  if (!d || !at || at <= d) return 0;
+  return Math.max(1, Math.ceil((at - d) / 86400000));
+};
+const lateText = (t, at) => {
+  const n = lateDays(t, at);
+  return n ? `늦음 · ${n}일` : "";
+};
 const dueText = (t) => {
   const d = dueOf(t);
   if (!d) return "마감 없음";
@@ -1953,6 +1964,23 @@ function openTask(id) {
         : `${fixed.toLocaleString("ko-KR")} 에 냈습니다.`;
   }
   $("tv-send").textContent = mine ? "고쳐서 다시 내기" : "제출하기";
+
+  // 늦었으면 학생 본인도 알아야 한다. 감점 요인이라 모르고 지나가면 안 된다.
+  const warn = $("tv-late");
+  const n = mine ? lateDays(t, when(mine.updatedAt)) : 0;
+  const shut = dueOf(t) && dueOf(t) < new Date();
+  if (n) {
+    warn.hidden = false;
+    warn.innerHTML = `<b>마감이 지난 뒤 낸 과제입니다 · ${n}일 늦음</b>`
+      + `<span>마감 ${esc(t.due)} · 낸 때 ${esc(stamp(when(mine.updatedAt)))}</span>`
+      + `<span>감점될 수 있습니다.</span>`;
+  } else if (shut && !mine) {
+    warn.hidden = false;
+    warn.innerHTML = `<b>마감이 지났습니다</b>`
+      + `<span>마감 ${esc(t.due)}. 지금 내면 늦은 제출로 기록되고 감점될 수 있습니다.</span>`;
+  } else {
+    warn.hidden = true;
+  }
 
   const pv = $("tv-preview");
   pv.src = mine?.photoUrl || "";
@@ -2171,7 +2199,7 @@ function renderWorksAll() {
           <span class="lst-body"><span class="lst-who">
             <b>${esc(r.name)}</b><span class="lst-sid">${esc(r.sid)}</span>
             ${edited ? `<span class="tag">고침</span>` : ""}
-            ${late ? `<span class="tag warn">늦음</span>` : ""}</span>
+            ${late ? `<span class="tag warn">${esc(lateText(state.taskPick, fixed))}</span>` : ""}</span>
             <span class="lst-text">${esc(r.text)}</span></span>
           <span class="lst-when">${stamp(fixed)}${edited ? `<br><small>처음 ${stamp(made)}</small>` : ""}</span>
         </button>
@@ -2207,7 +2235,7 @@ function worksCsv() {
   const rows = workRows();
   if (!rows.length) { toast("내려받을 것이 없습니다", true); return; }
   const t = state.taskPick;
-  const head = ["번호", "이름", "학번", "처음 낸 때", "마지막 수정", "고침", "늦음", "점수", "글", "사진 주소"];
+  const head = ["번호", "이름", "학번", "처음 낸 때", "마지막 수정", "고침", "늦음", "늦은 일수", "점수", "글", "사진 주소"];
   const body = rows.map((r, i) => {
     const made = when(r.createdAt) || when(r.updatedAt);
     const fixed = when(r.updatedAt);
@@ -2215,7 +2243,7 @@ function worksCsv() {
     return [i + 1, r.name, r.sid,
       made ? made.toLocaleString("ko-KR") : "",
       fixed ? fixed.toLocaleString("ko-KR") : "",
-      edited ? "O" : "", isLate(t, fixed) ? "O" : "",
+      edited ? "O" : "", isLate(t, fixed) ? "O" : "", lateDays(t, fixed) || "",
       sc(r.id).score ?? "", r.text, r.photoUrl || ""];
   });
   const csv = [head, ...body]
