@@ -1891,6 +1891,7 @@ function renderTasks() {
       ${prof ? `<span class="task-acts">
         <button class="film-eye${t.open !== false ? " on" : ""}" type="button" data-topen="${esc(t.id)}">
           ${t.open !== false ? "열림" : "닫힘"}</button>
+        <button class="lst-mark" type="button" data-tedit="${esc(t.id)}" title="고치기">✎</button>
         <button class="lst-del" type="button" data-tdel="${esc(t.id)}" title="지우기">×</button>
       </span>` : ""}
     </li>`;
@@ -1906,6 +1907,9 @@ function renderTasks() {
       try { await setDoc(doc(db, TASKS, t.id), { ...t, open: t.open === false }, { merge: true }); }
       catch (e) { toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true); }
     });
+  });
+  $("task-list").querySelectorAll("[data-tedit]").forEach((el) => {
+    el.addEventListener("click", () => editTask(el.dataset.tedit));
   });
   $("task-list").querySelectorAll("[data-tdel]").forEach((el) => {
     el.addEventListener("click", async () => {
@@ -2041,24 +2045,47 @@ $("tv-send").addEventListener("click", async () => {
   }
 });
 
-/* 교수: 과제 만들기 */
+/* 교수: 과제 만들기와 고치기.
+   묻는 것이 같으므로 한 통로로 둔다. 고칠 때는 지금 값을 먼저 채워 보여 준다. */
+async function askTask(old) {
+  const week = prompt("몇 주차 과제인가요?", old ? old.week : String(state.tasks.length + 1));
+  if (week === null) return null;
+  const title = prompt("과제 제목", old ? old.title : "");
+  if (title === null || !title.trim()) return null;
+  const guide = prompt("학생에게 보일 안내 (없으면 비워 두세요)", old ? (old.guide || "") : "");
+  if (guide === null) return null;
+  const due = prompt("마감일 (2026-09-15 처럼. 없으면 비워 두세요)", old ? (old.due || "") : "");
+  if (due === null) return null;
+  return {
+    week: String(week).trim(), title: title.trim(),
+    guide: guide.trim(), due: due.trim(),
+  };
+}
+
 $("p-task-new").addEventListener("click", async () => {
-  const week = prompt("몇 주차 과제인가요?", String(state.tasks.length + 1));
-  if (!week) return;
-  const title = prompt("과제 제목");
-  if (!title) return;
-  const guide = prompt("학생에게 보일 안내 (없으면 비워 두세요)") || "";
-  const due = prompt("마감일 (2026-09-15 처럼. 없으면 비워 두세요)") || "";
+  const got = await askTask(null);
+  if (!got) return;
   try {
-    await addDoc(collection(db, TASKS), {
-      week: String(week).trim(), title: title.trim(), guide: guide.trim(),
-      due: due.trim(), open: true, at: serverTimestamp(),
-    });
+    await addDoc(collection(db, TASKS), { ...got, open: true, at: serverTimestamp() });
     toast("과제를 냈습니다");
   } catch (e) {
     toast("만들지 못했습니다 (" + (e.code || e.message) + ")", true);
   }
 });
+
+async function editTask(id) {
+  const t = state.tasks.find((x) => x.id === id);
+  if (!t) return;
+  const got = await askTask(t);
+  if (!got) return;
+  try {
+    // open 은 건드리지 않는다. 고친다고 열리거나 닫히면 놀란다.
+    await setDoc(doc(db, TASKS, id), { ...got, at: serverTimestamp() }, { merge: true });
+    toast("과제를 고쳤습니다");
+  } catch (e) {
+    toast("고치지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+}
 
 /* 교수: 낸 과제 모아보기. 발표에도 쓴다. */
 function workRows() {
