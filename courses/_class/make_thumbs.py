@@ -27,7 +27,7 @@ def read_course(folder: Path):
     """course.js 에서 과목 이름과 강의 제목을 뽑는다."""
     src = (folder / "course.js").read_text(encoding="utf-8")
     name = re.search(r'name:\s*"([^"]+)"', src).group(1)
-    titles = re.findall(r'\bt:\s*"([^"]+)"', src)
+    titles = re.findall(r'\bt:\s*"([^"]*)"', src)   # 아직 제목이 없는 강도 자리를 잡는다
     return name, titles
 
 
@@ -80,6 +80,9 @@ def draw_one(i, title, course, unit):
     pad = 46
 
     d.text((pad, pad), course, font=ImageFont.truetype(BOLD, 21), fill=LIME)
+    soon = not title.strip()
+    if soon:
+        title = "준비 중"
 
     f_no = ImageFont.truetype(BOLD, 26)
     label = f"제{i}{unit}"
@@ -99,7 +102,7 @@ def draw_one(i, title, course, unit):
     lh = int(size * 1.28)
     top = H - 58 - lh * len(lines) + int(size * 0.10)
     for k, line in enumerate(lines):
-        d.text((pad, top + k * lh), line, font=f, fill=PAPER)
+        d.text((pad, top + k * lh), line, font=f, fill=(120, 132, 150) if soon else PAPER)
 
     d.rectangle((pad, H - 34, pad + 62, H - 29), fill=LIME)
     return im

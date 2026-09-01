@@ -57,6 +57,19 @@ service firebase.storage {
                     && request.resource.contentType.matches('image/.*'))));
     }
 
+    // ad_intros/{학생UID}/photo.jpg - 광고학개론 '기억에 남는 광고' 사진.
+    // 다른 과목과 같은 조건이다. 낸 사람과 교수만 본다.
+    match /ad_intros/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
     // 위에서 허용하지 않은 경로는 전부 막는다.
     match /{allPaths=**} {
       allow read, write: if false;
