@@ -18,7 +18,7 @@ window.COURSE = {
   intro: {
     title: "소비 되돌아보기",
     button: "소비 모아보기",
-    max: 300,
+    max: 3000,
     prompt: "최근 내가 한 소비 중, 지금 생각해도 ‘왜 샀지?’ 싶은 것은?",
     photoAsk: "그 소비를 보여 주는 사진을 한 장 올리세요",
     photoSub: "물건·영수증·주문 화면 무엇이든 됩니다",

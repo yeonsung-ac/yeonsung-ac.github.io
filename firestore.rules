@@ -173,6 +173,11 @@ service cloud.firestore {
     // 자기소개. 사진 한 장과 소개 글이다. 문서 이름이 곧 uid 라 한 사람이 하나만 갖는다.
     // 답안과 달리 고칠 수 있게 열어 둔다. 성적이 아니라 소개라 오타를 스스로 고치는 편이 낫다.
     // 학생끼리는 서로 못 본다. 낸 사람과 교수만 읽는다.
+    //
+    // 글자 수는 넉넉히 12000 으로 둔다. 칸이 여럿인 과목은 답이 하나로 이어져
+    // 담기므로(칸 3개 x 3000자) 한 칸 값보다 커야 한다. 몇 자까지 받을지는
+    // 화면이 정한다. 규칙에 과목별 값을 박아 두면 설정을 바꿀 때마다 규칙을
+    // 다시 게시해야 하고, 잊으면 학생이 다 써 놓고 제출에서 튕긴다.
     match /mgmt_intros/{introId} {
       // 문서 이름이 곧 uid 라 이름만 봐도 주인을 안다. resource.data 를 보면
       // 아직 내지 않은 학생은 문서가 없어 읽기가 막히고, 그 순간 화면이 굳는다.
@@ -190,7 +195,7 @@ service cloud.firestore {
         && request.resource.data.sid.size() <= 20
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 500
+        && request.resource.data.text.size() <= 12000
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 700;
 
@@ -283,7 +288,7 @@ service cloud.firestore {
         && request.resource.data.sid.size() <= 20
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 500
+        && request.resource.data.text.size() <= 12000
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 700;
 
@@ -376,7 +381,7 @@ service cloud.firestore {
         && request.resource.data.sid.size() <= 20
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 500
+        && request.resource.data.text.size() <= 12000
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 700;
 

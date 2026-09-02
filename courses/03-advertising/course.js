@@ -17,7 +17,7 @@ window.COURSE = {
   intro: {
     title: "기억에 남는 광고",
     button: "가져온 광고 모아보기",
-    max: 1000,
+    max: 3000,
     prompt: "아직도 기억에 남는 광고 한 편을 가져와 주세요.",
     photoAsk: "그 광고를 보여 주는 사진을 한 장 올리세요",
     photoSub: "화면 캡처 · 지면 사진 무엇이든 됩니다",

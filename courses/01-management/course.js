@@ -16,7 +16,7 @@ window.COURSE = {
   intro: {
     title: "자기소개",
     button: "자기소개 모아보기",
-    max: 500,
+    max: 3000,
     prompt: "",
     fields: [
       { label: "자기소개 및 사진 설명을 간략하게 하세요.",
