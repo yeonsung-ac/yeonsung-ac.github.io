@@ -690,7 +690,46 @@ body.showing{overflow:hidden}
   .show.long .show-text{font-size:1rem;line-height:1.7}
 }
 
-/* 글 칸 스크롤막대를 어두운 바탕에 맞춘다 */
-.show-stage figcaption::-webkit-scrollbar{width:8px}
-.show-stage figcaption::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:4px}
-.show-stage figcaption::-webkit-scrollbar-track{background:transparent}
+/* 스크롤막대를 늘 보이게 둔다.
+   요즘 브라우저는 막대를 숨겼다가 손을 대야 보여 준다. 강의실 스크린에서는
+   더 읽을 것이 있는지 눈으로만 판단하므로, 막대가 안 보이면 거기서 끝난 줄 안다. */
+.show.long .show-stage figcaption{
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.4) rgba(255,255,255,.08);
+}
+.show-stage figcaption::-webkit-scrollbar{width:12px}
+.show-stage figcaption::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.4);border-radius:6px;
+  border:3px solid transparent;background-clip:content-box;
+}
+.show-stage figcaption::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.62);background-clip:content-box}
+.show-stage figcaption::-webkit-scrollbar-track{background:rgba(255,255,255,.08);border-radius:6px}
+
+/* 아래가 더 있다는 것을 그늘로도 알려 준다. 막대를 못 본 사람도 알아챈다. */
+.show.long .show-stage figcaption{
+  position:relative;
+  -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 34px), transparent 100%);
+  mask-image:linear-gradient(to bottom, #000 calc(100% - 34px), transparent 100%);
+}
+.show.long .show-stage figcaption.at-end{-webkit-mask-image:none;mask-image:none}
+
+/* ── 발표 화면: 사진만 크게 ───────────────────
+   글과 사진은 서로 자리를 뺏는다. 발표 중에 사진을 들여다볼 일이 생기면
+   화면을 통째로 사진에 내준다. 사진을 누르거나 F 를 누르면 된다. */
+.show-zoom{
+  position:absolute;top:clamp(10px,2vh,22px);right:calc(clamp(12px,2vw,26px) + 58px);
+  padding:0 16px;height:46px;border:0;border-radius:999px;
+  background:rgba(255,255,255,.1);color:#fff;font:inherit;font-weight:700;font-size:.84rem;cursor:pointer;
+}
+.show-zoom:hover{background:rgba(255,255,255,.22)}
+.show-stage img{cursor:zoom-in}
+
+.show.zoom .show-stage figcaption{display:none}
+.show.zoom .show-stage{grid-template-columns:1fr !important;justify-items:center}
+.show.zoom .show-stage img{
+  max-height:92vh !important;max-width:96vw !important;cursor:zoom-out;
+}
+@media(max-width:640px){
+  .show-zoom{right:66px;height:40px;padding:0 12px;font-size:.78rem}
+  .show.zoom .show-stage img{max-height:80vh !important}
+}

@@ -2304,6 +2304,7 @@ function openWorkShow(i) {
   paintWork();
 }
 function paintWork() {
+  zoomShow(false);
   const rows = workRows();
   const r = rows[workAt];
   if (!r) { closeShow(); return; }
@@ -2343,9 +2344,23 @@ function fitShow(text) {
   const el = $("show");
   el.classList.toggle("long", n > 300);
   el.classList.toggle("verylong", n > 900);
+
+  // 끝까지 내렸으면 아래 그늘을 걷는다. 그늘이 남아 있으면 더 있는 줄 안다.
+  const cap = el.querySelector("figcaption");
+  if (!cap) return;
+  cap.scrollTop = 0;
+  cap.classList.remove("at-end");
+  if (!cap.dataset.watch) {
+    cap.dataset.watch = "1";
+    cap.addEventListener("scroll", () => {
+      const done = cap.scrollTop + cap.clientHeight >= cap.scrollHeight - 8;
+      cap.classList.toggle("at-end", done);
+    });
+  }
 }
 
 function paintShow() {
+  zoomShow(false);
   const rows = introRows();
   const r = rows[showAt];
   if (!r) { closeShow(); return; }
@@ -2383,13 +2398,31 @@ function closeShow() {
   document.body.classList.remove("showing");
 }
 
+/* 사진만 크게 보기.
+   글과 사진은 서로 자리를 뺏는다. 발표 중에 사진을 자세히 볼 일이 생기면
+   눌러서 화면을 통째로 사진에 내준다. 다시 누르면 돌아온다. */
+function zoomShow(on) {
+  const el = $("show");
+  const now = on === undefined ? !el.classList.contains("zoom") : on;
+  el.classList.toggle("zoom", now);
+  $("show-zoom").textContent = now ? "글 보기" : "사진 크게";
+}
+
+$("show-photo").addEventListener("click", () => zoomShow());
+$("show-zoom").addEventListener("click", () => zoomShow());
+
 $("show-x").addEventListener("click", closeShow);
 $("show-prev").addEventListener("click", () => stepShow(-1));
 $("show-next").addEventListener("click", () => stepShow(1));
 
 document.addEventListener("keydown", (e) => {
   if ($("show").hidden) return;
-  if (e.key === "Escape") { closeShow(); return; }
+  if (e.key === "Escape") {
+    if ($("show").classList.contains("zoom")) { zoomShow(false); return; }
+    closeShow();
+    return;
+  }
+  if (e.key === "f" || e.key === "F" || e.key === "Enter") { e.preventDefault(); zoomShow(); return; }
   if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
     e.preventDefault(); stepShow(1);
   } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
