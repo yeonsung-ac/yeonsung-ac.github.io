@@ -2314,6 +2314,7 @@ function paintWork() {
   $("show-name").textContent = r.name;
   $("show-sid").textContent = r.sid;
   $("show-text").textContent = r.text || "";
+  fitShow(r.text);
   $("show-n").textContent = `${workAt + 1} / ${rows.length}`;
   $("show-prev").disabled = workAt === 0;
   $("show-next").disabled = workAt >= rows.length - 1;
@@ -2334,6 +2335,16 @@ function openShow(i) {
   paintShow();
 }
 
+/* 글 길이에 따라 발표 화면 배치를 바꾼다.
+   짧은 소개는 사진을 크게 놓고 밑에 한 줄 받치는 것이 좋지만, 3천자짜리 글은
+   그 자리에 들어가지 않는다. 길면 사진을 왼쪽으로 물리고 글을 옆에 세운다. */
+function fitShow(text) {
+  const n = String(text || "").length;
+  const el = $("show");
+  el.classList.toggle("long", n > 300);
+  el.classList.toggle("verylong", n > 900);
+}
+
 function paintShow() {
   const rows = introRows();
   const r = rows[showAt];
@@ -2345,6 +2356,7 @@ function paintShow() {
   $("show-name").textContent = r.name;
   $("show-sid").textContent = r.sid;
   $("show-text").innerHTML = saidHtml(r);
+  fitShow(saidText(r));
   $("show-n").textContent = `${showAt + 1} / ${rows.length}`;
   $("show-prev").disabled = showAt === 0;
   $("show-next").disabled = showAt >= rows.length - 1;

@@ -657,3 +657,40 @@ body.showing{overflow:hidden}
   .sheet-acts{flex-direction:column-reverse}
   .sheet-acts .btn-go,.sheet-acts .btn-line{width:100%}
 }
+
+/* ── 발표 화면: 글이 길 때 ────────────────────
+   짧은 소개는 사진을 크게 놓고 밑에 한 줄 받치면 된다. 그런데 과제 글은
+   3천자까지 온다. 같은 자리에 넣으면 화면 밖으로 넘치고, 넘친 줄은 아무도
+   못 본다. 길면 사진을 옆으로 물리고 글에 자리를 내준다. */
+.show{overflow:auto}
+
+@media(min-width:1000px) and (orientation:landscape){
+  .show.long .show-stage{
+    grid-template-columns:minmax(0,auto) minmax(360px,1fr);
+    align-items:center;gap:clamp(20px,2.6vw,40px);
+    width:100%;max-width:1700px;margin:0 auto;
+  }
+  .show.long .show-stage img{max-height:76vh;max-width:46vw}
+  .show.long .show-stage figcaption{
+    max-width:none;text-align:left;max-height:78vh;overflow:auto;padding-right:8px;
+  }
+  .show.long .show-who{justify-content:flex-start}
+  .show.long .show-text{font-size:clamp(.95rem,1.25vw,1.25rem);line-height:1.75}
+
+  /* 아주 길면 사진을 더 물리고 글을 넓힌다 */
+  .show.verylong .show-stage{grid-template-columns:minmax(0,auto) minmax(460px,1.4fr)}
+  .show.verylong .show-stage img{max-height:62vh;max-width:34vw}
+  .show.verylong .show-text{font-size:clamp(.9rem,1.05vw,1.05rem)}
+}
+
+/* 좁은 화면에서는 위아래로. 글이 길면 그 칸만 스크롤한다. */
+@media(max-width:999px){
+  .show.long .show-stage img{max-height:34vh}
+  .show.long .show-stage figcaption{max-height:44vh;overflow:auto;text-align:left}
+  .show.long .show-text{font-size:1rem;line-height:1.7}
+}
+
+/* 글 칸 스크롤막대를 어두운 바탕에 맞춘다 */
+.show-stage figcaption::-webkit-scrollbar{width:8px}
+.show-stage figcaption::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:4px}
+.show-stage figcaption::-webkit-scrollbar-track{background:transparent}
