@@ -212,11 +212,11 @@ function drawPicks() {
     return;
   }
   if (!q) {
-    box.innerHTML = `<p class="gate-none">이름을 한두 글자 넣으면 목록이 나옵니다.</p>`;
+    box.innerHTML = `<p class="gate-none">이름 한두 글자 또는 학번 뒤 네 자리를 넣으면 목록이 나옵니다.</p>`;
     return;
   }
   if (!hit.length) {
-    box.innerHTML = `<p class="gate-none">명단에 없습니다. 담당 교수에게 말씀해 주세요.</p>`;
+    box.innerHTML = `<p class="gate-none">찾는 사람이 없습니다. 이름이나 학번을 다시 확인해 주세요.</p>`;
     return;
   }
   box.innerHTML = hit.slice(0, 8).map((r) => `
