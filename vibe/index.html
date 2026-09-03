@@ -56,6 +56,18 @@
     .btn:hover{background:rgba(255,255,255,.26)}
     .btn.on{background:#c8ef64;color:#101b2d}
 
+    /* 속도 고르기. 강의실에서 손이 빨리 닿아야 하므로 눌러서 고르는 알약으로 둔다. */
+    .speed{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;
+      background:rgba(255,255,255,.12);backdrop-filter:blur(3px)}
+    .speed button{
+      height:clamp(34px,3.4vh,40px);padding:0 clamp(9px,1vw,14px);
+      border:0;border-radius:999px;background:transparent;color:#dfe7f2;
+      font:inherit;font-weight:700;font-size:clamp(.74rem,.95vw,.86rem);cursor:pointer;
+      font-variant-numeric:tabular-nums;
+    }
+    .speed button:hover{background:rgba(255,255,255,.16)}
+    .speed button.on{background:#c8ef64;color:#101b2d}
+
     .count{
       color:#dfe7f2;font-size:clamp(.82rem,1.1vw,.98rem);font-variant-numeric:tabular-nums;
       min-width:4.4em;text-align:center;
@@ -123,6 +135,12 @@
 <div class="bottom ui">
   <button class="btn" id="play" type="button">⏸ <span class="long">멈춤</span></button>
   <p class="count"><b id="now">1</b> <span>/ <span id="all">15</span></span></p>
+  <span class="speed" id="speed" role="group" aria-label="넘김 속도">
+    <button type="button" data-sec="5">5초</button>
+    <button type="button" data-sec="10">10초</button>
+    <button type="button" data-sec="15">15초</button>
+    <button type="button" data-sec="30">30초</button>
+  </span>
   <button class="btn" id="mapgo" type="button">▦ <span class="long">한눈에</span></button>
   <button class="btn" id="full" type="button">⛶ <span class="long">전체 화면</span></button>
 </div>
@@ -134,7 +152,14 @@
 
 <script>
   const N = 15;
-  const EVERY = 3000;              // 3초마다 넘어간다
+  /* 넘어가는 간격. 10초를 기본으로 둔다. 3초는 설명을 시작하기도 전에 넘어갔다.
+     고른 값은 이 브라우저에 남아, 다음에 열 때도 그대로다. */
+  const KEEP = "vibe-sec";
+  let EVERY = 10000;
+  try {
+    const kept = Number(localStorage.getItem(KEEP));
+    if ([5, 10, 15, 30].includes(kept)) EVERY = kept * 1000;
+  } catch { /* 사생활 모드면 그만 */ }
 
   const stage = document.getElementById("stage");
   const map = document.getElementById("map");
@@ -206,6 +231,22 @@
     document.getElementById("map-x").hidden = !yes;
     if (yes) { stop(); } else if (playing) { start(); }
   }
+
+  /* 속도 고르기 */
+  function markSpeed() {
+    document.querySelectorAll("#speed [data-sec]").forEach((b) => {
+      b.classList.toggle("on", Number(b.dataset.sec) * 1000 === EVERY);
+    });
+  }
+  document.querySelectorAll("#speed [data-sec]").forEach((b) => {
+    b.addEventListener("click", () => {
+      EVERY = Number(b.dataset.sec) * 1000;
+      try { localStorage.setItem(KEEP, b.dataset.sec); } catch { /* 그만 */ }
+      markSpeed();
+      if (playing) start();          // 고른 값이 바로 먹히게 다시 센다
+    });
+  });
+  markSpeed();
 
   document.getElementById("prev").addEventListener("click", () => go(at - 1));
   document.getElementById("next").addEventListener("click", () => go(at + 1));
