@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>수업 관리 | 이현구</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="manage.css">
+</head>
+<body>
+
+<header class="page-header">
+  <a class="wordmark" href="../" aria-label="홈으로 이동"><b>이현구</b><span>연성대학교 경영학과 겸임교수</span></a>
+</header>
+
+<main class="wrap">
+
+  <p class="section-label">관리</p>
+  <h1>수업 관리</h1>
+
+  <!-- 로그인 전 -->
+  <section class="lock" id="lock" hidden>
+    <p class="lock-lede">담당 교수만 쓰는 화면입니다.<br>구글 계정으로 로그인해 주세요.</p>
+    <button class="btn-go" id="signin" type="button">구글로 로그인</button>
+    <p class="lock-who" id="lock-who" hidden></p>
+  </section>
+
+  <!-- 로그인 뒤 -->
+  <section class="room" id="room" hidden>
+
+    <div class="me">
+      <span id="me-mail"></span>
+      <button class="btn-line" id="signout" type="button">로그아웃</button>
+    </div>
+
+    <h2 class="block">입장 암호</h2>
+    <p class="lede">
+      학생이 수업 도우미에 들어올 때 넣는 숫자입니다. 과목마다 따로 정합니다.<br>
+      바꾸면 <b>그때부터 새 암호만</b> 통합니다. 학생들에게 알려 주세요.
+    </p>
+
+    <div class="notice">
+      <b>알아 두실 것</b>
+      <span>이 암호는 문고리이지 자물쇠가 아닙니다. 수업에서 소리 내어 알려 주는 값이고,
+        네 자리 숫자는 마음먹으면 뚫립니다. 실제로 막아 주는 것은 <b>명단</b>과 서버 규칙입니다.
+        성적이 걸린 것을 이 암호 하나로 지키지는 마세요.</span>
+    </div>
+
+    <ul class="cards" id="cards"></ul>
+
+  </section>
+
+  <p class="wait" id="wait">연결 중…</p>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="manage.js"></script>
+</body>
+</html>

@@ -74,7 +74,14 @@ const FILMS = C.films || [];
 const PHOTO_MAX = 1600;              // 긴 변. 강의실 스크린(1920)에 띄워도 견딘다
 const PHOTO_RAW_MB = 15;             // 고르기 전 원본이 이보다 크면 받지 않는다
 const SAY_MAX = C.intro.max || 500;
-const PASS = C.pass;                 // 문패다. 소스에 드러나므로 성적의 자물쇠로 쓰지 않는다.
+/* 입장 암호.
+   course.js 의 pass 는 처음 값이다. 교수가 관리 화면에서 바꾸면 서버(course_config)에
+   해시가 담기고, 그때부터는 그것만 통한다. 원문을 서버에 두지 않는 까닭은 소스나
+   콘솔에서 그냥 읽히지 않게 하려는 것이다.
+   다만 네 자리 숫자는 마음먹으면 뚫린다. 이것은 문고리이지 자물쇠가 아니다.
+   실제 자물쇠는 명단과 서버 규칙이다. */
+const PASS = C.pass;
+const CONFIG = "course_config";
 const KEY = C.id + "-who";
 const SIDS = C.id + "-sids";         // 이 기기가 지금까지 쓴 학번들
 
@@ -105,6 +112,7 @@ const state = {
   films: {},         // 강의 영상 공개 여부. 없으면 공개로 본다.
   roster: [],        // 수강생 명단 (이름·학번)
   rosterState: "wait",  // wait | ready | fail. 비었는지 못 읽었는지 가려 말해 주려는 것이다.
+  gateHash: null,       // 교수가 바꾼 암호의 해시. 없으면 course.js 의 처음 값을 쓴다.
   pick: null,        // 문패에서 고른 사람
   tasks: [],         // 주간 과제
   works: {},         // 내가 낸 과제  taskId -> 자료
@@ -249,7 +257,7 @@ if (USE_ROSTER) {
   $("gate-again").addEventListener("click", () => { state.pick = null; showPicked(); });
 }
 
-$("gate-form").addEventListener("submit", (e) => {
+$("gate-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const err = $("gate-error");
   const fail = (m) => { err.textContent = m; err.hidden = false; };
@@ -266,7 +274,11 @@ $("gate-form").addEventListener("submit", (e) => {
     if (name.length < 2) return fail("성명을 두 글자 이상 넣어 주세요.");
     if (sid.length < 4) return fail("학번을 확인해 주세요.");
   }
-  if (pw !== PASS) return fail("입장 암호가 다릅니다. 수업 시간에 알려 드린 숫자입니다.");
+  // 교수가 바꾼 암호가 있으면 그것만 통한다. 없으면 처음 값을 쓴다.
+  const ok = state.gateHash
+    ? (await hashOf(pw)) === state.gateHash
+    : pw === PASS;
+  if (!ok) return fail("입장 암호가 다릅니다. 수업 시간에 알려 드린 숫자입니다.");
 
   err.hidden = true;
   state.me = { name, sid };
@@ -381,6 +393,7 @@ onAuthStateChanged(auth, async (user) => {
   watchQuizzes();
   watchAnswers();
   watchIntros();
+  watchConfig();
   watchTasks();
   watchWorks();
   watchScores();
@@ -502,6 +515,24 @@ function watchScores() {
       if (state.view === "works") renderWorksAll();
     },
     () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
+  );
+}
+
+/* 암호를 견주는 자리.
+   원문을 주고받지 않고 해시로만 견준다. 브라우저가 자체로 SHA-256 을 해 준다. */
+async function hashOf(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+let stopConfig = null;
+
+function watchConfig() {
+  if (stopConfig) return;
+  stopConfig = onSnapshot(
+    doc(db, CONFIG, C.id),
+    (snap) => { state.gateHash = snap.exists() ? (snap.data().hash || null) : null; },
+    () => { /* 못 읽으면 처음 값을 쓴다 */ }
   );
 }
 

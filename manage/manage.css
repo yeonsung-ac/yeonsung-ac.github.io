@@ -1,0 +1,88 @@
+/* 수업 관리 — 홈페이지의 styles.css 위에 얹는다. 색과 글꼴은 그쪽 것을 쓴다. */
+
+[hidden]{display:none !important}
+
+:root{
+  --ok:#2f8f5b;
+  --soft:#f4f6f2;
+  --card-line:#dfe3dc;
+}
+
+/* 이 페이지는 흰 바탕이라 머리띠도 흰 바탕에 맞춘다.
+   본 사이트 헤더는 남색 위에 흰 글씨라 여기서는 글씨가 묻힌다. */
+.page-header{background:#fff;border-bottom:1px solid var(--line)}
+.page-header .wordmark b{color:var(--navy)}
+.page-header .wordmark span{color:var(--muted)}
+
+.wrap{max-width:820px;margin:0 auto;padding:44px 22px 90px}
+.wrap h1{margin:8px 0 30px;font-size:clamp(1.9rem,4.4vw,2.7rem);letter-spacing:-.05em}
+
+.wait{color:var(--muted);font-size:.9rem}
+
+/* ── 로그인 전 ───────────────────────────── */
+.lock{padding:34px 30px;border:1px solid var(--card-line);border-radius:14px;background:#fff}
+.lock-lede{margin:0 0 20px;color:var(--muted);line-height:1.8}
+.lock .btn-go{min-height:52px;padding:0 26px;font-size:1rem}
+.lock-who{margin:18px 0 0;padding:12px 15px;border-radius:9px;
+  background:#fdecea;color:#a2321f;font-size:.87rem;line-height:1.6}
+
+/* ── 로그인 뒤 ───────────────────────────── */
+.me{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 30px;
+  padding-bottom:18px;border-bottom:1px solid var(--line)}
+.me span{color:var(--muted);font-size:.88rem}
+.me .btn-line{margin-left:auto;min-height:38px;padding:0 14px;font-size:.82rem}
+
+.block{margin:0 0 8px;font-size:1.35rem;letter-spacing:-.04em}
+.lede{margin:0 0 18px;color:var(--muted);font-size:.92rem;line-height:1.8}
+.lede b{color:var(--ink,inherit)}
+
+.notice{display:grid;gap:5px;margin:0 0 26px;padding:15px 18px;border-radius:11px;
+  border-left:4px solid #c98a15;background:#fff6e5;color:#7a5a10;font-size:.86rem;line-height:1.75}
+.notice b{color:#5f4508}
+
+/* ── 과목 카드 ───────────────────────────── */
+.cards{list-style:none;display:grid;gap:16px;margin:0;padding:0}
+.card{padding:22px 24px;border:1px solid var(--card-line);border-radius:14px;background:#fff}
+.card-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.card-no{margin:0;font-weight:700;font-size:1.05rem;letter-spacing:-.03em}
+.card-link{margin-left:auto;color:var(--muted);font-size:.82rem;text-decoration:none}
+.card-link:hover{color:var(--navy);text-decoration:underline}
+
+.card-now{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:0 0 16px;color:var(--muted);font-size:.88rem}
+.card-now b{color:var(--navy);font-variant-numeric:tabular-nums}
+.card-at{color:#a8b0a6;font-size:.79rem}
+.dot{width:8px;height:8px;border-radius:50%;background:#c3c9c1;flex:0 0 auto}
+.dot.on{background:var(--ok)}
+
+.card-set{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.card-set label{font-weight:700;font-size:.85rem}
+.card-set input{
+  flex:1 1 190px;min-width:0;padding:12px 14px;
+  border:1px solid var(--card-line);border-radius:10px;background:#fff;
+  font:inherit;font-size:16px;
+}
+.card-set input:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:transparent}
+.card-set .btn-go,.card-set .btn-line{min-height:46px;padding:0 18px;font-size:.9rem}
+
+.card-err{margin:12px 0 0;padding:11px 14px;border-radius:9px;
+  background:#fdecea;color:#a2321f;font-size:.86rem}
+
+/* ── 알림 ────────────────────────────────── */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:95;
+  max-width:calc(100vw - 32px);padding:13px 22px;border-radius:999px;
+  background:rgba(15,26,42,.96);color:#fff;font-weight:600;font-size:.92rem;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.bad{background:rgba(150,40,26,.96)}
+
+@media(max-width:560px){
+  .wrap{padding:30px 18px 80px}
+  .card{padding:18px}
+  .card-set{display:grid}
+  .card-set .btn-go,.card-set .btn-line{width:100%}
+  .card-link{margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}
