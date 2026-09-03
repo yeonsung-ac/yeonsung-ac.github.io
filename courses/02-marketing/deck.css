@@ -1,0 +1,164 @@
+/* 교안 보관함 — 홈페이지의 styles.css 위에 얹는다. 색과 글꼴은 그쪽 것을 쓴다.
+   _class/class.css 를 끌어오지 않는 것은, 이 화면에는 문제도 과제도 없어
+   그 파일의 열에 아홉이 쓰이지 않기 때문이다. 문의 생김새만 같은 손으로 옮겼다. */
+
+[hidden]{display:none !important}
+
+:root{
+  --card-line:#dfe3dc;
+  --soft:#f4f6f2;
+  --ok:#2f8f5b;
+}
+
+.page-header{background:#fff;border-bottom:1px solid var(--line)}
+.page-header .wordmark b{color:var(--navy)}
+.page-header .wordmark span{color:var(--muted)}
+
+main{max-width:880px;margin:0 auto;padding:40px 22px 90px}
+.boot{color:var(--muted);font-size:.9rem}
+
+/* ── 문 ────────────────────────────────────── */
+.gate{display:grid;place-items:center;min-height:60vh}
+.gate-box{width:100%;max-width:420px}
+.gate-kicker{margin:0 0 6px;color:var(--muted);font-size:.82rem;letter-spacing:.02em}
+.gate-box h1{margin:0 0 14px;font-size:clamp(1.8rem,5.4vw,2.4rem);letter-spacing:-.05em}
+.gate-lede{margin:0 0 26px;color:var(--muted);font-size:.93rem;line-height:1.8}
+
+.gate-row{display:grid;gap:6px;margin:0 0 14px}
+.gate-row label{font-weight:700;font-size:.86rem}
+.gate-row input{
+  padding:13px 14px;border:1px solid var(--card-line);border-radius:10px;background:#fff;
+  font:inherit;font-size:16px;   /* 16px 밑으로 내려가면 아이폰이 화면을 확 당긴다 */
+}
+.gate-row input:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:transparent}
+
+.gate-error{margin:0 0 12px;padding:11px 14px;border-radius:9px;
+  background:#fdecea;color:#a2321f;font-size:.87rem}
+.gate-go{
+  width:100%;min-height:52px;border:0;border-radius:11px;
+  background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:1rem;cursor:pointer;
+}
+.gate-go:hover{opacity:.9}
+
+.gate-prof{margin:22px 0 0;color:var(--muted);font-size:.85rem}
+.gate-prof button{
+  margin-left:6px;padding:0;border:0;background:none;color:var(--navy);
+  font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;
+}
+.gate-foot{margin:26px 0 0;padding-top:18px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.79rem;line-height:1.8}
+.gate-foot b{color:var(--navy)}
+
+/* ── 들어온 뒤 ─────────────────────────────── */
+.room-head{display:flex;align-items:flex-start;gap:14px;margin:0 0 6px}
+.room-head h1{margin:4px 0 0;font-size:clamp(1.9rem,4.6vw,2.6rem);letter-spacing:-.05em}
+.crumb{margin:0;color:var(--muted);font-size:.8rem;letter-spacing:.04em}
+.btn-out{margin-left:auto;flex:0 0 auto;min-height:38px;padding:0 16px;font-size:.82rem}
+
+.room-who{margin:0 0 18px;color:var(--muted);font-size:.87rem}
+.lede{margin:0 0 22px;color:var(--muted);font-size:.92rem;line-height:1.8}
+.lede b{color:var(--navy)}
+
+.prof{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin:0 0 24px;padding:14px 16px;border-radius:11px;background:var(--soft)}
+.prof-who{color:var(--muted);font-size:.85rem}
+.prof .btn-line{margin-left:auto;min-height:38px;padding:0 14px;font-size:.82rem;
+  display:inline-flex;align-items:center;text-decoration:none}
+
+/* ── 교안 올리기 (교수만) ──────────────────── */
+.up{margin:0 0 26px;padding:20px;border:1px solid var(--card-line);border-radius:12px;background:#fff}
+.up-lede{margin:0 0 16px;color:var(--muted);font-size:.87rem;line-height:1.8}
+.up-lede b{color:var(--navy)}
+
+.up-pick{display:inline-block}
+.up-pick input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.up-pick span{
+  display:inline-flex;align-items:center;min-height:46px;padding:0 20px;
+  border-radius:11px;background:var(--navy);color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;
+}
+.up-pick input:focus-visible + span{outline:2px solid var(--navy);outline-offset:3px}
+
+.up-list{list-style:none;display:grid;gap:7px;margin:18px 0 0;padding:0}
+.up-row{display:grid;grid-template-columns:76px 1fr 118px;gap:11px;align-items:center;
+  font-size:.83rem;font-variant-numeric:tabular-nums}
+.up-row b{color:var(--navy)}
+.up-bar{height:7px;border-radius:999px;background:var(--soft);overflow:hidden}
+.up-bar i{display:block;height:100%;background:var(--navy);border-radius:999px;transition:width .2s}
+.up-say{color:var(--muted);text-align:right}
+.up-row.ok .up-bar i{background:var(--ok)}
+.up-row.ok .up-say{color:var(--ok)}
+.up-row.bad .up-bar i{background:#a2321f}
+.up-row.bad .up-say{color:#a2321f}
+.up-skip{padding:10px 13px;border-radius:9px;background:#fff6e5;color:#7a5a10;
+  font-size:.81rem;line-height:1.7}
+
+.wait{color:var(--muted);font-size:.9rem}
+.none{padding:34px 20px;border:1px dashed var(--card-line);border-radius:12px;
+  color:var(--muted);font-size:.9rem;line-height:1.8;text-align:center}
+
+/* ── 교안 목록 ─────────────────────────────── */
+/* 리스팅이다. 한 줄에 하나씩, 썸네일은 왼쪽에 작게. 폰에서는 위아래로 눕는다. */
+.decks{list-style:none;display:grid;gap:14px;margin:0;padding:0}
+.deck{
+  display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center;
+  padding:14px;border:1px solid var(--card-line);border-radius:14px;background:#fff;
+}
+.deck-thumb{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
+.deck-body{min-width:0}
+.deck-meta{margin:0 0 5px;color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.deck-meta b{color:var(--navy);font-size:.88rem}
+.deck-title{margin:0 0 14px;font-size:1.06rem;line-height:1.4;letter-spacing:-.03em}
+
+.deck-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.deck-acts .btn-go,.deck-acts .btn-line{min-height:42px;padding:0 16px;font-size:.87rem}
+
+/* 감춰 둔 강은 교수 화면에만 나온다. 학생에게 안 보인다는 것이 한눈에 보여야 한다. */
+.deck.shut{background:var(--soft);border-style:dashed}
+.deck.shut .deck-thumb{opacity:.45}
+.deck.shut .deck-title{color:var(--muted)}
+
+/* 공개·비공개 스위치 */
+.sw{
+  display:inline-flex;align-items:center;gap:9px;margin-left:auto;flex:0 0 auto;
+  min-height:42px;padding:0 14px 0 11px;border:1px solid var(--card-line);border-radius:999px;
+  background:#fff;color:var(--muted);font:inherit;font-size:.83rem;font-weight:700;cursor:pointer;
+}
+.sw i{width:34px;height:20px;border-radius:999px;background:#c9cfc6;position:relative;
+  transition:background .16s}
+.sw i:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;
+  border-radius:50%;background:#fff;transition:transform .16s}
+.sw.on{color:var(--ok);border-color:#bfe0cc}
+.sw.on i{background:var(--ok)}
+.sw.on i:after{transform:translateX(14px)}
+
+/* ── 알림 ──────────────────────────────────── */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:95;
+  max-width:calc(100vw - 32px);padding:13px 22px;border-radius:999px;
+  background:rgba(15,26,42,.96);color:#fff;font-weight:600;font-size:.92rem;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.bad{background:rgba(150,40,26,.96)}
+
+/* ── 폰 ────────────────────────────────────── */
+@media(max-width:620px){
+  main{padding:28px 16px 80px}
+
+  /* 썸네일을 폭 가득 눕히면 그 안에 그려 넣은 제목·날짜·쪽수가 바로 밑 글과
+     겹쳐 보인다. 리스팅이므로 왼쪽에 작게 두고 글을 오른쪽에 세운다. */
+  .deck{grid-template-columns:104px 1fr;gap:12px;padding:12px;align-items:start}
+  .deck-thumb{margin-top:2px}
+  .deck-title{font-size:.98rem;margin-bottom:11px}
+  .deck-acts{gap:7px}
+  .deck-acts .btn-go,.deck-acts .btn-line{flex:1 1 44%;justify-content:center;padding:0 10px}
+  .sw{margin-left:0;flex:1 1 100%;justify-content:center;min-height:38px}
+  .prof .btn-line{margin-left:0}
+}
+
+/* 아주 좁은 기기에서는 단추가 두 개도 안 들어간다. 한 줄에 하나씩 내린다. */
+@media(max-width:380px){
+  .deck{grid-template-columns:84px 1fr}
+  .deck-acts .btn-go,.deck-acts .btn-line{flex:1 1 100%}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}

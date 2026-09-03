@@ -32,6 +32,7 @@ const CONFIG = "course_config";
 /* 다루는 과목. 새 과목을 붙이면 여기 한 줄 더한다. */
 const COURSES = [
   { id: "mgmt", no: "01", name: "경영학원론", path: "courses/01-management/", first: "0909" },
+  { id: "mkt", no: "02", name: "통합적 마케팅 커뮤니케이션", path: "courses/02-marketing/", first: "0909" },
   { id: "ad", no: "03", name: "광고학개론", path: "courses/03-advertising/", first: "0909" },
   { id: "cb", no: "04", name: "소비자행동론", path: "courses/04-consumer-behavior/", first: "0909" },
 ];
@@ -209,6 +210,10 @@ const WHAT = [
   { id: "ad", name: "광고학개론" },
   { id: "cb", name: "소비자행동론" },
 ];
+/* 학생이 낸 것 말고 내가 올려 둔 것. 교안 PDF·PPT 가 여기 있고,
+   덩치가 커서 빼놓고 세면 사용량이 실제와 어긋난다. */
+const MINE = [{ prefix: "marketing", name: "마케팅 교안" }];
+
 const KIND = [
   { k: "intros", t: "자기소개" },
   { k: "works", t: "과제" },
@@ -260,6 +265,11 @@ $("use-go").addEventListener("click", async () => {
       rows.push({ ...c, counts, files: a.files + b.files, bytes: a.bytes + b.bytes });
     }
 
+    for (const m of MINE) {
+      const g = await sizeOf(m.prefix);
+      rows.push({ id: m.prefix, name: m.name, counts: {}, files: g.files, bytes: g.bytes });
+    }
+
     const files = rows.reduce((s, r) => s + r.files, 0);
     const bytes = rows.reduce((s, r) => s + r.bytes, 0);
     const docs = rows.reduce((s, r) =>
@@ -278,10 +288,10 @@ $("use-go").addEventListener("click", async () => {
       <div class="use-wrap">
         <table class="use-tb">
           <thead><tr><th>과목</th>${KIND.map((k) => `<th>${esc(k.t)}</th>`).join("")}
-            <th>사진</th><th>용량</th></tr></thead>
+            <th>파일</th><th>용량</th></tr></thead>
           <tbody>${rows.map((r) => `<tr>
             <td class="nm">${esc(r.name)}</td>
-            ${KIND.map((k) => `<td>${r.counts[k.k] === null ? "—" : r.counts[k.k]}</td>`).join("")}
+            ${KIND.map((k) => `<td>${r.counts[k.k] == null ? "—" : r.counts[k.k]}</td>`).join("")}
             <td>${r.files}</td><td>${nice(r.bytes)}</td>
           </tr>`).join("")}</tbody>
           <tfoot><tr><td class="nm">합계</td>
@@ -291,7 +301,7 @@ $("use-go").addEventListener("click", async () => {
       </div>
 
       <div class="use-bars">
-        ${bar("사진 저장 (Cloud Storage)", pctSt, `${mb(bytes).toFixed(1)} MB / 무료 5 GB`)}
+        ${bar("파일 저장 (Cloud Storage)", pctSt, `${mb(bytes).toFixed(1)} MB / 무료 5 GB`)}
         ${bar("글·기록 저장 (Firestore)", pctFs, `문서 ${docs}개 · 약 ${mb(fsBytes).toFixed(1)} MB / 무료 1 GiB`)}
       </div>
 
