@@ -86,3 +86,37 @@
   .card-link{margin-left:0}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none !important}}
+
+/* ── 사용량 ──────────────────────────────── */
+.use-h{margin-top:44px;padding-top:34px;border-top:2px solid var(--card-line)}
+.use-acts{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 20px}
+.use-acts .btn-go,.use-acts .btn-line{min-height:46px;padding:0 20px;font-size:.9rem;
+  display:inline-flex;align-items:center;text-decoration:none}
+.use-wait{margin:0;color:var(--muted);font-size:.9rem}
+
+.use-wrap{overflow-x:auto;border:1px solid var(--card-line);border-radius:12px;background:#fff}
+.use-tb{width:100%;border-collapse:collapse;font-size:.88rem;min-width:520px}
+.use-tb th,.use-tb td{padding:11px 14px;text-align:right;border-bottom:1px solid var(--line);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.use-tb th{background:var(--soft);color:var(--muted);font-size:.78rem;font-weight:700}
+.use-tb th:first-child,.use-tb .nm{text-align:left;font-weight:700}
+.use-tb tfoot td{border-bottom:0;background:var(--soft);font-weight:700}
+
+.use-bars{display:grid;gap:16px;margin:20px 0 0}
+.use-bar-top{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px}
+.use-bar-top b{font-size:.92rem}
+.use-bar-top span{color:var(--muted);font-size:.82rem;font-variant-numeric:tabular-nums}
+.use-track{height:10px;border-radius:999px;background:var(--soft);overflow:hidden}
+.use-track span{display:block;height:100%;background:var(--ok);border-radius:999px;
+  transition:width .3s}
+.use-bar-sub{margin:6px 0 0;color:var(--muted);font-size:.79rem}
+
+.use-cost{display:grid;gap:7px;margin:24px 0 0;padding:18px 20px;border-radius:12px;
+  background:#e8f4ec;color:#1f6b45}
+.use-cost b{color:#155235;font-size:1.05rem}
+.use-cost span{font-size:.87rem;line-height:1.7}
+.use-cost.over{background:#fff6e5;color:#7a5a10}
+.use-cost.over b{color:#5f4508}
+.use-note{color:#5c8a70 !important;font-size:.79rem !important}
+.use-cost.over .use-note{color:#8a7434 !important}
+.use-cost a{color:inherit}

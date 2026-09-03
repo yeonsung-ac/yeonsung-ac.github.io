@@ -14,7 +14,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 import {
   getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp,
+  getCountFromServer,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+import {
+  getStorage, ref as storageRef, listAll, getMetadata,
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
 
 import { firebaseConfig } from "../courses/_class/firebase-config.js";
 import { isProfessorUser } from "../professor.js";
@@ -22,6 +26,7 @@ import { isProfessorUser } from "../professor.js";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const store = getStorage(app);
 const CONFIG = "course_config";
 
 /* 다루는 과목. 새 과목을 붙이면 여기 한 줄 더한다. */
@@ -183,4 +188,140 @@ async function reset(id) {
   } catch (e) {
     say(id, "되돌리지 못했습니다 (" + (e.code || e.message) + ")");
   }
+}
+
+
+/* ── 사용량 ───────────────────────────────────
+   요금은 결국 이 숫자에서 나온다. 청구 금액 자체는 결제 API 가 있어야 읽을 수
+   있고 그건 서버가 필요하다. 이 사이트는 서버가 없으므로 사용량으로 가늠한다.
+
+   무료 제공량은 firebase.google.com/pricing 에 적힌 값이다.
+     Firestore  저장 1 GiB · 하루 읽기 5만 · 쓰기 2만 · 삭제 2만
+     Storage    저장 5 GB · 달 내려받기 100 GB · 업로드 작업 5천 · 내려받기 작업 5만 */
+const FREE = { fsStore: 1 * 1024 ** 3, stStore: 5 * 1024 ** 3 };
+
+/* 무료 한도를 넘겼을 때의 대략 단가(USD). 지역과 시점에 따라 다르므로
+   화면에도 '대략' 이라고 밝혀 둔다. 넘길 일이 거의 없어 참고용이다. */
+const RATE = { fsStoreGiB: 0.18, stStoreGB: 0.026, usdKrw: 1400 };
+
+const WHAT = [
+  { id: "mgmt", name: "경영학원론" },
+  { id: "ad", name: "광고학개론" },
+  { id: "cb", name: "소비자행동론" },
+];
+const KIND = [
+  { k: "intros", t: "자기소개" },
+  { k: "works", t: "과제" },
+  { k: "answers", t: "퀴즈 답안" },
+  { k: "roster", t: "명단" },
+];
+
+const mb = (n) => (n / 1024 / 1024);
+const nice = (n) => (n >= 1024 * 1024
+  ? (n / 1024 / 1024).toFixed(1) + " MB"
+  : Math.max(1, Math.round(n / 1024)) + " KB");
+
+async function countOf(name) {
+  try {
+    const s = await getCountFromServer(collection(db, name));
+    return s.data().count;
+  } catch { return null; }
+}
+
+/* 창고는 한 사람에 폴더 하나라 안쪽까지 들어가 세어야 한다. */
+async function sizeOf(prefix) {
+  let files = 0, bytes = 0;
+  async function walk(r) {
+    const got = await listAll(r);
+    for (const it of got.items) {
+      files++;
+      try { bytes += (await getMetadata(it)).size || 0; } catch { /* 그만 */ }
+    }
+    for (const p of got.prefixes) await walk(p);
+  }
+  try { await walk(storageRef(store, prefix)); } catch { /* 없을 수 있다 */ }
+  return { files, bytes };
+}
+
+$("use-go").addEventListener("click", async () => {
+  const btn = $("use-go");
+  const out = $("use-out");
+  btn.disabled = true;
+  btn.textContent = "세는 중…";
+  out.innerHTML = `<p class="use-wait">서버를 훑고 있습니다. 사진이 많으면 조금 걸립니다…</p>`;
+
+  try {
+    const rows = [];
+    for (const c of WHAT) {
+      const counts = {};
+      for (const k of KIND) counts[k.k] = await countOf(`${c.id}_${k.k}`);
+      const a = await sizeOf(`${c.id}_intros`);
+      const b = await sizeOf(`${c.id}_works`);
+      rows.push({ ...c, counts, files: a.files + b.files, bytes: a.bytes + b.bytes });
+    }
+
+    const files = rows.reduce((s, r) => s + r.files, 0);
+    const bytes = rows.reduce((s, r) => s + r.bytes, 0);
+    const docs = rows.reduce((s, r) =>
+      s + KIND.reduce((t, k) => t + (r.counts[k.k] || 0), 0), 0);
+
+    // 문서 하나를 넉넉히 2KB 로 잡는다. 실제로는 그보다 작다.
+    const fsBytes = docs * 2048;
+    const pctSt = bytes / FREE.stStore * 100;
+    const pctFs = fsBytes / FREE.fsStore * 100;
+
+    const overSt = Math.max(0, bytes - FREE.stStore) / 1024 ** 3;
+    const overFs = Math.max(0, fsBytes - FREE.fsStore) / 1024 ** 3;
+    const won = Math.round((overSt * RATE.stStoreGB + overFs * RATE.fsStoreGiB) * RATE.usdKrw);
+
+    out.innerHTML = `
+      <div class="use-wrap">
+        <table class="use-tb">
+          <thead><tr><th>과목</th>${KIND.map((k) => `<th>${esc(k.t)}</th>`).join("")}
+            <th>사진</th><th>용량</th></tr></thead>
+          <tbody>${rows.map((r) => `<tr>
+            <td class="nm">${esc(r.name)}</td>
+            ${KIND.map((k) => `<td>${r.counts[k.k] === null ? "—" : r.counts[k.k]}</td>`).join("")}
+            <td>${r.files}</td><td>${nice(r.bytes)}</td>
+          </tr>`).join("")}</tbody>
+          <tfoot><tr><td class="nm">합계</td>
+            ${KIND.map((k) => `<td>${rows.reduce((s, r) => s + (r.counts[k.k] || 0), 0)}</td>`).join("")}
+            <td>${files}</td><td>${nice(bytes)}</td></tr></tfoot>
+        </table>
+      </div>
+
+      <div class="use-bars">
+        ${bar("사진 저장 (Cloud Storage)", pctSt, `${mb(bytes).toFixed(1)} MB / 무료 5 GB`)}
+        ${bar("글·기록 저장 (Firestore)", pctFs, `문서 ${docs}개 · 약 ${mb(fsBytes).toFixed(1)} MB / 무료 1 GiB`)}
+      </div>
+
+      <div class="use-cost ${won ? "over" : ""}">
+        <b>${won ? `이대로면 달 ${won.toLocaleString()}원쯤 나올 수 있습니다`
+                 : "무료 한도 안입니다 · 예상 청구 0원"}</b>
+        <span>${won
+          ? "무료 한도를 넘긴 만큼만 셈한 것입니다."
+          : "지금 쌓인 양으로는 저장 요금이 붙지 않습니다. 읽고 쓰는 횟수도 하루 무료량"
+            + "(읽기 5만 · 쓰기 2만)에 한참 못 미칩니다."}</span>
+        <span class="use-note">
+          저장 단가는 대략 GB당 월 $${RATE.stStoreGB} (사진) · GiB당 $${RATE.fsStoreGiB} (글) 로 셈했고,
+          환율은 ${RATE.usdKrw}원으로 잡았습니다. 지역과 시점에 따라 다르니 어림수로만 보세요.
+          정확한 청구액은 <a href="https://console.firebase.google.com/project/yeonsung-ac/usage"
+          target="_blank" rel="noopener noreferrer">Firebase 사용량·결제</a>에서 보셔야 합니다.
+        </span>
+      </div>`;
+  } catch (e) {
+    out.innerHTML = `<p class="card-err">세지 못했습니다 (${esc(e.code || e.message)})</p>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "다시 세어 보기";
+  }
+});
+
+function bar(name, pct, sub) {
+  const w = Math.min(100, Math.max(pct, pct > 0 ? 0.6 : 0));
+  return `<div class="use-bar">
+    <p class="use-bar-top"><b>${esc(name)}</b><span>${pct < 0.1 ? "0.1% 미만" : pct.toFixed(1) + "%"}</span></p>
+    <div class="use-track"><span style="width:${w}%"></span></div>
+    <p class="use-bar-sub">${esc(sub)}</p>
+  </div>`;
 }
