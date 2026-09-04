@@ -167,7 +167,7 @@ export function drawBrand(box) {
       '<p class="bd-lede">도형에 마우스를 얹거나 누르면 아래에 뜻이 나옵니다. ' +
         '<i class="nd-dot"></i> 가 붙은 곳은 교재가 옮기면서 원문과 달라진 자리입니다.</p>' +
     "</div>" +
-    '<div class="bd-scroll"><div class="bd-fit"><div class="bd-map"' +
+    '<div class="bd-top"><div class="bd-scroll"><div class="bd-fit"><div class="bd-map"' +
       ' style="width:' + w + "px;height:" + h + 'px">' +
       '<svg class="bd-wire" width="' + w + '" height="' + h + '" aria-hidden="true">' +
         '<path class="w0" d="' + wire(0) + '"/>' +
@@ -176,7 +176,7 @@ export function drawBrand(box) {
       "</svg>" +
       all.map(nodeHtml).join("") +
     "</div></div></div>" +
-    '<p class="bd-hint">좁은 화면에서는 그림을 옆으로 밀어 보세요</p>' +
+    '<p class="bd-hint">좁은 화면에서는 그림을 옆으로 밀어 보세요</p></div>' +
     '<div class="bd-panel" id="bd-panel">' + all.map(cardHtml).join("") + "</div>" +
     '<p class="bd-foot">교재 <b>촉진관리</b>(제4판) P011. 원문은 ' +
       "Keller, K. L. (1993), <i>Journal of Marketing</i> 57(1), p.7, " +
@@ -223,7 +223,13 @@ export function drawBrand(box) {
     const scroll = box.querySelector(".bd-scroll");
     const pad = box.querySelector(".bd-fit");
     if (!scroll.clientWidth) return;
-    const k = Math.max(0.58, Math.min(1, scroll.clientWidth / w));
+
+    /* 그림은 화면 맨 위에 붙박여 있고 설명만 흐른다(엑셀의 틀 고정처럼).
+       그러려면 그림이 화면을 다 먹지 않아야 한다. 창 높이의 절반 남짓에
+       맞춰 줄이되, 폭에 맞춘 값과 견주어 작은 쪽을 쓴다. 가로세로가 따로
+       놀면 도형이 찌그러지기 때문이다. */
+    const room = Math.min(innerHeight * (innerWidth < 620 ? 0.34 : 0.5), 520);
+    const k = Math.max(0.58, Math.min(1, scroll.clientWidth / w, room / h));
     map.style.transformOrigin = "0 0";
     map.style.transform = k < 1 ? "scale(" + k + ")" : "";
     pad.style.width = Math.ceil(w * k) + "px";
