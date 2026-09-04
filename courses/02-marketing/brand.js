@@ -167,7 +167,10 @@ export function drawBrand(box) {
       '<p class="bd-lede">도형에 마우스를 얹거나 누르면 아래에 뜻이 나옵니다. ' +
         '<i class="nd-dot"></i> 가 붙은 곳은 교재가 옮기면서 원문과 달라진 자리입니다.</p>' +
     "</div>" +
-    '<div class="bd-top"><div class="bd-scroll"><div class="bd-fit"><div class="bd-map"' +
+    '<div class="bd-top">' +
+      '<button class="bd-fold" id="bd-fold" type="button" aria-expanded="true">' +
+        '<span>그림 접기</span><i></i></button>' +
+      '<div class="bd-scroll"><div class="bd-fit"><div class="bd-map"' +
       ' style="width:' + w + "px;height:" + h + 'px">' +
       '<svg class="bd-wire" width="' + w + '" height="' + h + '" aria-hidden="true">' +
         '<path class="w0" d="' + wire(0) + '"/>' +
@@ -236,6 +239,16 @@ export function drawBrand(box) {
     pad.style.height = Math.ceil(h * k) + "px";
     box.querySelector(".bd-hint").hidden = Math.ceil(w * k) <= scroll.clientWidth + 1;
   };
+  /* 폰에서는 붙박인 그림이 화면의 절반쯤을 먹는다. 읽을 때 답답하므로
+     접을 수 있게 둔다. 접어도 붙박이 자리는 남아, 다시 펴면 제자리다. */
+  const fold = box.querySelector("#bd-fold");
+  fold.addEventListener("click", () => {
+    const off = box.classList.toggle("folded");
+    fold.setAttribute("aria-expanded", String(!off));
+    fold.querySelector("span").textContent = off ? "그림 펴기" : "그림 접기";
+    if (!off) fit();
+  });
+
   fit();
   window.addEventListener("resize", fit);
   if (window.ResizeObserver) new ResizeObserver(fit).observe(box);
