@@ -1,107 +1,137 @@
 /* 그림 1-1 · 브랜드자산 형성과정
    ────────────────────────────────────────────────────────────
-   글씨 크기를 먼저 못 박고 그림을 거기에 맞춘다. 어느 화면에서도
-   마디 이름은 15px 밑으로 내려가지 않는다. 교재 그림처럼 옆으로 뻗으면
-   폰에서 글씨를 줄일 수밖에 없으므로, 위에서 아래로 세웠다. */
+   위는 그림, 아래는 설명이다. 눈으로 짚는 곳과 읽는 곳을 나누었다.
+   그래서 도형은 작아도 되고, 설명 글씨는 어느 화면에서도 줄지 않는다. */
 
 .brand{
-  margin:0 0 30px;padding:26px 24px 22px;
+  margin:0 0 30px;padding:26px 22px 22px;
   border-radius:16px;background:var(--navy);color:#eef2f6;
+
+  /* 두 집안의 색. 인지도 쪽은 라임, 이미지 쪽은 하늘. 뿌리와 브랜드지식은
+     어느 쪽도 아니라 흰빛으로 둔다. 색이 끝가지까지 이어져야 어느 줄기에
+     매달린 것인지 눈으로 따라갈 수 있다. */
+  --c0:#e4ecf5;--c1:#c8ef64;--c2:#7cc4f0;
 }
 
 .bd-kick{margin:0 0 7px;color:#c8ef64;font-size:.79rem;font-weight:700;letter-spacing:.06em}
 .brand h2{margin:0 0 8px;font-size:clamp(1.15rem,3.1vw,1.5rem);letter-spacing:-.04em;color:#fff}
-.bd-lede{margin:0 0 24px;color:#9fb0c4;font-size:.85rem;line-height:1.7}
-.bd-foot{margin:22px 0 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);
-  color:#7e93b2;font-size:.76rem}
+.bd-lede{margin:0 0 20px;color:#9fb0c4;font-size:.85rem;line-height:1.8}
+
+.bd-foot{margin:20px 0 0;padding-top:15px;border-top:1px solid rgba(255,255,255,.1);
+  color:#7e93b2;font-size:.76rem;line-height:1.7}
 .bd-foot b{color:#9fb0c4}
 
-/* ── 나무 ─────────────────────────────────── */
-.bn-root,.bn-kids{list-style:none;margin:0;padding:0}
-.bn{position:relative}
+/* ── 그림 ─────────────────────────────────── */
+/* 좁은 화면에서는 제 칸 안에서만 옆으로 밀린다. 페이지 전체가 밀리면
+   글을 읽다가 자꾸 틀어져 성가시다. */
+.bd-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:6px;
+  -webkit-overflow-scrolling:touch}
+.bd-fit{position:relative}          /* 줄인 그림이 차지하는 실제 자리 */
+.bd-map{position:relative}
 
-/* 마디. 통째로 단추라 손가락으로 누르기 쉽다. */
-.bn-box{
-  display:block;width:100%;text-align:left;
-  margin:0 0 7px;padding:11px 15px;
-  border:1px solid rgba(255,255,255,.16);border-radius:10px;
-  background:rgba(255,255,255,.055);color:inherit;font:inherit;cursor:pointer;
-  transition:background .15s,border-color .15s,opacity .15s;
+.bd-wire{position:absolute;left:0;top:0;pointer-events:none}
+.bd-wire path{fill:none;stroke-width:1.5;stroke-linejoin:round}
+.bd-wire .w0{stroke:rgba(228,236,245,.5)}
+.bd-wire .w1{stroke:rgba(200,239,100,.45)}
+.bd-wire .w2{stroke:rgba(124,196,240,.45)}
+
+/* 마디. 이니셜이 크고 우리말이 작다. 여기서는 읽는 것이 아니라 짚는 것이라
+   우리말은 '어느 것인지 알아보는' 정도면 된다. 읽을 것은 아래에 있다. */
+.nd{
+  position:absolute;width:112px;height:52px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:0 6px;border:1.5px solid var(--c);border-radius:11px;
+  background:#101b2d;color:var(--c);font:inherit;cursor:pointer;
+  transition:background .14s,color .14s,opacity .14s,transform .14s;
 }
-.bn-box:hover{background:rgba(255,255,255,.11)}
-/* 제목 줄. 표시가 붙는 마디가 있어 한 줄로 묶는다. 좁으면 표시가 아래로 내려간다. */
-.bn-top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
-.bn-t{font-weight:700;font-size:.97rem;line-height:1.4;letter-spacing:-.02em}
+.nd.fam0{--c:var(--c0)}
+.nd.fam1{--c:var(--c1)}
+.nd.fam2{--c:var(--c2)}
 
-/* 교재가 원문과 달라진 자리. 학생이 시험 볼 것은 교재라 본체는 그대로 두고,
-   여기에만 표시를 붙여 눌러 보게 한다. 색을 요란하게 쓰면 '틀린 곳'처럼
-   보이므로 흐린 테두리로만 둔다. */
-.bn-mark{
-  flex:0 0 auto;padding:2px 8px;border-radius:999px;
-  border:1px solid rgba(200,239,100,.45);color:#c8ef64;
-  font-size:.7rem;font-weight:700;letter-spacing:.01em;line-height:1.5;
+.nd-ab{font-weight:800;font-size:.86rem;letter-spacing:.02em;line-height:1.2;white-space:nowrap}
+.nd-s{color:#8ea0b6;font-size:.72rem;line-height:1.25;white-space:nowrap}
+
+/* 위 세 겹은 이 그림의 뼈대라 둥글게, 조금 더 크게 */
+.nd.lv0,.nd.lv1,.nd.lv2{border-width:2px;border-radius:26px}
+.nd.lv0 .nd-ab,.nd.lv1 .nd-ab,.nd.lv2 .nd-ab{font-size:.95rem}
+
+.nd:hover{transform:translateY(-1px)}
+.nd.on{background:var(--c);color:#101b2d}
+.nd.on .nd-s{color:rgba(16,27,45,.65)}
+.nd.off{opacity:.28}
+
+/* 교재가 원문과 달라진 자리. 요란하게 쓰면 '틀린 곳'처럼 보이므로 점 하나만. */
+.nd.has-note:after{
+  content:"";position:absolute;top:6px;right:8px;
+  width:6px;height:6px;border-radius:50%;background:var(--c);
 }
-.bn-box.on .bn-mark{border-color:rgba(16,27,45,.35);color:#2f4210}
-.bn-sub{display:block;margin-top:3px;color:#9fb0c4;font-size:.79rem;line-height:1.5}
+.nd-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:#c8ef64;vertical-align:middle;margin:0 1px}
 
-/* 고른 마디와 거기까지의 길 */
-.bn-box.on{background:#c8ef64;border-color:#c8ef64;color:#101b2d}
-.bn-box.on .bn-sub{color:#41562a}
-.bn-box.off{opacity:.34}
+/* 줄여도 다 안 들어갈 때만 나온다. 들어가면 js 가 감춘다. */
+.bd-hint{margin:8px 0 0;color:#7e93b2;font-size:.76rem;text-align:center}
+.bd-hint[hidden]{display:none}
 
-/* 뜻풀이. 고른 마디 바로 밑에 나온다. 딴 데 띄우면 눈이 왔다 갔다 한다. */
-.bn-say{
-  margin:-2px 0 10px;padding:11px 15px;border-radius:10px;
-  background:rgba(200,239,100,.1);border-left:3px solid #c8ef64;
-  color:#dfe7f2;font-size:.87rem;line-height:1.75;
+/* ── 설명 ─────────────────────────────────── */
+/* 열셋을 한꺼번에 깔아 두고 흐려 놓는다. 하나씩 갈아 끼우면 자리가 흔들려
+   매번 어디를 볼지 다시 찾아야 하고, 눌렀던 것이 사라져 견줄 수도 없다.
+   이대로 두면 그 자체로 용어 사전 노릇도 한다. */
+.bd-panel{
+  display:grid;grid-template-columns:1fr;gap:8px;
+  margin:22px 0 0;padding-top:20px;border-top:1px solid rgba(255,255,255,.1);
 }
-.bn-say p{margin:0}
 
-/* 원문 쪽지. 뜻풀이와 같은 상자에 있되 결이 다르다는 것이 보여야 한다. */
-.bn-note{
-  margin-top:9px !important;padding-top:9px;
+.bp{
+  display:grid;grid-template-columns:74px 1fr;gap:13px;align-items:start;
+  width:100%;text-align:left;
+  padding:13px 15px;border:1px solid rgba(255,255,255,.08);border-radius:12px;
+  background:rgba(255,255,255,.03);color:inherit;font:inherit;cursor:pointer;
+  opacity:.42;transition:opacity .16s,background .16s,border-color .16s;
+}
+.bp.fam0{--c:var(--c0)}
+.bp.fam1{--c:var(--c1)}
+.bp.fam2{--c:var(--c2)}
+
+.bp:hover{opacity:.78}
+.bp.path{opacity:.7}                 /* 고른 것으로 가는 길목 */
+.bp.on{
+  opacity:1;background:rgba(255,255,255,.075);
+  border-color:var(--c);border-left-width:3px;
+}
+
+.bp-ab{
+  padding:5px 0;border-radius:8px;background:rgba(255,255,255,.06);
+  color:var(--c);font-weight:800;font-size:.78rem;letter-spacing:.02em;
+  text-align:center;white-space:nowrap;
+}
+.bp.on .bp-ab{background:var(--c);color:#101b2d}
+
+.bp-body{display:block;min-width:0}
+.bp-body > b{display:block;font-size:1rem;letter-spacing:-.03em;line-height:1.4}
+.bp-en{display:block;margin-top:2px;color:var(--c);font-style:normal;
+  font-size:.79rem;line-height:1.5;opacity:.85}
+.bp-sub{display:block;margin-top:3px;color:#8ea0b6;font-style:normal;
+  font-size:.79rem;line-height:1.55}
+.bp-body > span{display:block;margin-top:8px;color:#dfe7f2;font-size:.88rem;line-height:1.75}
+
+.bp-note{
+  margin-top:9px;padding-top:9px;
   border-top:1px dashed rgba(255,255,255,.18);
-  color:#9fb0c4;font-size:.83rem;
+  color:#9fb0c4 !important;font-size:.83rem !important;
 }
-.bn-note b{color:#c8ef64;font-weight:700}
-
-/* 안내 문구 안에 놓인 표시는 글줄에 얹히므로 조금 줄인다 */
-.bd-lede .bn-mark{display:inline-block;font-size:.68rem;padding:1px 7px;margin:0 2px}
-
-/* 아래 겹은 들여쓰고 왼쪽에 줄을 그어 '매달린 것'임을 보인다.
-   선을 그리지 않으면 넷째 겹부터 어느 줄기 것인지 헷갈린다. */
-.bn-kids{margin-left:15px;padding-left:14px;border-left:2px solid rgba(255,255,255,.13)}
-
-/* 뿌리에서 내려오는 첫 줄기는 조금 더 밝게. 브랜드자산과 브랜드지식이
-   형제처럼 나란히 보이면 이 그림이 무엇을 말하는지가 흐려진다. */
-.bn-root > .bn > .bn-kids{border-left-color:rgba(200,239,100,.4)}
-
-/* 겹이 깊어질수록 글씨를 아주 조금만 줄인다. 위아래 위계는 보이되
-   맨 아래 것도 읽을 수 있어야 한다. */
-.bn[data-d="3"] .bn-t,
-.bn[data-d="4"] .bn-t{font-size:.93rem}
-.bn[data-d="5"] .bn-t{font-size:.9rem;font-weight:600}
-
-/* 둘째 겹(브랜드지식)은 뿌리와 한 몸처럼 보이게 살짝 도드라뜨린다.
-   고르거나 흐려진 상태일 때는 비켜 준다. 이 규칙이 더 촘촘해서, 비켜 주지
-   않으면 길 위에 있는데도 색이 안 살아난다. */
-.bn[data-d="0"] > .bn-box .bn-t{font-size:1.12rem}
-.bn[data-d="1"] > .bn-box:not(.on):not(.off){background:rgba(255,255,255,.09)}
+.bp-note b{display:inline;color:#c8ef64;font-size:inherit;font-weight:700}
 
 /* ── 넓은 화면 ────────────────────────────── */
-/* 끝가지끼리만 나란히 세운다. 칸 너비를 230px 아래로는 내리지 않으므로,
-   화면이 좁아지면 두 칸이 저절로 한 칸으로 접힌다. 글씨는 그대로다. */
-@media(min-width:760px){
+@media(min-width:820px){
   .brand{padding:32px 30px 26px}
-  .bn-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-    gap:8px;align-items:start}
-  .bn-row > .bn > .bn-box{height:100%}
+  .bd-panel{grid-template-columns:1fr 1fr;gap:9px}
 }
 
+/* ── 폰 ───────────────────────────────────── */
 @media(max-width:620px){
-  .brand{padding:22px 16px 18px;margin-bottom:24px;border-radius:14px}
-  .bn-kids{margin-left:9px;padding-left:11px}
-  .bn-box{padding:10px 13px}
+  .brand{padding:22px 14px 18px;margin-bottom:24px;border-radius:14px}
+  .bp{grid-template-columns:64px 1fr;gap:11px;padding:12px 13px}
+  .bp-ab{font-size:.72rem}
 }
 
-@media(prefers-reduced-motion:reduce){.bn-box{transition:none}}
+@media(prefers-reduced-motion:reduce){.nd,.bp{transition:none}}
