@@ -736,7 +736,9 @@ body.showing{overflow:hidden}
 
 /* ── 오늘의 주제 ──────────────────────────────
    강의실 스크린에 띄우는 발표 화면으로 가는 자리. 수업 시작 때 한 번 누른다. */
-.today{margin:0 0 34px}
+/* 두 장 넘게 놓이면 나란히 세운다. 하나씩 세로로 쌓으면 자리를 많이 먹는다. */
+.today{display:grid;gap:10px;margin:0 0 34px}
+@media(min-width:720px){.today{grid-template-columns:1fr 1fr}}
 .today-go{
   display:grid;gap:5px;padding:20px 24px;border-radius:13px;
   background:var(--navy);color:#dfe7f2;text-decoration:none;

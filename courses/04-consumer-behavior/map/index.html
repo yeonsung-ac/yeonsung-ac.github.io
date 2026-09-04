@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>전체 과목의 지도 | 소비자행동론</title>
+  <link rel="stylesheet" href="flow.css">
+</head>
+<body>
+
+<main class="wrap">
+
+  <a class="back" href="../">← 소비자행동론</a>
+
+  <div class="head">
+    <p class="kick">소비자행동론 · 1장 ~ 17장</p>
+    <h1>소비자 행동 모델 — 전체 과목의 지도</h1>
+    <p class="lede">
+      열일곱 장이 어떻게 맞물리는지 한 장으로 봅니다.
+      <b>아래에서 위로</b> 읽으세요 — 밖의 조건이 안의 조건을 빚고,
+      그 위에서 마음이 움직이며, 끝에 결과가 남습니다.<br>
+      도형을 누르면 아래에 뜻이 나옵니다.
+    </p>
+  </div>
+
+  <div id="flow"></div>
+
+  <p class="foot">
+    교재 차례를 따라 그린 것입니다. 장 번호는 교재와 같습니다.
+  </p>
+
+</main>
+
+<script type="module">
+  import { drawFlow } from "./flow.js";
+  drawFlow(document.getElementById("flow"));
+</script>
+</body>
+</html>

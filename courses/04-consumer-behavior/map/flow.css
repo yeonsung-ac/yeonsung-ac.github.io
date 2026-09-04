@@ -1,0 +1,216 @@
+/* 소비자 행동 모델 · 전체 과목의 지도
+   ────────────────────────────────────────────────────────────
+   위는 그림, 아래는 설명이다. 눈으로 짚는 곳과 읽는 곳을 나누었다.
+
+   CBBE 그림과 달리 좌표를 잡지 않는다. 뼈대가 나무가 아니라 띠와 줄이라
+   CSS 가 알아서 접어 준다. 그래서 좁은 화면에서 줄이거나 옆으로 밀 것 없이
+   여섯 칸이 두 칸으로, 다시 한 칸으로 접힌다. 글씨는 어디서도 줄지 않는다. */
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:#0d1626;color:#eef2f6;
+  font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+
+  /* 층마다 색. 0 바탕 · 1 마음 · 2 선택 · 3 사회문화 · 4 결과 */
+  --t0:#e4ecf5; --t1:#c8ef64; --t2:#7cc4f0; --t3:#d9a3f0; --t4:#6fd8b4;
+  --line:rgba(255,255,255,.12);
+}
+
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px 80px}
+
+.head{margin:0 0 18px}
+.kick{margin:0 0 6px;color:#c8ef64;font-size:.79rem;font-weight:700;letter-spacing:.06em}
+.head h1{margin:0 0 8px;font-size:clamp(1.3rem,3.6vw,1.9rem);letter-spacing:-.04em}
+.lede{margin:0;color:#9fb0c4;font-size:.87rem;line-height:1.8}
+.lede b{color:#dfe7f2}
+.back{display:inline-block;margin:0 0 14px;color:#7e93b2;text-decoration:none;font-size:.83rem}
+.back:hover{color:#c8ef64}
+
+/* ── 붙박이 그림 ──────────────────────────── */
+/* 설명을 내려 읽는 동안에도 그림이 화면 위에 남는다. 지금 읽는 것이 지도의
+   어디인지 눈을 떼지 않고 짚을 수 있어야 한다. */
+.fw-top{
+  position:sticky;top:0;z-index:3;
+  display:flex;flex-direction:column;
+  margin:0 -6px;padding:8px 6px 10px;
+  background:#0d1626;
+}
+.fw-top:after{
+  content:"";position:absolute;left:0;right:0;bottom:-14px;height:14px;
+  background:linear-gradient(#0d1626,rgba(13,22,38,0));pointer-events:none;
+}
+
+.fw-fold{
+  align-self:flex-end;margin:0 0 6px;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 11px;border:1px solid var(--line);border-radius:999px;
+  background:rgba(13,22,38,.9);color:#9fb0c4;font:inherit;font-size:.75rem;cursor:pointer;
+}
+.fw-fold:hover{color:#dfe7f2;border-color:rgba(255,255,255,.3)}
+.fw-fold i{width:0;height:0;border:4px solid transparent;
+  border-bottom-color:currentColor;margin-bottom:3px}
+.folded .fw-fold i{border-bottom-color:transparent;border-top-color:currentColor;margin:3px 0 0}
+.folded .fw-map{display:none}
+
+.fw-map{
+  padding:16px 16px 14px;border:1px solid var(--line);border-radius:14px;
+  background:rgba(255,255,255,.02);
+}
+
+/* 층 이름. 아래에서 위로 읽는다는 것을 번호로 알린다. */
+.fw-step-no{
+  margin:0 0 7px;color:#7e93b2;font-size:.72rem;font-weight:700;letter-spacing:.08em;
+}
+
+/* 층과 층 사이의 오름 화살표 */
+.fw-riser{
+  position:relative;margin:9px 0 13px;padding-top:16px;
+  color:#7e93b2;font-size:.75rem;text-align:center;
+}
+.fw-riser:before{
+  content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);
+  width:0;height:0;border:6px solid transparent;border-bottom-color:rgba(255,255,255,.28);
+}
+
+/* ── 가운데 줄 (3장 → 10장) ───────────────── */
+.fw-row{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
+
+.fw-step{
+  flex:1 1 132px;min-width:132px;
+  display:flex;flex-direction:column;gap:4px;
+  padding:11px 12px;border:1.5px solid var(--c);border-radius:11px;
+  background:#101b2d;color:inherit;font:inherit;text-align:left;cursor:pointer;
+  transition:background .14s,opacity .14s;
+}
+.fw-arw{
+  align-self:center;flex:0 0 auto;width:0;height:0;
+  border:5px solid transparent;border-left-color:rgba(255,255,255,.3);
+}
+
+.fw-ch{color:var(--c);font-weight:800;font-size:.76rem;letter-spacing:.02em}
+.fw-t{font-weight:700;font-size:.88rem;line-height:1.4;letter-spacing:-.02em}
+
+/* 고노력·저노력으로 갈리는 두 자리. 이 갈림이 이 지도의 뼈대다. */
+.fw-split{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
+.fw-split i{
+  padding:2px 7px;border-radius:999px;border:1px solid var(--c);
+  color:var(--c);font-style:normal;font-size:.68rem;font-weight:700;white-space:nowrap;
+}
+
+/* M·A·O 가 위의 두 갈림으로 올려보내는 선 */
+.fw-drop{display:flex;justify-content:center;gap:min(26vw,240px);margin:0 0 9px}
+.fw-drop i{
+  width:0;height:0;border:6px solid transparent;
+  border-bottom-color:rgba(228,236,245,.4);
+}
+
+/* ── M·A·O ────────────────────────────────── */
+.fw-sw{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 14px;border:2px solid var(--t0);border-radius:13px;
+  background:rgba(228,236,245,.05);
+}
+.fw-swbox{
+  flex:0 0 auto;display:flex;flex-direction:column;gap:2px;
+  padding:9px 16px;border:0;border-radius:10px;
+  background:rgba(228,236,245,.1);color:inherit;font:inherit;text-align:left;cursor:pointer;
+  transition:background .14s;
+}
+.fw-ab{font-weight:800;font-size:1.15rem;letter-spacing:.02em;color:var(--t0)}
+.fw-swsay{margin:0;flex:1 1 220px;color:#9fb0c4;font-size:.8rem;line-height:1.7}
+.fw-swsay b{color:var(--t0)}
+
+/* ── 띠 (사회·문화 / 결과) ────────────────── */
+.fw-band{
+  display:grid;gap:9px;
+  padding:12px 14px;border:1.5px solid var(--c);border-radius:13px;
+  background:rgba(255,255,255,.025);
+}
+.fw-btitle{
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;
+}
+.fw-btitle b{font-size:.98rem;letter-spacing:-.03em}
+.fw-btitle span{color:var(--c);font-size:.76rem;font-weight:700}
+
+.fw-chips{display:flex;gap:6px;flex-wrap:wrap}
+.fw-chip{
+  flex:1 1 150px;min-width:0;
+  display:flex;flex-direction:column;gap:2px;
+  padding:8px 11px;border:1px solid var(--line);border-radius:9px;
+  background:rgba(255,255,255,.03);color:inherit;font:inherit;text-align:left;cursor:pointer;
+  transition:background .14s,opacity .14s;
+}
+.fw-chip .fw-t{font-size:.83rem;font-weight:600}
+
+.fw-intro{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+.fw-intro .fw-chip{flex:0 1 260px}
+
+/* ── 색 ───────────────────────────────────── */
+.tone0{--c:var(--t0)} .tone1{--c:var(--t1)} .tone2{--c:var(--t2)}
+.tone3{--c:var(--t3)} .tone4{--c:var(--t4)}
+
+/* ── 고르기 ───────────────────────────────── */
+.fw-map [data-id]:hover{background:rgba(255,255,255,.09)}
+.fw-map [data-id].on{background:var(--c);color:#0d1626}
+.fw-map [data-id].on .fw-ch,
+.fw-map [data-id].on .fw-ab,
+.fw-map [data-id].on .fw-btitle span{color:rgba(13,22,38,.7)}
+.fw-map [data-id].on .fw-split i{border-color:rgba(13,22,38,.4);color:rgba(13,22,38,.75)}
+.picked .fw-map [data-id]:not(.on){opacity:.34}
+
+/* ── 설명 카드 ────────────────────────────── */
+/* 열여덟을 한꺼번에 깔아 두고 흐려 놓는다. 누른 것만 살아난다. 하나씩 갈아
+   끼우면 자리가 흔들려 매번 어디를 볼지 다시 찾아야 하고, 눌렀던 것이
+   사라져 견줄 수도 없다. 이대로 두면 그 자체로 차례표 노릇도 한다. */
+.fw-cards{
+  display:grid;grid-template-columns:1fr;gap:8px;
+  margin:24px 0 0;padding-top:20px;border-top:1px solid var(--line);
+}
+.fc{
+  display:grid;grid-template-columns:74px 1fr;gap:13px;align-items:start;
+  width:100%;text-align:left;
+  padding:13px 15px;border:1px solid rgba(255,255,255,.08);border-radius:12px;
+  background:rgba(255,255,255,.03);color:inherit;font:inherit;cursor:pointer;
+  opacity:.42;transition:opacity .16s,background .16s,border-color .16s;
+}
+.fc:hover{opacity:.78}
+.fc.on{opacity:1;background:rgba(255,255,255,.075);
+  border-color:var(--c);border-left-width:3px}
+
+.fc-ab{
+  padding:5px 0;border-radius:8px;background:rgba(255,255,255,.06);
+  color:var(--c);font-weight:800;font-size:.78rem;text-align:center;white-space:nowrap;
+}
+.fc.on .fc-ab{background:var(--c);color:#0d1626}
+
+.fc-body{display:block;min-width:0}
+.fc-body > b{display:block;font-size:1rem;letter-spacing:-.03em;line-height:1.4}
+.fc-en,.fc-sp{display:block;margin-top:2px;color:var(--c);font-style:normal;
+  font-size:.79rem;line-height:1.5;opacity:.85}
+.fc-body > span{display:block;margin-top:8px;color:#dfe7f2;font-size:.88rem;line-height:1.75}
+
+.foot{margin:24px 0 0;padding-top:16px;border-top:1px solid var(--line);
+  color:#7e93b2;font-size:.78rem;line-height:1.8}
+
+/* ── 넓은 화면 ────────────────────────────── */
+@media(min-width:860px){
+  .fw-cards{grid-template-columns:1fr 1fr;gap:9px}
+}
+
+/* ── 폰 ───────────────────────────────────── */
+@media(max-width:620px){
+  .wrap{padding:20px 14px 70px}
+  .fw-map{padding:13px 11px 11px}
+  .fw-row{gap:5px}
+  .fw-step{flex:1 1 100%;min-width:0}
+  .fw-arw{align-self:center;transform:rotate(90deg)}   /* 세로로 접히면 화살표도 눕는다 */
+  .fw-drop{gap:34vw}
+  .fw-chip{flex:1 1 100%}
+  .fc{grid-template-columns:62px 1fr;gap:11px;padding:12px 13px}
+  .fc-ab{font-size:.72rem}
+}
+
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}
