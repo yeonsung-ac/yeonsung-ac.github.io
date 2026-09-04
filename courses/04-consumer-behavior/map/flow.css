@@ -32,7 +32,10 @@
 .flow .top{
   position:sticky;top:0;z-index:3;
   display:flex;flex-direction:column;
-  margin:0 -6px;padding:8px 6px 10px;background:inherit;
+  margin:0 -6px;padding:8px 6px 10px;
+  /* 바탕색을 물려받게 두면 안 된다. 낱장에서는 .flow 가 바탕을 비워
+     두므로 이 자리가 투명해지고, 밑으로 지나가는 카드가 그대로 비친다. */
+  background:#0d1626;
 }
 .flow .top:after{
   content:"";position:absolute;left:0;right:0;bottom:-14px;height:14px;
