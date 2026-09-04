@@ -142,19 +142,35 @@ function fileUrl(kind, n) {
 }
 
 /* 새 창은 먼저 열어 두고 주소를 나중에 넣는다. 주소를 받아 온 뒤에 열면
-   사용자가 누른 순간과 멀어져 스마트폰이 팝업으로 보고 막는다. */
+   사용자가 누른 순간과 멀어져 스마트폰이 팝업으로 보고 막는다.
+
+   세 번째 자리에 'noopener' 를 주면 브라우저가 창 손잡이를 돌려주지 않는다.
+   손잡이가 없으면 주소를 나중에 넣을 수 없으니 여기서는 쓰지 않고,
+   창을 받은 뒤 opener 를 손수 끊는다. 효과는 같고 손잡이는 남는다. */
 async function openDeck(n, kind) {
-  const win = window.open("", "_blank", "noopener");
+  const win = window.open("", "_blank");
+  if (win) {
+    try { win.opener = null; } catch (e) { /* 브라우저가 막아도 그만이다 */ }
+    win.document.write(
+      '<title>교안을 여는 중…</title>' +
+      '<body style="margin:0;display:grid;place-items:center;height:100vh;' +
+      'font:15px system-ui;color:#6b7280">교안을 여는 중입니다…</body>');
+  }
   try {
     const url = await fileUrl(kind, n);
     if (win) win.location = url;
-    else location.href = url;          // 그래도 막혔다면 이 창에서 연다
+    else location.href = url;          // 팝업이 막혔다면 이 창에서 연다
     note(n, kind);
   } catch (e) {
     if (win) win.close();
-    toast(e && e.code === "storage/object-not-found"
-      ? "아직 올라오지 않은 교안입니다."
-      : "파일을 여는 데 실패했습니다. 잠시 뒤 다시 눌러 주세요.", true);
+    const code = (e && e.code) || "";
+    toast(
+      code === "storage/object-not-found"
+        ? n + "강 " + kind.toUpperCase() + " 파일이 아직 서버에 없습니다. 교안 올리기를 먼저 해 주세요."
+      : code === "storage/unauthorized"
+        ? "권한이 없습니다. Storage 규칙을 게시하셨는지 확인해 주세요."
+      : "파일을 열지 못했습니다 (" + (code || "알 수 없음") + ")",
+      true);
   }
 }
 
