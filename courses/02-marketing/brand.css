@@ -1,0 +1,83 @@
+/* 그림 1-1 · 브랜드자산 형성과정
+   ────────────────────────────────────────────────────────────
+   글씨 크기를 먼저 못 박고 그림을 거기에 맞춘다. 어느 화면에서도
+   마디 이름은 15px 밑으로 내려가지 않는다. 교재 그림처럼 옆으로 뻗으면
+   폰에서 글씨를 줄일 수밖에 없으므로, 위에서 아래로 세웠다. */
+
+.brand{
+  margin:0 0 30px;padding:26px 24px 22px;
+  border-radius:16px;background:var(--navy);color:#eef2f6;
+}
+
+.bd-kick{margin:0 0 7px;color:#c8ef64;font-size:.79rem;font-weight:700;letter-spacing:.06em}
+.brand h2{margin:0 0 8px;font-size:clamp(1.15rem,3.1vw,1.5rem);letter-spacing:-.04em;color:#fff}
+.bd-lede{margin:0 0 24px;color:#9fb0c4;font-size:.85rem;line-height:1.7}
+.bd-foot{margin:22px 0 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);
+  color:#7e93b2;font-size:.76rem}
+.bd-foot b{color:#9fb0c4}
+
+/* ── 나무 ─────────────────────────────────── */
+.bn-root,.bn-kids{list-style:none;margin:0;padding:0}
+.bn{position:relative}
+
+/* 마디. 통째로 단추라 손가락으로 누르기 쉽다. */
+.bn-box{
+  display:block;width:100%;text-align:left;
+  margin:0 0 7px;padding:11px 15px;
+  border:1px solid rgba(255,255,255,.16);border-radius:10px;
+  background:rgba(255,255,255,.055);color:inherit;font:inherit;cursor:pointer;
+  transition:background .15s,border-color .15s,opacity .15s;
+}
+.bn-box:hover{background:rgba(255,255,255,.11)}
+.bn-t{display:block;font-weight:700;font-size:.97rem;line-height:1.4;letter-spacing:-.02em}
+.bn-sub{display:block;margin-top:3px;color:#9fb0c4;font-size:.79rem;line-height:1.5}
+
+/* 고른 마디와 거기까지의 길 */
+.bn-box.on{background:#c8ef64;border-color:#c8ef64;color:#101b2d}
+.bn-box.on .bn-sub{color:#41562a}
+.bn-box.off{opacity:.34}
+
+/* 뜻풀이. 고른 마디 바로 밑에 나온다. 딴 데 띄우면 눈이 왔다 갔다 한다. */
+.bn-say{
+  margin:-2px 0 10px;padding:11px 15px;border-radius:10px;
+  background:rgba(200,239,100,.1);border-left:3px solid #c8ef64;
+  color:#dfe7f2;font-size:.87rem;line-height:1.75;
+}
+
+/* 아래 겹은 들여쓰고 왼쪽에 줄을 그어 '매달린 것'임을 보인다.
+   선을 그리지 않으면 넷째 겹부터 어느 줄기 것인지 헷갈린다. */
+.bn-kids{margin-left:15px;padding-left:14px;border-left:2px solid rgba(255,255,255,.13)}
+
+/* 뿌리에서 내려오는 첫 줄기는 조금 더 밝게. 브랜드자산과 브랜드지식이
+   형제처럼 나란히 보이면 이 그림이 무엇을 말하는지가 흐려진다. */
+.bn-root > .bn > .bn-kids{border-left-color:rgba(200,239,100,.4)}
+
+/* 겹이 깊어질수록 글씨를 아주 조금만 줄인다. 위아래 위계는 보이되
+   맨 아래 것도 읽을 수 있어야 한다. */
+.bn[data-d="3"] .bn-t,
+.bn[data-d="4"] .bn-t{font-size:.93rem}
+.bn[data-d="5"] .bn-t{font-size:.9rem;font-weight:600}
+
+/* 둘째 겹(브랜드지식)은 뿌리와 한 몸처럼 보이게 살짝 도드라뜨린다.
+   고르거나 흐려진 상태일 때는 비켜 준다. 이 규칙이 더 촘촘해서, 비켜 주지
+   않으면 길 위에 있는데도 색이 안 살아난다. */
+.bn[data-d="0"] > .bn-box .bn-t{font-size:1.12rem}
+.bn[data-d="1"] > .bn-box:not(.on):not(.off){background:rgba(255,255,255,.09)}
+
+/* ── 넓은 화면 ────────────────────────────── */
+/* 끝가지끼리만 나란히 세운다. 칸 너비를 230px 아래로는 내리지 않으므로,
+   화면이 좁아지면 두 칸이 저절로 한 칸으로 접힌다. 글씨는 그대로다. */
+@media(min-width:760px){
+  .brand{padding:32px 30px 26px}
+  .bn-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:8px;align-items:start}
+  .bn-row > .bn > .bn-box{height:100%}
+}
+
+@media(max-width:620px){
+  .brand{padding:22px 16px 18px;margin-bottom:24px;border-radius:14px}
+  .bn-kids{margin-left:9px;padding-left:11px}
+  .bn-box{padding:10px 13px}
+}
+
+@media(prefers-reduced-motion:reduce){.bn-box{transition:none}}

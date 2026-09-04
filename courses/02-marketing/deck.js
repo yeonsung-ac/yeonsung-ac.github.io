@@ -28,6 +28,7 @@ import {
 
 import { firebaseConfig } from "../_class/firebase-config.js";
 import { isProfessorUser } from "../../professor.js";
+import { drawBrand } from "./brand.js";
 
 const C = window.COURSE;
 const DECKS = C.id + "_decks";       // 강마다 공개·비공개 한 줄
@@ -91,6 +92,10 @@ function show() {
   $("gate").hidden = inside;
   $("room").hidden = !inside;
   if (!inside) return;
+
+  /* 그림은 한 번만 그린다. 다시 그리면 펴 놓은 갈래가 접힌다. */
+  const bd = $("brand");
+  if (!bd.dataset.drawn) { drawBrand(bd); bd.dataset.drawn = "1"; }
 
   $("prof").hidden = !state.isProfessor;
   if (state.isProfessor) {
