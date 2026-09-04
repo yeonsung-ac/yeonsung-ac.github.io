@@ -14,6 +14,7 @@
   <link rel="canonical" href="https://yeonsung-ac.github.io/courses/04-consumer-behavior/">
   <link rel="stylesheet" href="../../styles.css">
   <link rel="stylesheet" href="../_class/class.css">
+  <link rel="stylesheet" href="map/flow.css">
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 바로가기</a>
@@ -118,6 +119,11 @@
         <button class="btn-go" id="live-go" type="button">풀러 가기</button>
       </div>
 
+      <!-- 전체 지도 — 들어오면 가장 먼저 보이는 그림.
+           설명 카드는 놓지 않는다. 열여덟 장이 딸려 오면 그 아래 과제와
+           문제가 저 멀리 밀려난다. 읽을 것은 낱장으로 건너가서 본다. -->
+      <div class="flow" id="flow"></div>
+
       <!-- 오늘의 주제 — 강의실 스크린에 띄우는 발표 화면 -->
       <section class="today">
         <a class="today-go" href="topic/" target="_blank" rel="noopener noreferrer">
@@ -125,17 +131,18 @@
           <span class="today-title">소비자 행동, 네 가지 물음</span>
           <span class="today-sub">제1장 · 화면 띄우기 ↗</span>
         </a>
-        <!-- 학기 내내 쓰는 지도. 진도와 상관없이 언제든 펼쳐 본다. -->
-        <a class="today-go" href="map/" target="_blank" rel="noopener noreferrer">
-          <span class="today-tag">전체 지도</span>
-          <span class="today-title">소비자 행동 모델</span>
-          <span class="today-sub">1장 ~ 17장 · 한 장으로 보기 ↗</span>
-        </a>
       </section>
 
       <!-- 자기소개 — 사진 한 장과 글 -->
-      <section class="intro" id="intro" hidden>
-        <h2 class="block-title">소비 되돌아보기</h2>
+      <section class="intro folded" id="intro" hidden>
+        <button class="intro-banner" id="intro-open" type="button" aria-expanded="false">
+          <span class="ib-tag">과제</span>
+          <span class="ib-mid">
+            <b>소비 되돌아보기</b>
+            <span id="intro-state">사진 한 장과 글을 냅니다</span>
+          </span>
+          <span class="ib-go" aria-hidden="true"></span>
+        </button>
 
         <div class="intro-done" id="intro-done" hidden>
           <img class="intro-photo" id="intro-photo" alt="내가 낸 사진">
@@ -381,5 +388,9 @@
 
   <script src="course.js"></script>
   <script type="module" src="../_class/class.js"></script>
+<script type="module">
+  import { drawFlow } from "./map/flow.js";
+  drawFlow(document.getElementById("flow"), { cards: false, more: "map/" });
+</script>
 </body>
 </html>

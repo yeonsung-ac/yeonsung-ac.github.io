@@ -356,6 +356,19 @@ $("qr-copy").addEventListener("click", async () => {
   }
 });
 
+/* 자기소개를 배너로 접어 두는 과목이 있다. 첫 화면에 낼 것이 통째로 펼쳐져
+   있으면 그 위의 그림과 아래의 문제가 다 밀려나기 때문이다. 배너가 없는
+   과목은 이 자리를 그냥 지나간다. */
+(function foldIntro() {
+  const open = $("intro-open");
+  const box = $("intro");
+  if (!open || !box) return;
+  open.addEventListener("click", () => {
+    const off = box.classList.toggle("folded");
+    open.setAttribute("aria-expanded", String(!off));
+  });
+})();
+
 /* ── 로그인 ───────────────────────────────── */
 $("p-signin").addEventListener("click", async () => {
   try {
@@ -1255,6 +1268,16 @@ function renderIntro() {
   const editing = box.dataset.editing === "1";
   $("intro-done").hidden = !got || editing;
   $("intro-form").hidden = Boolean(got) && !editing;
+
+  /* 배너를 쓰는 과목이면, 배너 한 줄로 지금 형편을 알린다.
+     낸 것이 있으면 접힌 채로도 냈다는 것이 보여야 한다. */
+  const say = $("intro-state");
+  if (say) {
+    say.textContent = got
+      ? "냈습니다 · 눌러서 보거나 고치기"
+      : "사진 한 장과 글을 냅니다 · 눌러서 열기";
+    box.classList.toggle("done", Boolean(got));
+  }
 
   if (got && !editing) {
     $("intro-photo").src = got.photoUrl || "";

@@ -28,7 +28,7 @@
 
 /* 가운데 줄. ab 는 마디에 크게 적을 약어, s 는 그 밑에 작게 적을 우리말. */
 const MAIN = [
-  { id: "mao", ab: "M·A·O", s: "동기·능력·기회", ch: "2장", tone: 1,
+  { id: "mao", ab: "M·A·O", orb: "M·A·O", s: "동기·능력·기회", ch: "2장", tone: 1,
     en: "motivation · ability · opportunity",
     say: "얼마나 애써서 처리할 것인가를 정한다. 이 하나가 뒤의 모든 단계의 결을 바꾼다. "
        + "관심이 있고(동기), 알 만하고(능력), 여유가 있으면(기회) 고노력으로 간다. "
@@ -36,12 +36,12 @@ const MAIN = [
     note: "첫 칸이면서 스위치다. BUY 안의 태도(5·6장)와 의사결정(8·9장)이 "
         + "여기서 고노력과 저노력으로 갈린다." },
 
-  { id: "eapc", ab: "E·A·P·C", s: "노출·주의·지각·이해", ch: "3장", tone: 1,
+  { id: "eapc", ab: "3장", orb: "노출·주의\n지각·이해", s: "노출·주의·지각·이해", ch: "3장", tone: 1,
     en: "exposure · attention · perception · comprehension",
     say: "자극이 눈에 들기까지. 세상에 널린 것 가운데 무엇이 나에게 닿고(노출), "
        + "닿은 것 중 무엇에 눈길이 머물며(주의), 머문 것을 어떻게 받아들이는가(지각·이해)." },
 
-  { id: "kmr", ab: "K·M·R", s: "지식·기억·인출", ch: "4장", tone: 1,
+  { id: "kmr", ab: "4장", orb: "지식·기억\n인출", s: "지식·기억·인출", ch: "4장", tone: 1,
     en: "knowledge · memory · retrieval",
     say: "머릿속에 이미 있던 것과 만난다. 새로 들어온 것은 늘 옛것에 견주어 자리를 잡고, "
        + "필요할 때 다시 꺼내진다. 꺼내지지 않는 기억은 없는 것과 같다.",
@@ -50,14 +50,14 @@ const MAIN = [
     go: { href: "../../02-marketing/cbbe/",
           t: "브랜드 지식은 어떤 모습인가 — CBBE 그림 보기" } },
 
-  { id: "buy", ab: "BUY", s: "구매", ch: "5~9장", tone: 2,
+  { id: "buy", ab: "5~9장", orb: "구매", s: "구매", ch: "5~9장", tone: 2,
     en: "attitude · search · judgment · decision",
     hi: "고노력 5·8장", lo: "저노력 6·9장",
     say: "고르기까지. 좋다 싫다가 생기고(5·6장 태도), 지금과 바라는 바의 틈을 알아채 "
        + "찾아 나선 뒤(7장), 고른다(8·9장). M·A·O 의 갈림이 여기서 드러난다 — 견주어 "
        + "따져 고르기와 어림으로 집기는 아주 다르게 움직인다. 장바구니의 대부분은 뒤쪽이다." },
 
-  { id: "post", ab: "POST", s: "구매후행동", ch: "10장", tone: 2,
+  { id: "post", ab: "10장", orb: "구매 후\n행동", s: "구매후행동", ch: "10장", tone: 2,
     en: "post-decision processes",
     say: "사고 난 뒤가 끝이 아니다. 잘 샀나 되짚고, 쓰면서 겪고, 그 겪음이 다시 기억에 "
        + "쌓여 다음 선택의 밑돌이 된다. 지도가 한 바퀴 도는 자리다." },
@@ -110,13 +110,13 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (m) =>
 const tag = (n, cls) =>
   ' type="button" data-id="' + n.id + '" class="' + cls + " t" + n.tone + '"';
 
-/* 가운데 줄의 마디. 약어가 크고 우리말이 작다. 여기서는 읽는 것이 아니라
-   짚는 것이라, 우리말은 어느 것인지 알아보는 정도면 된다. */
+/* 가운데 줄의 마디. 동그라미 안에 낱말 하나만 넣는다.
+   장 번호도 영어도 걷어냈다. 이 줄은 흐름을 눈에 새기는 자리라, 글자가
+   많을수록 흐름이 묻힌다. 장 번호와 원어는 아래 카드에 다 있다.
+   M·A·O 만 그대로 두는 것은 그것이 풀어 쓴 말이 아니라 이름이기 때문이다. */
 function stepHtml(n) {
   return "<button" + tag(n, "st") + ">" +
-    '<span class="st-ch">' + esc(n.ch) + "</span>" +
-    '<span class="st-ab">' + esc(n.ab) + "</span>" +
-    '<span class="st-s">' + esc(n.s) + "</span>" +
+    '<span class="orb"><span>' + esc(n.orb).replace(/\n/g, "<br>") + "</span></span>" +
     (n.hi ? '<span class="st-sp"><i>고노력</i><i>저노력</i></span>' : "") +
     "</button>";
 }
@@ -158,23 +158,31 @@ function cardHtml(n) {
     "</span></div>";
 }
 
-export function drawFlow(box) {
+/* opt.cards === false 면 설명 카드를 놓지 않고 그림만 그린다.
+   수업 도우미 첫 화면에 얹을 때 쓴다 — 카드 열여덟 장까지 딸려 오면
+   그 아래 과제와 문제가 저 멀리 밀려나기 때문이다. */
+export function drawFlow(box, opt) {
+  const withCards = !opt || opt.cards !== false;
+
   box.innerHTML =
     '<div class="top">' +
       '<button class="fold" id="fold" type="button" aria-expanded="true">' +
         "<span>그림 접기</span><i></i></button>" +
 
       '<div class="map">' +
-        /* 가운데 줄 */
-        '<div class="row">' +
-          MAIN.map((n, i) =>
-            (i ? '<span class="arw" aria-hidden="true"></span>' : "") + stepHtml(n)
-          ).join("") +
+        /* 핵심 흐름만 따로 테두리를 두른다. 이 줄이 이 그림의 알맹이라
+           둘레의 띠와 같은 무게로 놓이면 눈이 어디 머물지 몰라 흩어진다. */
+        '<div class="core">' +
+          '<p class="core-tag">핵심 흐름</p>' +
+          '<div class="row">' +
+            MAIN.map((n, i) =>
+              (i ? '<span class="arw" aria-hidden="true"></span>' : "") + stepHtml(n)
+            ).join("") +
+          "</div>" +
+          /* 무엇이 무엇을 가르는지 한 줄로 적어 둔다 */
+          '<p class="rule"><b>M·A·O</b> 가 <b>구매</b> 안의 태도(5·6장)와 ' +
+            "의사결정(8·9장)을 고노력 · 저노력으로 가른다</p>" +
         "</div>" +
-
-        /* 무엇이 무엇을 가르는지 한 줄로 적어 둔다 */
-        '<p class="rule"><b>M·A·O</b> 가 <b>BUY</b> 안의 태도(5·6장)와 ' +
-          "의사결정(8·9장)을 고노력 · 저노력으로 가른다</p>" +
 
         '<p class="up">위의 모든 단계에 스며든다</p>' +
         bandHtml(CULTURE) +
@@ -186,7 +194,10 @@ export function drawFlow(box) {
       "</div>" +
     "</div>" +
 
-    '<div class="cards">' + ALL.map(cardHtml).join("") + "</div>";
+    (withCards
+      ? '<div class="cards">' + ALL.map(cardHtml).join("") + "</div>"
+      : '<p class="more"><a href="' + (opt.more || "map/") + '" target="_blank" ' +
+        'rel="noopener noreferrer">각 단계가 무엇인지 읽어 보기 ↗</a></p>');
 
   const byId = {};
   ALL.forEach((n) => { byId[n.id] = n; });
@@ -218,7 +229,8 @@ export function drawFlow(box) {
     });
   });
 
-  /* 카드에서도 거슬러 짚을 수 있어야 어디 붙은 것인지가 양쪽으로 이어진다. */
+  /* 카드에서도 거슬러 짚을 수 있어야 어디 붙은 것인지가 양쪽으로 이어진다.
+     카드를 놓지 않았으면 이 자리는 그냥 지나간다. */
   box.querySelectorAll(".fc").forEach((c) => {
     const n = byId[c.dataset.id];
     const hit = () => { locked = locked === n ? null : n; put(locked, false); };

@@ -750,3 +750,46 @@ body.showing{overflow:hidden}
 .today-sub{color:#9fb0c4;font-size:.84rem}
 /* 관리 화면으로 가는 자리. 단추가 아니라 링크라 높이를 맞춰 준다. */
 .p-manage{display:inline-flex;align-items:center;text-decoration:none}
+
+
+/* ── 자기소개 배너 (쓰는 과목만) ────────────────────────────
+   첫 화면에 낼 것이 통째로 펼쳐져 있으면 그 위의 그림과 아래의 문제가 다
+   밀려난다. 한 줄로 접어 두고, 낼 사람만 펴게 한다. */
+.intro-banner{
+  display:flex;align-items:center;gap:14px;width:100%;
+  padding:16px 18px;border:1px solid var(--line);border-radius:13px;
+  background:#fff;color:inherit;font:inherit;text-align:left;cursor:pointer;
+  transition:border-color .14s,box-shadow .14s;
+}
+.intro-banner:hover{border-color:var(--navy);box-shadow:0 2px 10px rgba(16,27,45,.07)}
+
+.ib-tag{
+  flex:0 0 auto;padding:4px 10px;border-radius:999px;
+  background:var(--navy);color:var(--lime);
+  font-size:.71rem;font-weight:800;letter-spacing:.04em;
+}
+.ib-mid{display:grid;gap:2px;min-width:0;flex:1 1 auto}
+.ib-mid b{font-size:1.02rem;letter-spacing:-.03em}
+.ib-mid span{color:var(--muted);font-size:.82rem}
+
+/* 펼침 표시. 접혀 있으면 아래(열어라), 펴져 있으면 위(닫아라)를 가리킨다. */
+.ib-go{flex:0 0 auto;width:0;height:0;border:6px solid transparent;
+  border-bottom-color:var(--muted);margin-bottom:5px}
+.intro.folded .ib-go{border-bottom-color:transparent;border-top-color:var(--muted);
+  margin:5px 0 0}
+
+/* 냈으면 초록으로 알린다. 접힌 채로도 냈다는 것이 보여야 한다. */
+.intro.done .ib-tag{background:#2f8f5b;color:#fff}
+.intro.done .ib-mid span{color:#2f8f5b;font-weight:600}
+
+/* 접혀 있으면 알맹이를 감춘다. 제목은 배너가 대신한다. */
+.intro.folded .intro-done,
+.intro.folded .intro-form{display:none}
+.intro-banner + .intro-done,
+.intro-banner + .intro-form,
+.intro-banner ~ .intro-form{margin-top:14px}
+
+@media(max-width:560px){
+  .intro-banner{padding:14px;gap:11px}
+  .ib-mid b{font-size:.96rem}
+}

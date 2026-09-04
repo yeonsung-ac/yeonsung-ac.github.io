@@ -2,11 +2,17 @@
    ────────────────────────────────────────────────────────────
    위는 그림, 아래는 설명이다. 마디에는 약어만 크게 적고 읽을 글은 아래
    카드에 모은다. 그래야 마디가 좁아져 다섯 칸이 한 화면에 들어오고,
-   그러면서도 설명 글씨는 어디서도 줄지 않는다. */
+   그러면서도 설명 글씨는 어디서도 줄지 않는다.
 
-*{box-sizing:border-box}
-html,body{margin:0}
-body{
+   모든 규칙을 .flow 안에 가둔다. 이 그림은 낱장으로도 쓰고 수업 도우미
+   화면에도 얹는데, 그쪽에 이미 .intro 나 .row 같은 이름이 있어 그냥 두면
+   서로 물어뜯는다. */
+
+/* 그림 한 벌이 통째로 앉는 자리. 색과 바탕을 여기서 정해, 밝은 화면에
+   얹어도 이 안만 어둡게 남는다. */
+.flow{
+  display:block;
+  padding:18px 16px 16px;border-radius:16px;
   background:#0d1626;color:#eef2f6;
   font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",Arial,sans-serif;
   -webkit-font-smoothing:antialiased;
@@ -15,193 +21,215 @@ body{
   --t0:#e4ecf5; --t1:#c8ef64; --t2:#7cc4f0; --t3:#d9a3f0; --t4:#6fd8b4;
   --ln:rgba(255,255,255,.12);
 }
+.flow *{box-sizing:border-box}
 
-.wrap{max-width:960px;margin:0 auto;padding:24px 20px 80px}
-
-.back{display:inline-block;margin:0 0 12px;color:#7e93b2;text-decoration:none;font-size:.83rem}
-.back:hover{color:#c8ef64}
-.head{margin:0 0 16px}
-.kick{margin:0 0 6px;color:#c8ef64;font-size:.78rem;font-weight:700;letter-spacing:.06em}
-.head h1{margin:0 0 8px;font-size:clamp(1.25rem,3.4vw,1.8rem);letter-spacing:-.04em}
-.lede{margin:0;color:#9fb0c4;font-size:.86rem;line-height:1.8}
-.lede b{color:#dfe7f2}
-.foot{margin:24px 0 0;padding-top:16px;border-top:1px solid var(--ln);
-  color:#7e93b2;font-size:.78rem;line-height:1.8}
+/* 낱장에서는 여백을 페이지가 대신 잡아 준다 */
+.flow.bare{padding:0;background:none;border-radius:0}
 
 /* ── 붙박이 그림 ──────────────────────────── */
 /* 설명을 내려 읽는 동안에도 그림이 화면 위에 남는다. 지금 읽는 것이 지도의
    어디인지 눈을 떼지 않고 짚을 수 있어야 한다. */
-.top{
+.flow .top{
   position:sticky;top:0;z-index:3;
   display:flex;flex-direction:column;
-  margin:0 -6px;padding:8px 6px 10px;background:#0d1626;
+  margin:0 -6px;padding:8px 6px 10px;background:inherit;
 }
-.top:after{
+.flow .top:after{
   content:"";position:absolute;left:0;right:0;bottom:-14px;height:14px;
   background:linear-gradient(#0d1626,rgba(13,22,38,0));pointer-events:none;
 }
-.fold{
+.flow .fold{
   align-self:flex-end;margin:0 0 6px;display:inline-flex;align-items:center;gap:7px;
   padding:5px 11px;border:1px solid var(--ln);border-radius:999px;
   background:rgba(13,22,38,.9);color:#9fb0c4;font:inherit;font-size:.75rem;cursor:pointer;
 }
-.fold:hover{color:#dfe7f2;border-color:rgba(255,255,255,.3)}
-.fold i{width:0;height:0;border:4px solid transparent;
+.flow .fold:hover{color:#dfe7f2;border-color:rgba(255,255,255,.3)}
+.flow .fold i{width:0;height:0;border:4px solid transparent;
   border-bottom-color:currentColor;margin-bottom:3px}
-.folded .fold i{border-bottom-color:transparent;border-top-color:currentColor;margin:3px 0 0}
-.folded .map{display:none}
+.flow .folded .fold i{border-bottom-color:transparent;border-top-color:currentColor;margin:3px 0 0}
+.flow .folded .map{display:none}
 
-.map{padding:15px 14px 13px;border:1px solid var(--ln);border-radius:14px;
+.flow .map{padding:15px 14px 13px;border:1px solid var(--ln);border-radius:14px;
   background:rgba(255,255,255,.02)}
 
-/* ── 가운데 줄 ────────────────────────────── */
-/* 다섯 칸이 한 화면에 들어와야 한다. 약어가 짧아 칸을 좁게 잡을 수 있다. */
-.row{display:flex;align-items:stretch;gap:5px}
+/* ── 핵심 흐름 ────────────────────────────── */
+/* 이 줄이 그림의 알맹이다. 둘레의 띠와 같은 무게로 놓으면 눈이 어디 머물지
+   몰라 흩어지므로, 따로 테두리를 둘러 시선을 모은다. */
+.flow .core{
+  position:relative;
+  margin:0 0 4px;padding:20px 14px 14px;
+  border:2px solid rgba(200,239,100,.55);border-radius:16px;
+  background:rgba(200,239,100,.045);
+}
+.flow .core-tag{
+  position:absolute;left:16px;top:-9px;margin:0;padding:1px 10px;
+  border-radius:999px;background:#c8ef64;color:#0d1626;
+  font-size:.68rem;font-weight:800;letter-spacing:.06em;
+}
 
-.st{
-  flex:1 1 0;min-width:0;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:11px 7px;border:1.5px solid var(--c);border-radius:12px;
-  background:#101b2d;color:inherit;font:inherit;cursor:pointer;text-align:center;
+.flow .row{display:flex;align-items:center;justify-content:center;gap:4px}
+
+/* 마디는 동그라미다. 낱말 하나만 들어가므로 둥근 것이 눈에 먼저 잡히고,
+   네모난 띠들과도 확실히 구별된다. */
+.flow .st{
+  flex:0 1 auto;min-width:0;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;
+}
+.flow .orb{
+  display:grid;place-items:center;
+  width:clamp(88px,13.5vw,132px);aspect-ratio:1;
+  border:2px solid var(--c);border-radius:50%;
+  background:#101b2d;
   transition:background .14s,color .14s,opacity .14s;
 }
-.arw{
-  align-self:center;flex:0 0 auto;width:0;height:0;
-  border:5px solid transparent;border-left-color:rgba(255,255,255,.32);
+.flow .orb > span{
+  display:block;padding:0 8px;
+  color:var(--c);font-weight:800;
+  font-size:clamp(.72rem,1.55vw,.92rem);line-height:1.4;
+  letter-spacing:-.02em;text-align:center;word-break:keep-all;
+}
+.flow .arw{
+  flex:0 0 auto;width:0;height:0;
+  border:6px solid transparent;border-left-color:rgba(255,255,255,.35);
 }
 
-.st-ch{color:var(--c);font-size:.68rem;font-weight:700;letter-spacing:.03em;opacity:.85}
-.st-ab{font-weight:800;font-size:clamp(.82rem,1.6vw,1.02rem);letter-spacing:.01em;
-  line-height:1.2;white-space:nowrap;color:var(--c)}
-.st-s{color:#9fb0c4;font-size:.72rem;line-height:1.35;word-break:keep-all}
-
-/* 고노력·저노력으로 갈리는 자리. 이 갈림이 이 지도의 뼈대다. */
-.st-sp{display:flex;gap:4px;margin-top:2px;flex-wrap:wrap;justify-content:center}
-.st-sp i{
+/* 고노력·저노력으로 갈리는 자리. 이 갈림이 이 지도의 뼈대다.
+   동그라미 안에 넣으면 낱말과 부딪히므로 밑에 붙인다. */
+.flow .st-sp{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.flow .st-sp i{
   padding:1px 6px;border-radius:999px;border:1px solid var(--c);
   color:var(--c);font-style:normal;font-size:.63rem;font-weight:700;white-space:nowrap;
 }
 
-.rule{
-  margin:9px 0 0;padding:7px 10px;border-radius:8px;
-  background:rgba(255,255,255,.04);color:#9fb0c4;font-size:.75rem;
+.flow .rule{
+  margin:14px 0 0;padding:7px 10px;border-radius:8px;
+  background:rgba(255,255,255,.05);color:#9fb0c4;font-size:.75rem;
   line-height:1.6;text-align:center;
 }
-.rule b{color:#e4ecf5;font-weight:800}
+.flow .rule b{color:#e4ecf5;font-weight:800}
 
 /* ── 층 사이 화살표 ───────────────────────── */
-.up,.down{
+.flow .up, .flow .down{
   position:relative;margin:12px 0 9px;padding-top:15px;
   color:#7e93b2;font-size:.74rem;text-align:center;
 }
-.up:before,.down:before{
+.flow .up:before, .flow .down:before{
   content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);
   width:0;height:0;border:6px solid transparent;
 }
-.up:before{border-bottom-color:rgba(217,163,240,.5)}      /* 사회·문화가 위로 */
-.down:before{border-top-color:rgba(111,216,180,.5);top:2px}  /* 결과로 내려감 */
+.flow .up:before{border-bottom-color:rgba(217,163,240,.5)}      /* 사회·문화가 위로 */
+.flow .down:before{border-top-color:rgba(111,216,180,.5);top:2px}  /* 결과로 내려감 */
 
 /* ── 띠 ───────────────────────────────────── */
-.bd{display:grid;gap:8px;padding:11px 13px;border:1.5px solid var(--c);
+.flow .bd{display:grid;gap:8px;padding:11px 13px;border:1.5px solid var(--c);
   border-radius:12px;background:rgba(255,255,255,.025)}
-.bd-h{
+.flow .bd-h{
   display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
   padding:0;border:0;background:none;color:inherit;font:inherit;
   text-align:left;cursor:pointer;
 }
-.bd-ab{color:var(--c);font-weight:800;font-size:.8rem;letter-spacing:.03em}
-.bd-h b{font-size:.94rem;letter-spacing:-.03em}
-.bd-ch{color:#7e93b2;font-size:.74rem;font-weight:700}
+.flow .bd-ab{color:var(--c);font-weight:800;font-size:.8rem;letter-spacing:.03em}
+.flow .bd-h b{font-size:.94rem;letter-spacing:-.03em}
+.flow .bd-ch{color:#7e93b2;font-size:.74rem;font-weight:700}
 
-.bd-k{display:flex;gap:5px;flex-wrap:wrap}
-.cp{
+.flow .bd-k{display:flex;gap:5px;flex-wrap:wrap}
+.flow .cp{
   flex:1 1 130px;min-width:0;display:flex;flex-direction:column;gap:1px;
   padding:7px 10px;border:1px solid var(--ln);border-radius:9px;
   background:rgba(255,255,255,.03);color:inherit;font:inherit;
   text-align:left;cursor:pointer;transition:background .14s,opacity .14s;
 }
-.cp-ch{color:var(--c);font-size:.68rem;font-weight:700}
-.cp-t{font-size:.8rem;font-weight:600;line-height:1.35;word-break:keep-all}
+.flow .cp-ch{color:var(--c);font-size:.68rem;font-weight:700}
+.flow .cp-t{font-size:.8rem;font-weight:600;line-height:1.35;word-break:keep-all}
 
-.intro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+.flow .intro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   margin-top:11px;padding-top:11px;border-top:1px dashed var(--ln)}
-.intro .cp{flex:0 1 230px}
-.intro > span{color:#7e93b2;font-size:.74rem}
+.flow .intro .cp{flex:0 1 230px}
+.flow .intro > span{color:#7e93b2;font-size:.74rem}
 
 /* ── 색 ───────────────────────────────────── */
-.t0{--c:var(--t0)} .t1{--c:var(--t1)} .t2{--c:var(--t2)}
-.t3{--c:var(--t3)} .t4{--c:var(--t4)}
+.flow .t0{--c:var(--t0)} .flow .t1{--c:var(--t1)} .flow .t2{--c:var(--t2)}
+.flow .t3{--c:var(--t3)} .flow .t4{--c:var(--t4)}
 
 /* ── 고르기 ───────────────────────────────── */
-.map [data-id]:hover{background:rgba(255,255,255,.09)}
-.map .st.on,.map .cp.on{background:var(--c);color:#0d1626}
-.map .st.on .st-ch,.map .st.on .st-ab,.map .st.on .st-s,
-.map .cp.on .cp-ch{color:rgba(13,22,38,.75)}
-.map .st.on .st-sp i{border-color:rgba(13,22,38,.4);color:rgba(13,22,38,.8)}
-.map .bd-h.on b{color:var(--c)}
-.map .bd-h.on{background:none}
-.picked .map [data-id]:not(.on){opacity:.32}
+.flow .map .cp:hover, .flow .map .bd-h:hover{background:rgba(255,255,255,.09)}
+.flow .map .st:hover .orb{background:rgba(255,255,255,.09)}
+.flow .map .cp.on{background:var(--c);color:#0d1626}
+.flow .map .cp.on .cp-ch{color:rgba(13,22,38,.75)}
+.flow .map .st.on .orb{background:var(--c)}
+.flow .map .st.on .orb > span{color:#0d1626}
+.flow .map .st.on .st-sp i{background:var(--c);border-color:var(--c);color:#0d1626}
+.flow .map .bd-h.on b{color:var(--c)}
+.flow .map .bd-h.on{background:none}
+.flow .picked .map [data-id]:not(.on){opacity:.32}
+
+/* 카드를 놓지 않았을 때, 설명이 있는 곳으로 가는 길 */
+.flow .more{margin:14px 0 0;text-align:center}
+.flow .more a{
+  display:inline-block;padding:8px 16px;border-radius:999px;
+  border:1px solid rgba(200,239,100,.5);color:#c8ef64;
+  text-decoration:none;font-size:.82rem;font-weight:700;
+}
+.flow .more a:hover{background:#c8ef64;color:#0d1626}
 
 /* ── 설명 카드 ────────────────────────────── */
 /* 열여덟을 한꺼번에 깔아 두고 흐려 놓는다. 누른 것만 살아난다. 하나씩 갈아
    끼우면 자리가 흔들려 매번 어디를 볼지 다시 찾아야 하고, 눌렀던 것이
    사라져 견줄 수도 없다. 이대로 두면 그 자체로 차례표 노릇도 한다. */
-.cards{display:grid;grid-template-columns:1fr;gap:8px;
+.flow .cards{display:grid;grid-template-columns:1fr;gap:8px;
   margin:24px 0 0;padding-top:20px;border-top:1px solid var(--ln)}
-.fc{
+.flow .fc{
   display:grid;grid-template-columns:78px 1fr;gap:13px;align-items:start;
   width:100%;text-align:left;padding:13px 15px;
   border:1px solid rgba(255,255,255,.08);border-radius:12px;
   background:rgba(255,255,255,.03);color:inherit;font:inherit;cursor:pointer;
   opacity:.42;transition:opacity .16s,background .16s,border-color .16s;
 }
-.fc:hover{opacity:.78}
-.fc.on{opacity:1;background:rgba(255,255,255,.075);
+.flow .fc:hover{opacity:.78}
+.flow .fc.on{opacity:1;background:rgba(255,255,255,.075);
   border-color:var(--c);border-left-width:3px}
 
-.fc-ab{padding:5px 0;border-radius:8px;background:rgba(255,255,255,.06);
+.flow .fc-ab{padding:5px 0;border-radius:8px;background:rgba(255,255,255,.06);
   color:var(--c);font-weight:800;font-size:.76rem;text-align:center;white-space:nowrap}
-.fc.on .fc-ab{background:var(--c);color:#0d1626}
+.flow .fc.on .fc-ab{background:var(--c);color:#0d1626}
 
-.fc-b{display:block;min-width:0}
-.fc-b > b{display:block;font-size:1rem;letter-spacing:-.03em;line-height:1.4}
-.fc-en,.fc-sp{display:block;margin-top:2px;color:var(--c);font-style:normal;
+.flow .fc-b{display:block;min-width:0}
+.flow .fc-b > b{display:block;font-size:1rem;letter-spacing:-.03em;line-height:1.4}
+.flow .fc-en, .flow .fc-sp{display:block;margin-top:2px;color:var(--c);font-style:normal;
   font-size:.78rem;line-height:1.5;opacity:.85}
-.fc-b > span{display:block;margin-top:8px;color:#dfe7f2;font-size:.88rem;line-height:1.75}
+.flow .fc-b > span{display:block;margin-top:8px;color:#dfe7f2;font-size:.88rem;line-height:1.75}
 /* 다른 쪽으로 건너가는 길. 흐린 카드 안에서도 눈에 띄어야 한다. */
-.fc-go{
+.flow .fc-go{
   display:inline-block;margin-top:11px;padding:7px 13px;
   border:1px solid var(--c);border-radius:999px;
   color:var(--c);text-decoration:none;font-size:.8rem;font-weight:700;
 }
-.fc-go:hover{background:var(--c);color:#0d1626}
-.fc.on .fc-go{background:var(--c);color:#0d1626}
-.fc.on .fc-go:hover{opacity:.85}
+.flow .fc-go:hover{background:var(--c);color:#0d1626}
+.flow .fc.on .fc-go{background:var(--c);color:#0d1626}
+.flow .fc.on .fc-go:hover{opacity:.85}
 
-.fc-note{margin-top:9px !important;padding-top:9px;
+.flow .fc-note{margin-top:9px !important;padding-top:9px;
   border-top:1px dashed rgba(255,255,255,.18);color:#9fb0c4 !important;
   font-size:.83rem !important}
 
 /* ── 넓은 화면 ────────────────────────────── */
 @media(min-width:820px){
-  .cards{grid-template-columns:1fr 1fr;gap:9px}
+  .flow .cards{grid-template-columns:1fr 1fr;gap:9px}
 }
 
 /* ── 폰 ───────────────────────────────────── */
 /* 다섯 칸을 그대로 두면 한 칸이 60px 밖에 안 되어 약어가 잘린다.
    두 줄로 접고, 그때는 화살표도 눕는다. */
 @media(max-width:640px){
-  .wrap{padding:18px 13px 70px}
-  .map{padding:12px 10px 10px}
-  .row{flex-wrap:wrap;gap:5px}
-  .st{flex:1 1 calc(33.33% - 12px)}
-  .arw{transform:none}
-  .cp{flex:1 1 calc(50% - 3px)}
-  .fc{grid-template-columns:64px 1fr;gap:11px;padding:12px 13px}
-  .fc-ab{font-size:.71rem}
-}
-@media(max-width:400px){
-  .st{flex:1 1 calc(50% - 10px)}
+  .flow .wrap{padding:18px 13px 70px}
+  .flow .map{padding:12px 10px 10px}
+  .flow .core{padding:18px 10px 12px}
+  .flow .row{flex-wrap:wrap;gap:6px}
+  .flow .arw{border-width:5px}
+  .flow .cp{flex:1 1 calc(50% - 3px)}
+  .flow .fc{grid-template-columns:64px 1fr;gap:11px;padding:12px 13px}
+  .flow .fc-ab{font-size:.71rem}
 }
 
-@media(prefers-reduced-motion:reduce){*{transition:none !important}}
+@media(prefers-reduced-motion:reduce){.flow *{transition:none !important}}

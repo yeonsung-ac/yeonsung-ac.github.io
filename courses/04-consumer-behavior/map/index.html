@@ -6,6 +6,29 @@
   <meta name="robots" content="noindex">
   <title>전체 과목의 지도 | 소비자행동론</title>
   <link rel="stylesheet" href="flow.css">
+  <style>
+    /* 낱장 전용. 그림 자체의 모양은 flow.css 가 .flow 안에 가둬 두었고,
+       여기서는 페이지의 바탕과 여백만 잡는다. 그림은 수업 도우미 화면에도
+       그대로 얹히므로, 그쪽을 건드릴 규칙을 이 그림 파일에 둘 수 없다. */
+    *{box-sizing:border-box}
+    html,body{margin:0}
+    body{
+      background:#0d1626;color:#eef2f6;
+      font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+    .wrap{max-width:960px;margin:0 auto;padding:24px 20px 80px}
+    .back{display:inline-block;margin:0 0 12px;color:#7e93b2;
+      text-decoration:none;font-size:.83rem}
+    .back:hover{color:#c8ef64}
+    .head{margin:0 0 16px}
+    .kick{margin:0 0 6px;color:#c8ef64;font-size:.78rem;font-weight:700;letter-spacing:.06em}
+    .head h1{margin:0 0 8px;font-size:clamp(1.25rem,3.4vw,1.8rem);letter-spacing:-.04em}
+    .lede{margin:0;color:#9fb0c4;font-size:.86rem;line-height:1.8}
+    .lede b{color:#dfe7f2}
+    .foot{margin:24px 0 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);
+      color:#7e93b2;font-size:.78rem;line-height:1.8}
+  </style>
 </head>
 <body>
 
@@ -18,13 +41,13 @@
     <h1>소비자 행동 모델 — 전체 과목의 지도</h1>
     <p class="lede">
       열일곱 장이 어떻게 맞물리는지 한 장으로 봅니다.
-      <b>아래에서 위로</b> 읽으세요 — 밖의 조건이 안의 조건을 빚고,
-      그 위에서 마음이 움직이며, 끝에 결과가 남습니다.<br>
+      가운데 <b>핵심 흐름</b>이 이 과목의 줄기이고,
+      그 아래 <b>소비자 문화</b>가 전 과정에 스며들며, 끝에 <b>결과</b>가 남습니다.<br>
       도형을 누르면 아래에 뜻이 나옵니다.
     </p>
   </div>
 
-  <div id="flow"></div>
+  <div class="flow bare" id="flow"></div>
 
   <p class="foot">
     교재 차례를 따라 그린 것입니다. 장 번호는 교재와 같습니다.
