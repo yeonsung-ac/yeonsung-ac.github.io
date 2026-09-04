@@ -65,6 +65,8 @@
   content:"";position:absolute;top:6px;right:8px;
   width:6px;height:6px;border-radius:50%;background:var(--c);
 }
+/* 골라서 속이 찼을 때는 점도 뒤집는다. 안 그러면 배경과 같은 색이라 사라진다. */
+.nd.has-note.on:after{background:rgba(16,27,45,.5)}
 .nd-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
   background:#c8ef64;vertical-align:middle;margin:0 1px}
 
