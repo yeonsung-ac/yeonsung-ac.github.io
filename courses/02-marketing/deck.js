@@ -318,12 +318,29 @@ $("gate-form").addEventListener("submit", async (e) => {
 });
 
 $("gate-prof").addEventListener("click", async () => {
+  const err = $("gate-error");
   try {
     await signInWithPopup(auth, new GoogleAuthProvider());
   } catch (e) {
-    toast("로그인하지 못했습니다.", true);
+    err.textContent = sayAuth(e);
+    err.hidden = false;
   }
 });
+
+/* 로그인이 어긋났을 때 무엇이 잘못됐는지 말해 준다. 잠자코 있으면
+   교수는 화면이 멈춘 줄로만 알고 손쓸 데가 없다. */
+function sayAuth(e) {
+  const code = (e && e.code) || "";
+  if (code === "auth/popup-closed-by-user") return "로그인 창을 닫으셨습니다.";
+  if (code === "auth/cancelled-popup-request") return "로그인 창이 이미 떠 있습니다.";
+  if (code === "auth/popup-blocked") return "브라우저가 로그인 창을 막았습니다. 팝업을 허용해 주세요.";
+  if (code === "auth/unauthorized-domain") {
+    return "이 주소가 Firebase 에 등록되어 있지 않습니다. "
+      + "Authentication ▸ Settings ▸ 승인된 도메인에 yeonsung-ac.github.io 를 넣어야 합니다.";
+  }
+  if (code === "auth/network-request-failed") return "인터넷이 끊겼습니다. 연결을 확인해 주세요.";
+  return "로그인하지 못했습니다 (" + (code || "알 수 없음") + ")";
+}
 
 $("out").addEventListener("click", async () => {
   try { localStorage.removeItem(KEY); } catch (e) { /* 무시 */ }
@@ -355,8 +372,19 @@ onAuthStateChanged(auth, (user) => {
     });
     return;
   }
-  const wasProf = state.isProfessor;
   state.isProfessor = isProfessorUser(user);
   watch();
-  if (state.isProfessor !== wasProf || !$("room").hidden) show();
+
+  /* 구글로 들어왔는데 교수로 인정되지 않으면, 여태 아무 말 없이 문패에
+     머물렀다. 화면이 멈춘 것과 구별이 안 된다. 까닭을 적어 준다. */
+  if (!user.isAnonymous && !state.isProfessor) {
+    const err = $("gate-error");
+    err.textContent = !user.emailVerified
+      ? (user.email || "그 계정") + " 은 구글이 아직 확인하지 않은 주소입니다."
+      : (user.email || "그 계정") + " 은 교수 계정이 아닙니다. "
+        + "학교 계정(dasahee@yeonsung.ac.kr)으로 다시 로그인해 주세요.";
+    err.hidden = false;
+  }
+
+  show();
 });
