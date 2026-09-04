@@ -29,7 +29,19 @@
   transition:background .15s,border-color .15s,opacity .15s;
 }
 .bn-box:hover{background:rgba(255,255,255,.11)}
-.bn-t{display:block;font-weight:700;font-size:.97rem;line-height:1.4;letter-spacing:-.02em}
+/* 제목 줄. 표시가 붙는 마디가 있어 한 줄로 묶는다. 좁으면 표시가 아래로 내려간다. */
+.bn-top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.bn-t{font-weight:700;font-size:.97rem;line-height:1.4;letter-spacing:-.02em}
+
+/* 교재가 원문과 달라진 자리. 학생이 시험 볼 것은 교재라 본체는 그대로 두고,
+   여기에만 표시를 붙여 눌러 보게 한다. 색을 요란하게 쓰면 '틀린 곳'처럼
+   보이므로 흐린 테두리로만 둔다. */
+.bn-mark{
+  flex:0 0 auto;padding:2px 8px;border-radius:999px;
+  border:1px solid rgba(200,239,100,.45);color:#c8ef64;
+  font-size:.7rem;font-weight:700;letter-spacing:.01em;line-height:1.5;
+}
+.bn-box.on .bn-mark{border-color:rgba(16,27,45,.35);color:#2f4210}
 .bn-sub{display:block;margin-top:3px;color:#9fb0c4;font-size:.79rem;line-height:1.5}
 
 /* 고른 마디와 거기까지의 길 */
@@ -43,6 +55,18 @@
   background:rgba(200,239,100,.1);border-left:3px solid #c8ef64;
   color:#dfe7f2;font-size:.87rem;line-height:1.75;
 }
+.bn-say p{margin:0}
+
+/* 원문 쪽지. 뜻풀이와 같은 상자에 있되 결이 다르다는 것이 보여야 한다. */
+.bn-note{
+  margin-top:9px !important;padding-top:9px;
+  border-top:1px dashed rgba(255,255,255,.18);
+  color:#9fb0c4;font-size:.83rem;
+}
+.bn-note b{color:#c8ef64;font-weight:700}
+
+/* 안내 문구 안에 놓인 표시는 글줄에 얹히므로 조금 줄인다 */
+.bd-lede .bn-mark{display:inline-block;font-size:.68rem;padding:1px 7px;margin:0 2px}
 
 /* 아래 겹은 들여쓰고 왼쪽에 줄을 그어 '매달린 것'임을 보인다.
    선을 그리지 않으면 넷째 겹부터 어느 줄기 것인지 헷갈린다. */

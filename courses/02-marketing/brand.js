@@ -47,7 +47,9 @@ const TREE = {
                     say: "그 물건이 무엇이고 어떻게 만들어졌는가." },
                   { t: "제품과 직접 관련이 없는 속성",
                     sub: "non-product-related · 브랜드 개성 · 사용자 · 제품용도 · 느낌과 경험",
-                    say: "물건 자체와는 상관없지만 브랜드에 달라붙은 것들." },
+                    say: "물건 자체와는 상관없지만 브랜드에 달라붙은 것들.",
+                    note: "든 보기가 다릅니다 — 가격 · 포장 · 사용자 이미지 · 사용상황 이미지 " +
+                          "(price · packaging · user imagery · usage imagery)." },
                 ],
               },
               {
@@ -62,11 +64,18 @@ const TREE = {
                     say: "쓰는 동안의 즐거움 그 자체. 감각과 기분에 닿는 것이라 실용으로 따지지 않는다." },
                 ],
               },
-              { t: "기업과 관련된 연상", sub: "corporate associations", say: "만든 회사가 어떤 회사인가." },
+              { t: "기업과 관련된 연상", sub: "corporate associations",
+                say: "만든 회사가 어떤 회사인가.",
+                note: "이 자리는 태도(attitudes)입니다. 속성과 편익을 종합해 브랜드를 " +
+                      "통틀어 어떻게 평가하는가를 뜻하고, 셋 가운데 구매 행동에 " +
+                      "가장 가깝습니다." },
             ],
           },
           { t: "브랜드 연상", sub: "favorability · strength · uniqueness of brand associations",
-            say: "떠오르는 것이 좋은가, 뚜렷한가, 남과 다른가. 무엇이 떠오르느냐만큼 어떻게 떠오르느냐가 중요하다." },
+            say: "떠오르는 것이 좋은가, 뚜렷한가, 남과 다른가. 무엇이 떠오르느냐만큼 어떻게 떠오르느냐가 중요하다.",
+            note: "셋이 한 상자가 아니라 연상 유형과 나란한 세 갈래입니다. 무엇이 " +
+                  "떠오르는가(유형)와 어떻게 떠오르는가(호의성·강도·독특성)를 " +
+                  "같은 층으로 봅니다." },
         ],
       },
     ],
@@ -86,11 +95,18 @@ function draw(node, parentId, depth) {
   parentOf[id] = parentId;
 
   const head =
-    '<button class="bn-box" type="button" data-id="' + id + '" data-d="' + depth + '">' +
-      '<span class="bn-t">' + esc(node.t) + "</span>" +
+    '<button class="bn-box' + (node.note ? " has-note" : "") + '" type="button"' +
+            ' data-id="' + id + '" data-d="' + depth + '">' +
+      '<span class="bn-top">' +
+        '<span class="bn-t">' + esc(node.t) + "</span>" +
+        (node.note ? '<span class="bn-mark">원문 다름</span>' : "") +
+      "</span>" +
       (node.sub ? '<span class="bn-sub">' + esc(node.sub) + "</span>" : "") +
     "</button>" +
-    (node.say ? '<p class="bn-say" id="say-' + id + '" hidden>' + esc(node.say) + "</p>" : "");
+    '<div class="bn-say" id="say-' + id + '" hidden>' +
+      (node.say ? "<p>" + esc(node.say) + "</p>" : "") +
+      (node.note ? '<p class="bn-note"><b>Keller 원문</b> ' + esc(node.note) + "</p>" : "") +
+    "</div>";
 
   if (!node.kids) return '<li class="bn" data-d="' + depth + '">' + head + "</li>";
 
@@ -111,7 +127,9 @@ export function drawBrand(box) {
     '<div class="bd-head">' +
       '<p class="bd-kick">그림 1-1 · 제1장 IMC와 브랜드자산</p>' +
       "<h2>소비자 관점에서 본 브랜드자산 형성과정</h2>" +
-      '<p class="bd-lede">마디를 누르면 그 갈래가 살아나고 뜻이 함께 나옵니다.</p>' +
+      '<p class="bd-lede">마디를 누르면 그 갈래가 살아나고 뜻이 함께 나옵니다.<br>' +
+        '<span class="bn-mark">원문 다름</span> 이 붙은 곳은 교재가 옮기면서 원문과 ' +
+        '달라진 자리입니다. 시험은 교재를 따르세요.</p>' +
     "</div>" +
     '<ul class="bn-root">' + draw(TREE, null, 0) + "</ul>" +
     '<p class="bd-foot">교재 <b>촉진관리</b>(제4판) P011. 원문은 Keller, K. L. (1993), <i>Journal of Marketing</i> 57(1), p.7, Figure 1 “Dimensions of Brand Knowledge”.</p>';
