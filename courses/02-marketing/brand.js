@@ -15,42 +15,43 @@
  */
 
 const TREE = {
-  t: "브랜드자산",
+  t: "브랜드자산", sub: "customer-based brand equity",
   say: "소비자가 그 브랜드를 알기 때문에 생기는 값어치. 속이 같은 물건이라도 이름이 붙으면 값이 달라진다.",
   kids: [{
-    t: "브랜드 지식",
+    t: "브랜드 지식", sub: "brand knowledge",
     say: "소비자 머릿속에 그 브랜드에 대해 쌓여 있는 것 전부. 브랜드자산은 여기에서 나온다.",
     kids: [
       {
-        t: "브랜드 인지도",
+        t: "브랜드 인지도", sub: "brand awareness",
         say: "그 브랜드를 알아보거나 떠올릴 수 있는가. 아는 것이 먼저다.",
         kids: [
-          { t: "브랜드 재인", sub: "보조상기",
+          { t: "브랜드 재인", sub: "brand recognition · 보조상기",
             say: "보여 주면 “아, 이거” 하고 알아본다. 진열대 앞에서 고를 때 쓰인다." },
-          { t: "브랜드 회상", sub: "비보조상기",
+          { t: "브랜드 회상", sub: "brand recall · 비보조상기",
             say: "아무것도 안 보여 줘도 스스로 떠올린다. “커피 하면?” 하고 물었을 때 나오는 이름." },
         ],
       },
       {
-        t: "브랜드 이미지",
+        t: "브랜드 이미지", sub: "brand image",
         say: "그 브랜드 하면 떠오르는 생각의 묶음. 무엇이, 어떻게 떠오르는가로 나뉜다.",
         kids: [
           {
-            t: "브랜드 연상 유형",
+            t: "브랜드 연상 유형", sub: "types of brand association",
             say: "무엇이 떠오르는가.",
             kids: [
               {
-                t: "속성",
+                t: "속성", sub: "attributes",
                 say: "제품 그 자체에 관한 것.",
                 kids: [
-                  { t: "제품과 관련된 속성", sub: "제품범주 · 제품속성 · 품질",
+                  { t: "제품과 관련된 속성", sub: "product-related · 제품범주 · 제품속성 · 품질",
                     say: "그 물건이 무엇이고 어떻게 만들어졌는가." },
-                  { t: "제품과 직접 관련이 없는 속성", sub: "브랜드 개성 · 사용자 · 제품용도 · 느낌과 경험",
+                  { t: "제품과 직접 관련이 없는 속성",
+                    sub: "non-product-related · 브랜드 개성 · 사용자 · 제품용도 · 느낌과 경험",
                     say: "물건 자체와는 상관없지만 브랜드에 달라붙은 것들." },
                 ],
               },
               {
-                t: "편익",
+                t: "편익", sub: "benefits",
                 say: "그 브랜드가 나에게 무엇을 해 주는가. 실용(기능)·과시(상징)·즐거움(경험) 셋으로 나뉜다.",
                 kids: [
                   { t: "기능적 편익", sub: "functional · utilitarian",
@@ -61,10 +62,10 @@ const TREE = {
                     say: "쓰는 동안의 즐거움 그 자체. 감각과 기분에 닿는 것이라 실용으로 따지지 않는다." },
                 ],
               },
-              { t: "기업과 관련된 연상", say: "만든 회사가 어떤 회사인가." },
+              { t: "기업과 관련된 연상", sub: "corporate associations", say: "만든 회사가 어떤 회사인가." },
             ],
           },
-          { t: "브랜드 연상", sub: "호의성 · 강도 · 독특성",
+          { t: "브랜드 연상", sub: "favorability · strength · uniqueness of brand associations",
             say: "떠오르는 것이 좋은가, 뚜렷한가, 남과 다른가. 무엇이 떠오르느냐만큼 어떻게 떠오르느냐가 중요하다." },
         ],
       },
@@ -113,7 +114,7 @@ export function drawBrand(box) {
       '<p class="bd-lede">마디를 누르면 그 갈래가 살아나고 뜻이 함께 나옵니다.</p>' +
     "</div>" +
     '<ul class="bn-root">' + draw(TREE, null, 0) + "</ul>" +
-    '<p class="bd-foot">교재 <b>촉진관리</b>(제4판) P011 의 그림을 옮긴 것입니다.</p>';
+    '<p class="bd-foot">교재 <b>촉진관리</b>(제4판) P011. 원문은 Keller, K. L. (1993), <i>Journal of Marketing</i> 57(1), p.7, Figure 1 “Dimensions of Brand Knowledge”.</p>';
 
   box.addEventListener("click", (e) => {
     const b = e.target.closest(".bn-box");
