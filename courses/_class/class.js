@@ -1944,6 +1944,31 @@ async function dropIntro(id) {
   }
 }
 
+/* 낸 과제 하나 지우기.
+ *
+ * 자기소개에는 있던 것이 과제에는 없었다. 잘못 낸 것이나, 명단에서 뺀 사람이
+ * 남긴 것을 치울 데가 없었다.
+ *
+ * 사진도 함께 지운다. 장부만 지우면 창고에 사진이 남아 자리를 먹는데 아무도
+ * 그것을 다시 찾지 못한다. 점수는 따로 있으므로 그것도 같이 치운다.
+ */
+async function dropWork(id) {
+  const r = (state.allWorks || []).find((x) => x.id === id);
+  if (!r) return;
+  if (!confirm(r.name + " (" + r.sid + ") 학생이 낸 과제를 지웁니다.\n되돌릴 수 없습니다.")) return;
+  try {
+    if (r.photoPath) {
+      try { await deleteObject(storageRef(store, r.photoPath)); }
+      catch { /* 사진이 이미 없어도 장부는 지운다 */ }
+    }
+    await deleteDoc(doc(db, WORKS, id));
+    try { await deleteDoc(doc(db, SCORES, id)); } catch { /* 점수가 없을 수 있다 */ }
+    toast("지웠습니다");
+  } catch (e) {
+    toast("지우지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+}
+
 /* 소개 글까지 통째로 내려받는다. 사진은 주소만 담는다. */
 function introCsv() {
   const rows = introRows();
@@ -2484,12 +2509,16 @@ function renderWorksAll() {
           <input class="wk-score" type="number" min="0" max="100" inputmode="numeric"
                  data-score="${esc(r.id)}" value="${esc(String(sc(r.id).score ?? ""))}"
                  placeholder="점수" title="점수를 넣고 화면 밖을 누르면 저장됩니다">
+          <button class="lst-del" type="button" data-wdel="${esc(r.id)}" title="지우기">×</button>
         </span>
       </li>`;
     }).join("")}</ul>` : `<p class="empty">이 과제는 아직 아무도 내지 않았습니다.</p>`);
 
   body.querySelectorAll("[data-score]").forEach((el) => {
     el.addEventListener("change", () => putScore(el.dataset.score, el.value));
+  });
+  body.querySelectorAll("[data-wdel]").forEach((el) => {
+    el.addEventListener("click", () => dropWork(el.dataset.wdel));
   });
 
   $("wk-pick").addEventListener("change", (e) => {
