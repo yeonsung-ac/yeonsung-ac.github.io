@@ -793,3 +793,32 @@ body.showing{overflow:hidden}
   .intro-banner{padding:14px;gap:11px}
   .ib-mid b{font-size:.96rem}
 }
+
+/* ── 명단에 없는 사람이 빠져나갈 길 ──────────────────────────
+   첫 수업에 못 온 학생은 명단에 없다. 문 앞에서 돌려보내면 아무것도 낼 수
+   없고, 교수는 그런 사람이 있었는지도 모른다. 눈에 띄되 명단에서 고르는 것이
+   먼저라는 것은 보이도록, 한 겹 접어 둔다. */
+.gate-self{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.gate-self > p{margin:0 0 8px;color:var(--muted);font-size:.83rem;line-height:1.7}
+.gate-self-go{
+  padding:0;border:0;background:none;color:var(--navy);
+  font:inherit;font-size:.85rem;font-weight:700;text-decoration:underline;cursor:pointer;
+}
+.gate-self-form{display:grid;gap:8px;margin-top:11px}
+.gate-self-form input{
+  padding:12px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;
+  font:inherit;font-size:16px;   /* 16px 밑이면 아이폰이 화면을 당긴다 */
+}
+.gate-self-form input:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:transparent}
+.gate-self-ok{
+  min-height:46px;border:0;border-radius:10px;
+  background:var(--navy);color:#fff;font:inherit;font-weight:700;cursor:pointer;
+}
+.gate-self-ok:hover{opacity:.9}
+
+/* 명단 밖에서 낸 사람이 있다는 알림 */
+.ros-note{
+  margin:0 0 12px;padding:11px 14px;border-radius:10px;
+  background:#fff6e5;color:#7a5a10;font-size:.85rem;line-height:1.7;
+}
+.warn-txt{color:#c98a15}

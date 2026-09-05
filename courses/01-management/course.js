@@ -11,6 +11,10 @@ window.COURSE = {
   id: "mgmt",
   name: "경영학원론",
   pass: "0909",
+  // 명단에서 이름을 고르게 한다. 정식 수강생 명단은 수강 정정이 끝나야
+  // 나오므로, 그때까지는 낸 사람들로 채운 명단을 쓴다. 명단에 없는
+  // 학생은 문패에서 직접 이름을 넣고 들어올 수 있다.
+  gate: "roster",
   url: "https://yeonsung-ac.github.io/courses/01-management/",
 
   intro: {

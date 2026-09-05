@@ -225,6 +225,7 @@ function drawPicks() {
   }
   if (!hit.length) {
     box.innerHTML = `<p class="gate-none">찾는 사람이 없습니다. 이름이나 학번을 다시 확인해 주세요.</p>`;
+    drawSelfWay(box);
     return;
   }
   box.innerHTML = hit.slice(0, 8).map((r) => `
@@ -236,6 +237,51 @@ function drawPicks() {
       state.pick = state.roster.find((r) => String(r.sid) === el.dataset.sid) || null;
       showPicked();
     });
+  });
+}
+
+/* 명단에 없는 사람이 빠져나갈 길.
+ *
+ * 첫 수업에 못 온 학생은 명단에 없다. 그렇다고 문 앞에서 돌려보내면 그 학생은
+ * 아무것도 낼 수 없고, 교수는 그런 사람이 있었는지도 모른다. 그래서 이름과
+ * 학번을 직접 넣고 들어오는 길을 낸다.
+ *
+ * 다만 명단을 고른 사람과 구별해 둔다. 나중에 교수가 명단에 넣을지 판단해야
+ * 하기 때문이다. state.pick.self 가 그 표시다.
+ */
+function drawSelfWay(box) {
+  const q = ($("g-find")?.value || "").trim();
+  const wrap = document.createElement("div");
+  wrap.className = "gate-self";
+  wrap.innerHTML = `
+    <p>명단에 없나요? 첫 수업에 못 오셨다면 그럴 수 있습니다.</p>
+    <button class="gate-self-go" type="button">이름과 학번을 직접 넣기</button>
+    <div class="gate-self-form" hidden>
+      <input class="gate-self-name" type="text" maxlength="20" placeholder="성명"
+             autocomplete="name" value="${esc(/^\d+$/.test(q) ? "" : q)}">
+      <input class="gate-self-sid" type="text" maxlength="20" placeholder="학번"
+             inputmode="numeric" value="${esc(/^\d+$/.test(q) ? q : "")}">
+      <button class="gate-self-ok" type="button">이 이름으로 들어가기</button>
+    </div>`;
+  box.appendChild(wrap);
+
+  const form = wrap.querySelector(".gate-self-form");
+  wrap.querySelector(".gate-self-go").addEventListener("click", () => {
+    form.hidden = false;
+    wrap.querySelector(".gate-self-name").focus();
+  });
+  wrap.querySelector(".gate-self-ok").addEventListener("click", () => {
+    const name = cleanName(wrap.querySelector(".gate-self-name").value);
+    const sid = cleanSid(wrap.querySelector(".gate-self-sid").value);
+    const err = $("gate-error");
+    if (name.length < 2 || sid.length < 4) {
+      err.textContent = "성명 두 글자, 학번 네 자리 이상을 넣어 주세요.";
+      err.hidden = false;
+      return;
+    }
+    err.hidden = true;
+    state.pick = { name, sid, self: true };   // 스스로 넣었다는 표시
+    showPicked();
   });
 }
 
@@ -281,7 +327,11 @@ $("gate-form").addEventListener("submit", async (e) => {
   if (!ok) return fail("입장 암호가 다릅니다. 수업 시간에 알려 드린 숫자입니다.");
 
   err.hidden = true;
-  state.me = { name, sid };
+  // 명단에서 고르지 않고 스스로 넣고 들어온 사람은 표시해 둔다.
+  // 교수 화면의 명단에서 '명단 밖'으로 보여, 넣을지 판단할 수 있게 한다.
+  state.me = state.pick && state.pick.self
+    ? { name, sid, self: true }
+    : { name, sid };
   saveWho(state.me);
   noteSid(sid);
   enterRoom();
@@ -1696,10 +1746,70 @@ $("roster-file")?.addEventListener("change", async (e) => {
 });
 
 /* 명단과 대조해 아직 안 낸 사람을 짚어 준다. 낸 사람만 세면 누가 빠졌는지 모른다. */
+/* 무언가 낸 사람을 모두 모은다.
+ *
+ * 정식 수강생 명단은 수강 정정이 끝나야 나오는데, 그때까지 한 달이 걸리기도
+ * 한다. 그동안 명단 없이 굴리면 학생이 이름을 매번 손으로 넣어야 하고 오타가
+ * 쌓인다. 그래서 이미 낸 사람들로 명단을 채워 두고, 정식 명단이 나오면
+ * 그것으로 갈아 끼운다.
+ *
+ * 자기소개만 보지 않는다. 과제나 퀴즈만 낸 사람도 있기 때문이다.
+ * 같은 학번이 여러 번 나오면 이름이 가장 최근인 것을 따른다.
+ */
+function everyoneWhoSubmitted() {
+  const seen = new Map();
+  const add = (name, sid) => {
+    const key = cleanSid(String(sid || ""));
+    const who = cleanName(String(name || ""));
+    if (key.length < 4 || who.length < 2) return;
+    seen.set(key, who);          // 나중 것이 이긴다
+  };
+  (state.intros || []).forEach((r) => add(r.name, r.sid));
+  (state.allWorks || []).forEach((r) => add(r.name, r.sid));   // 낸 과제 전체
+  (state.all || []).forEach((r) => add(r.name, r.sid));        // 퀴즈 답안 전체
+  return [...seen].map(([sid, name]) => ({ sid, name }));
+}
+
+async function rosterFromSubmissions() {
+  const found = everyoneWhoSubmitted();
+  if (!found.length) {
+    toast("아직 아무도 내지 않았습니다.", true);
+    return;
+  }
+  const had = new Set(state.roster.map((r) => String(r.sid)));
+  const fresh = found.filter((r) => !had.has(r.sid));
+  if (!fresh.length) {
+    toast("낸 사람이 모두 이미 명단에 있습니다.");
+    return;
+  }
+  const ask = fresh.slice(0, 8).map((r) => `${r.name} ${r.sid}`).join("\n");
+  const more = fresh.length > 8 ? `\n… 그 밖 ${fresh.length - 8}명` : "";
+  if (!confirm(`낸 사람 ${fresh.length}명을 명단에 넣습니다.\n\n${ask}${more}`)) return;
+
+  try {
+    // 이미 명단에 있는 사람은 건드리지 않는다. 엑셀로 올린 이름이
+    // 손으로 넣은 이름보다 정확할 수 있기 때문이다.
+    await Promise.all(fresh.map((r) =>
+      setDoc(doc(db, ROSTER, r.sid), { name: r.name, sid: r.sid, from: "제출" },
+             { merge: true })));
+    toast(`${fresh.length}명을 명단에 넣었습니다.`);
+  } catch (e) {
+    toast("넣지 못했습니다. " + (e?.code || ""), true);
+  }
+}
+
 function renderRoster() {
   const body = $("prof-body");
+  const found = everyoneWhoSubmitted();
+  const outside = found.filter((r) => !state.roster.some((x) => String(x.sid) === r.sid));
+
   if (!state.roster.length) {
-    body.innerHTML = `<p class="empty">명단이 아직 없습니다. 위 <b>명단 올리기</b> 로 엑셀을 올려 주세요.</p>`;
+    body.innerHTML = `<p class="empty">명단이 아직 없습니다.
+      위 <b>명단 올리기</b> 로 엑셀을 올리거나, 아래 단추로 지금까지 낸 사람을 넣으세요.</p>
+      <p style="text-align:center;margin-top:14px">
+        <button class="btn-go" id="ros-from-sub" type="button">낸 사람으로 명단 만들기
+          ${found.length ? `(${found.length}명)` : ""}</button></p>`;
+    $("ros-from-sub")?.addEventListener("click", rosterFromSubmissions);
     return;
   }
   const gave = new Set(state.intros.map((r) => String(r.sid)));
@@ -1709,9 +1819,15 @@ function renderRoster() {
   body.innerHTML = `<div class="lst-bar">
       <p class="lst-count">명단 <b>${state.roster.length}명</b> ·
         ${esc(C.intro.title)} 낸 사람 <b>${done.length}</b> ·
-        아직 <b>${miss.length}</b></p>
-      <div class="lst-tools"><button class="btn-line" id="ros-csv" type="button">CSV</button></div>
+        아직 <b>${miss.length}</b>${outside.length
+          ? ` · <b class="warn-txt">명단 밖 ${outside.length}</b>` : ""}</p>
+      <div class="lst-tools">
+        ${outside.length ? `<button class="btn-line" id="ros-from-sub" type="button">명단 밖 ${outside.length}명 넣기</button>` : ""}
+        <button class="btn-line" id="ros-csv" type="button">CSV</button></div>
     </div>
+    ${outside.length ? `<p class="ros-note">명단에 없는데 무언가 낸 사람이
+      ${outside.length}명 있습니다 — ${esc(outside.slice(0, 5).map((r) => r.name).join(", "))}${
+      outside.length > 5 ? " 외" : ""}. 첫 수업에 못 온 학생일 수 있습니다.</p>` : ""}
     <ul class="lst">${state.roster.map((r, i) => {
       const ok = gave.has(String(r.sid));
       return `<li class="lst-row${ok ? " spoke" : ""}">
@@ -1726,6 +1842,7 @@ function renderRoster() {
       </li>`;
     }).join("")}</ul>`;
 
+  $("ros-from-sub")?.addEventListener("click", rosterFromSubmissions);
   $("ros-csv")?.addEventListener("click", () => {
     const head = ["번호", "이름", "학번", "전화번호", C.intro.title];
     const rows = state.roster.map((r, i) => [i + 1, r.name, r.sid,

@@ -39,15 +39,18 @@
           가입은 없습니다. 아래만 채우면 바로 들어갑니다.</p>
 
         <form id="gate-form" autocomplete="off">
-          <div class="gate-row">
-            <label for="g-name">성명</label>
-            <input id="g-name" name="name" type="text" maxlength="20" required
-                   placeholder="홍길동" autocomplete="name">
+          <div class="gate-row" id="gate-find-row">
+            <label for="g-find">이름 또는 학번</label>
+            <input id="g-find" type="search" maxlength="20" autocomplete="off"
+                   placeholder="예)  김수  또는  1667">
+            <div class="gate-picks" id="gate-picks"></div>
           </div>
-          <div class="gate-row">
-            <label for="g-sid">학번</label>
-            <input id="g-sid" name="sid" type="text" inputmode="numeric" maxlength="20" required
-                   placeholder="20260000">
+
+          <div class="gate-who" id="gate-who" hidden>
+            <p class="gate-who-line">
+              <b id="gate-who-name"></b><span id="gate-who-sid"></span>
+            </p>
+            <button class="gate-again" id="gate-again" type="button">다른 사람 고르기</button>
           </div>
           <div class="gate-row">
             <label for="g-pw">입장 암호</label>
