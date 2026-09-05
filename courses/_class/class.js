@@ -199,6 +199,22 @@ function saveWho(who) {
 /* 문패를 명단에서 고르는 방식으로 쓸지. 과목 설정에서 정한다. */
 const USE_ROSTER = C.gate === "roster";
 
+/* 목록에 학번을 통째로 보여 준다.
+ *
+ * 한때 뒤 네 자리만 내놓았다. 이 목록은 암호를 넣기 전에 보이므로 주소만
+ * 알면 누구나 이름을 쳐서 볼 수 있기 때문이다. 그런데 잘린 번호로는 제
+ * 것을 가려내기 어렵다는 것이 수업에서 드러났다. 뒷자리가 같은 사람이
+ * 있으면 누가 누구인지 알 수 없다.
+ *
+ * 학번은 이름과 함께 출석부에 적히는 값이지 감출 것이 아니고, 이 목록에
+ * 닿으려면 그 과목 주소를 알아야 한다. 고르는 쪽을 택했다.
+ *
+ * 과목 설정에 sidShow: "tail" 을 두면 뒤 네 자리만 보인다. */
+function showSid(sid) {
+  const v = String(sid ?? "");
+  return C.sidShow === "tail" ? v.slice(-4) : v;
+}
+
 /* 이름으로 좁혀 보여 준다. 서른 명을 통째로 늘어놓으면 찾기가 더 어렵다.
    두 글자만 쳐도 대개 한 사람으로 좁혀진다. */
 function drawPicks() {
@@ -230,7 +246,7 @@ function drawPicks() {
   }
   box.innerHTML = hit.slice(0, 8).map((r) => `
     <button class="gate-pick" type="button" data-sid="${esc(r.sid)}">
-      <b>${esc(r.name)}</b><span>${esc(String(r.sid).slice(-4))}</span>
+      <b>${esc(r.name)}</b><span>${esc(showSid(r.sid))}</span>
     </button>`).join("");
   box.querySelectorAll("[data-sid]").forEach((el) => {
     el.addEventListener("click", () => {
@@ -1798,6 +1814,29 @@ async function rosterFromSubmissions() {
   }
 }
 
+/* 명단에서 한 사람 빼기.
+ *
+ * 이름을 손으로 넣고 들어오는 길을 냈으니, 오타로 두 번 들어온 사람이나
+ * 장난으로 넣은 이름이 섞일 수 있다. 그때 지울 데가 있어야 한다.
+ *
+ * 낸 것까지 지우지는 않는다. 자기소개나 과제는 uid 로 묶여 있어 명단과
+ * 별개이고, 명단에서 뺐다고 낸 것을 없애면 되돌릴 수 없다. 명단에서만
+ * 빠지므로, 그 사람이 다시 들어오면 '명단 밖'으로 다시 잡힌다.
+ */
+async function dropFromRoster(sid, name) {
+  if (!sid) return;
+  if (!confirm(`${name || sid} 님을 명단에서 뺍니다.\n\n낸 자기소개나 과제는 그대로 남습니다.`)) {
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, ROSTER, String(sid)));
+    try { await deleteDoc(doc(db, PHONE, String(sid))); } catch { /* 없을 수 있다 */ }
+    toast(`${name || sid} 님을 명단에서 뺐습니다.`);
+  } catch (e) {
+    toast("빼지 못했습니다. " + (e?.code || ""), true);
+  }
+}
+
 function renderRoster() {
   const body = $("prof-body");
   const found = everyoneWhoSubmitted();
@@ -1839,10 +1878,15 @@ function renderRoster() {
           </span></span>
           <span class="lst-when">${esc(state.tels?.[r.sid] || "")}</span>
         </span>
+        <button class="ros-del" type="button" data-sid="${esc(r.sid)}"
+                data-name="${esc(r.name)}" title="명단에서 빼기">×</button>
       </li>`;
     }).join("")}</ul>`;
 
   $("ros-from-sub")?.addEventListener("click", rosterFromSubmissions);
+  body.querySelectorAll(".ros-del").forEach((el) => {
+    el.addEventListener("click", () => dropFromRoster(el.dataset.sid, el.dataset.name));
+  });
   $("ros-csv")?.addEventListener("click", () => {
     const head = ["번호", "이름", "학번", "전화번호", C.intro.title];
     const rows = state.roster.map((r, i) => [i + 1, r.name, r.sid,
