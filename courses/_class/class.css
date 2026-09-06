@@ -469,7 +469,23 @@ body.showing{overflow:hidden}
 .film-title{font-weight:700;font-size:1rem;line-height:1.45;letter-spacing:-.02em}
 .film-go:hover .film-title{text-decoration:underline;text-underline-offset:3px}
 
-.film-acts{flex:0 0 auto;padding:0 14px 0 6px}
+/* 교재 단추.
+   영상 카드와 같은 줄에 둔다. 장 번호가 영상과 교재가 같으므로 한자리에서
+   고르는 것이 맞다. 목록을 두 벌 만들면 같은 제2장을 두 번 찾게 된다.
+   좁은 화면에서는 아래 줄로 내려간다. */
+.film-book{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;padding:0 4px}
+.btn-book{
+  min-width:92px;padding:9px 12px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--navy);background:var(--navy);color:#fff;
+  font:inherit;font-weight:700;font-size:.8rem;white-space:nowrap;
+  transition:background .14s,border-color .14s,color .14s,transform .08s;
+}
+.btn-book:hover{background:#16305a}
+.btn-book.ghost{background:#fff;color:var(--navy)}
+.btn-book.ghost:hover{background:#eef2f8}
+.btn-book:active{transform:scale(.95)}
+
+.film-acts{flex:0 0 auto;padding:0 14px 0 6px;display:flex;flex-direction:column;gap:6px}
 .film-eye{
   min-width:74px;padding:9px 12px;border-radius:999px;cursor:pointer;
   border:1px solid var(--card-line);background:#fff;
@@ -488,6 +504,14 @@ body.showing{overflow:hidden}
   .film-title{font-size:.9rem}
   .film-acts{padding:0 10px 0 4px}
   .film-eye{min-width:62px;padding:8px 9px;font-size:.74rem}
+  /* 손안에서는 한 줄에 다 못 담는다. 영상 카드는 위 줄을 다 쓰고,
+     교재 단추와 공개 단추는 아래 줄로 내려 나란히 편다. */
+  .film{flex-wrap:wrap}
+  .film-go{flex:1 1 100%}
+  .film-book{flex-direction:row;width:100%;padding:0 11px 11px;gap:7px}
+  .btn-book{flex:1;min-width:0}
+  .film-acts{flex-direction:row;width:100%;padding:0 11px 11px;gap:7px}
+  .film-eye{flex:1}
 }
 /* 눌린 것이 손끝에도 보이게. 색만 바뀌면 놓치기 쉽다. */
 .film-eye{transition:background .14s,border-color .14s,color .14s,transform .08s}

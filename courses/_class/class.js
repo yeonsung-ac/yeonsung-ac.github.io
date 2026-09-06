@@ -60,6 +60,8 @@ const QUIZZES = C.id + "_quizzes";
 const ANSWERS = C.id + "_answers";
 const LOGS = C.id + "_log";
 const FILMS_C = C.id + "_films";    // 강의 영상의 공개 여부. 교수만 고친다.
+const BOOK_C = C.id + "_book";      // 교재 각 장의 공개 여부. 교수만 고친다.
+const BOOK_DIR = "textbook";        // 저장소(Storage) 안의 교재 자리. textbook/02.html
 const INTROS = C.id + "_intros";
 const TASKS = C.id + "_tasks";      // 주간 과제. 교수가 낸다.
 const WORKS = C.id + "_works";      // 낸 과제. 사진 한 장과 글.
@@ -110,6 +112,9 @@ const state = {
   introPage: 0,
   spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
   films: {},         // 강의 영상 공개 여부. 없으면 공개로 본다.
+  book: {},          // 교재 각 장의 공개 여부. 없으면 비공개로 본다.
+                     // 영상과 반대다. 아직 올리지 않은 장이 대부분이라,
+                     // 기본을 공개로 두면 없는 파일을 여는 단추가 줄줄이 생긴다.
   roster: [],        // 수강생 명단 (이름·학번)
   rosterState: "wait",  // wait | ready | fail. 비었는지 못 읽었는지 가려 말해 주려는 것이다.
   gateHash: null,       // 교수가 바꾼 암호의 해시. 없으면 course.js 의 처음 값을 쓴다.
@@ -504,6 +509,7 @@ onAuthStateChanged(auth, async (user) => {
   watchWorks();
   watchScores();
   watchFilms();
+  watchBook();
   if (USE_ROSTER) watchRoster();
   if (state.isProfessor) watchLogs();
   render();
@@ -666,6 +672,22 @@ function watchRoster() {
 }
 
 let stopFilms = null;
+
+let stopBook = null;
+
+function watchBook() {
+  if (stopBook) return;
+  stopBook = onSnapshot(
+    collection(db, BOOK_C),
+    (snap) => {
+      const got = {};
+      snap.docs.forEach((d) => { got[d.id] = d.data(); });
+      state.book = got;
+      renderFilms();
+    },
+    () => { /* 못 읽어도 기본값(비공개)으로 보여 준다 */ }
+  );
+}
 
 function watchFilms() {
   if (stopFilms) return;
@@ -2036,6 +2058,8 @@ function introCsv() {
 const UNIT = C.unit || "강";
 const filmId = (i) => String(i + 1).padStart(2, "0");
 const filmOpen = (i) => state.films[filmId(i)]?.open !== false;
+// 교재는 반대로, 켜 준 장만 보인다.
+const bookOpen = (i) => state.book[filmId(i)]?.open === true;
 
 function renderFilms() {
   const box = $("films");
@@ -2075,19 +2099,85 @@ function renderFilms() {
           <span class="film-title">${esc(f.t)}</span>
         </span>
       ${ready ? "</a>" : "</span>"}
+      ${bookOpen(f.i) ? `<span class="film-book">
+        <button class="btn-book" type="button" data-book="${no}">교재 읽기</button>
+        <button class="btn-book ghost" type="button" data-bookpdf="${no}">PDF 받기</button>
+      </span>` : ""}
       ${prof ? `<span class="film-acts">
         <button class="film-eye${on ? " on" : ""}" type="button" data-film="${no}"
-                aria-pressed="${on}" title="${on ? "학생에게 보입니다" : "학생에게 감춰져 있습니다"}">
-          ${on ? "공개" : "비공개"}
+                aria-pressed="${on}" title="${on ? "영상이 학생에게 보입니다" : "영상이 학생에게 감춰져 있습니다"}">
+          영상 ${on ? "공개" : "비공개"}
+        </button>
+        <button class="film-eye${bookOpen(f.i) ? " on" : ""}" type="button" data-bookeye="${no}"
+                aria-pressed="${bookOpen(f.i)}"
+                title="${bookOpen(f.i) ? "교재가 학생에게 보입니다" : "교재가 학생에게 감춰져 있습니다"}">
+          교재 ${bookOpen(f.i) ? "공개" : "비공개"}
         </button>
       </span>` : ""}
     </li>`;
   }).join("");
 
+  $("film-list").querySelectorAll("[data-book]").forEach((el) => {
+    el.addEventListener("click", () => openBook(el.dataset.book, "html"));
+  });
+  $("film-list").querySelectorAll("[data-bookpdf]").forEach((el) => {
+    el.addEventListener("click", () => openBook(el.dataset.bookpdf, "pdf"));
+  });
+
   if (!prof) return;
   $("film-list").querySelectorAll("[data-film]").forEach((el) => {
     el.addEventListener("click", () => flipFilm(el.dataset.film));
   });
+  $("film-list").querySelectorAll("[data-bookeye]").forEach((el) => {
+    el.addEventListener("click", () => flipBook(el.dataset.bookeye));
+  });
+}
+
+/* 교재 한 장을 새 창에 연다.
+
+   교재는 저장소(Storage)에 둔다. 깃 저장소가 공개라 거기 두면 주소만 알면
+   누구나 읽는다. 저장소는 규칙이 로그인을 요구하므로 문패를 지난 사람만
+   열 수 있다.
+
+   창은 먼저 열고 주소는 나중에 넣는다. 주소를 받아 온 뒤에 열면 브라우저가
+   사용자가 누른 것으로 보지 않아 팝업으로 막는다.
+   'noopener' 를 주면 창 손잡이를 돌려주지 않으므로, 받은 뒤 손수 끊는다. */
+async function openBook(no, kind) {
+  const win = window.open("", "_blank");
+  if (win) {
+    try { win.opener = null; } catch (e) { /* 브라우저가 막아도 그만이다 */ }
+    win.document.write("<title>교재</title><p style='font:16px system-ui;padding:24px'>교재를 여는 중…</p>");
+  }
+  try {
+    const url = await getDownloadURL(storageRef(store, BOOK_DIR + "/" + no + "." + kind));
+    if (win) win.location.replace(url); else window.location.href = url;
+  } catch (e) {
+    if (win) win.close();
+    const code = e && e.code;
+    toast(code === "storage/object-not-found"
+      ? (kind === "pdf" ? "이 장은 PDF 를 아직 올리지 않았습니다" : "아직 올리지 않은 교재입니다")
+      : code === "storage/unauthorized"
+        ? "권한이 없습니다. Storage 규칙을 게시하셨는지 확인해 주세요."
+        : "교재를 열지 못했습니다 (" + (code || e.message) + ")", true);
+  }
+}
+
+/* 교재 공개 여부. 영상과 같은 방식으로, 누르는 순간 화면부터 바꾼다. */
+async function flipBook(id) {
+  const was = state.book[id];
+  const now = was?.open === true;
+
+  state.book[id] = { ...(was || {}), open: !now };
+  renderFilms();
+
+  try {
+    await setDoc(doc(db, BOOK_C, id), { open: !now, at: serverTimestamp() });
+    toast(now ? "교재를 감췄습니다" : "교재를 공개했습니다");
+  } catch (e) {
+    if (was === undefined) delete state.book[id]; else state.book[id] = was;
+    renderFilms();
+    toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
 }
 
 /* 누르는 순간 화면부터 바꾼다.

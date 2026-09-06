@@ -1,130 +1,145 @@
-rules_version = '2';
-
-// 연성대학교 이현구 교수 홈페이지 Storage 규칙
-// 과제 제출함(yeonsung-ac.github.io/submit/)이 쓰는 파일 보관 규칙이다.
-
-service firebase.storage {
-  match /b/{bucket}/o {
-
-    // 교수 판별은 구글 로그인 이메일로 한다. professor.js 의 목록과 같아야 한다.
-    function isProfessor() {
-      return request.auth != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email in ['dasahee@yeonsung.ac.kr'];
-    }
-
-    // 파일 하나당 최대 50MB. submit/settings.js 의 MAX_FILE_MB 와 같은 값이어야 한다.
-    function withinSizeLimit() {
-      return request.resource == null || request.resource.size <= 50 * 1024 * 1024;
-    }
-
-    // submissions/{학생UID}/{임의ID}/{파일명}
-    match /submissions/{ownerId}/{allPaths=**} {
-
-      // 본인 것과 교수만 내려받을 수 있다. 학생끼리는 서로 못 본다.
-      allow read: if request.auth != null
-        && (request.auth.uid == ownerId || isProfessor());
-
-      // 올리기·덮어쓰기·지우기. 삭제 요청에는 request.resource 가 없다.
-      allow write: if isProfessor()
-        || (request.auth != null && request.auth.uid == ownerId && withinSizeLimit());
-    }
-
-    // mgmt_intros/{학생UID}/photo.jpg - 경영학원론 자기소개 사진.
-    // 브라우저에서 긴 변 1600px JPEG 으로 줄여 올리므로 한 장이 1MB 를 넘지 않는다.
-    // 넉넉히 5MB 까지만 받는다. 낸 사람과 교수만 본다.
-    match /mgmt_intros/{ownerId}/{allPaths=**} {
-      allow read: if request.auth != null
-        && (request.auth.uid == ownerId || isProfessor());
-
-      allow write: if isProfessor()
-        || (request.auth != null && request.auth.uid == ownerId
-            && (request.resource == null
-                || (request.resource.size <= 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*'))));
-    }
-
-    // cb_intros/{학생UID}/photo.jpg - 소비자행동론 '소비 되돌아보기' 사진.
-    // 경영학원론과 같은 조건이다. 낸 사람과 교수만 본다.
-    match /cb_intros/{ownerId}/{allPaths=**} {
-      allow read: if request.auth != null
-        && (request.auth.uid == ownerId || isProfessor());
-
-      allow write: if isProfessor()
-        || (request.auth != null && request.auth.uid == ownerId
-            && (request.resource == null
-                || (request.resource.size <= 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*'))));
-    }
-
-    // ad_intros/{학생UID}/photo.jpg - 광고학개론 '기억에 남는 광고' 사진.
-    // 다른 과목과 같은 조건이다. 낸 사람과 교수만 본다.
-    match /ad_intros/{ownerId}/{allPaths=**} {
-      allow read: if request.auth != null
-        && (request.auth.uid == ownerId || isProfessor());
-
-      allow write: if isProfessor()
-        || (request.auth != null && request.auth.uid == ownerId
-            && (request.resource == null
-                || (request.resource.size <= 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*'))));
-    }
-
-
-    // 경영학원론 주간 과제 사진. 낸 사람과 교수만 본다.
-    match /mgmt_works/{ownerId}/{allPaths=**} {
-      allow read: if request.auth != null
-        && (request.auth.uid == ownerId || isProfessor());
-
-      allow write: if isProfessor()
-        || (request.auth != null && request.auth.uid == ownerId
-            && (request.resource == null
-                || (request.resource.size <= 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*'))));
-    }
-
-    // 소비자행동론 주간 과제 사진. 낸 사람과 교수만 본다.
-    match /cb_works/{ownerId}/{allPaths=**} {
-      allow read: if request.auth != null
-        && (request.auth.uid == ownerId || isProfessor());
-
-      allow write: if isProfessor()
-        || (request.auth != null && request.auth.uid == ownerId
-            && (request.resource == null
-                || (request.resource.size <= 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*'))));
-    }
-
-    // 광고학개론 주간 과제 사진. 낸 사람과 교수만 본다.
-    match /ad_works/{ownerId}/{allPaths=**} {
-      allow read: if request.auth != null
-        && (request.auth.uid == ownerId || isProfessor());
-
-      allow write: if isProfessor()
-        || (request.auth != null && request.auth.uid == ownerId
-            && (request.resource == null
-                || (request.resource.size <= 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*'))));
-    }
-
-    // marketing/pdf/01.pdf · marketing/pptx/01.pptx - 마케팅 교안.
-    // 학생이 올리는 것이 아니라 내가 올려 두는 것이라, 쓰기는 교수뿐이다.
-    //
-    // 읽기를 로그인한 사람 모두에게 여는 까닭은, 학생이 문패를 지나면 익명으로
-    // 로그인하기 때문이다. 어느 강을 보여 줄지는 mkt_decks 의 공개 여부가 가른다.
-    // 깃 저장소가 공개라 교안을 거기 두지 않고 여기 두는 것이다.
-    match /marketing/{allPaths=**} {
-      allow read: if request.auth != null;
-
-      // 가장 큰 교안(제5장 광고전략)이 28MB 다. 조금 여유를 두고 40MB 로 잡는다.
-      // 지울 때는 request.resource 가 없다.
-      allow write: if isProfessor()
-        && (request.resource == null || request.resource.size <= 40 * 1024 * 1024);
-    }
-
-    // 위에서 허용하지 않은 경로는 전부 막는다.
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-  }
-}
+rules_version = '2';
+
+// 연성대학교 이현구 교수 홈페이지 Storage 규칙
+// 과제 제출함(yeonsung-ac.github.io/submit/)이 쓰는 파일 보관 규칙이다.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 교수 판별은 구글 로그인 이메일로 한다. professor.js 의 목록과 같아야 한다.
+    function isProfessor() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['dasahee@yeonsung.ac.kr'];
+    }
+
+    // 파일 하나당 최대 50MB. submit/settings.js 의 MAX_FILE_MB 와 같은 값이어야 한다.
+    function withinSizeLimit() {
+      return request.resource == null || request.resource.size <= 50 * 1024 * 1024;
+    }
+
+    // submissions/{학생UID}/{임의ID}/{파일명}
+    match /submissions/{ownerId}/{allPaths=**} {
+
+      // 본인 것과 교수만 내려받을 수 있다. 학생끼리는 서로 못 본다.
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      // 올리기·덮어쓰기·지우기. 삭제 요청에는 request.resource 가 없다.
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId && withinSizeLimit());
+    }
+
+    // mgmt_intros/{학생UID}/photo.jpg - 경영학원론 자기소개 사진.
+    // 브라우저에서 긴 변 1600px JPEG 으로 줄여 올리므로 한 장이 1MB 를 넘지 않는다.
+    // 넉넉히 5MB 까지만 받는다. 낸 사람과 교수만 본다.
+    match /mgmt_intros/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+    // cb_intros/{학생UID}/photo.jpg - 소비자행동론 '소비 되돌아보기' 사진.
+    // 경영학원론과 같은 조건이다. 낸 사람과 교수만 본다.
+    match /cb_intros/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+    // ad_intros/{학생UID}/photo.jpg - 광고학개론 '기억에 남는 광고' 사진.
+    // 다른 과목과 같은 조건이다. 낸 사람과 교수만 본다.
+    match /ad_intros/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+
+    // 경영학원론 주간 과제 사진. 낸 사람과 교수만 본다.
+    match /mgmt_works/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+    // 소비자행동론 주간 과제 사진. 낸 사람과 교수만 본다.
+    match /cb_works/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+    // 광고학개론 주간 과제 사진. 낸 사람과 교수만 본다.
+    match /ad_works/{ownerId}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || isProfessor());
+
+      allow write: if isProfessor()
+        || (request.auth != null && request.auth.uid == ownerId
+            && (request.resource == null
+                || (request.resource.size <= 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*'))));
+    }
+
+    // marketing/pdf/01.pdf · marketing/pptx/01.pptx - 마케팅 교안.
+    // 학생이 올리는 것이 아니라 내가 올려 두는 것이라, 쓰기는 교수뿐이다.
+    //
+    // 읽기를 로그인한 사람 모두에게 여는 까닭은, 학생이 문패를 지나면 익명으로
+    // 로그인하기 때문이다. 어느 강을 보여 줄지는 mkt_decks 의 공개 여부가 가른다.
+    // 깃 저장소가 공개라 교안을 거기 두지 않고 여기 두는 것이다.
+    // textbook/02.html - 소비자행동론 교재. 장마다 파일 하나다.
+    // 그림을 파일 안에 실어 두어 한 장만 열어도 그림이 다 나온다.
+    // 함께 두는 textbook/02.pdf 는 학생이 내려받는 몫이다.
+    //
+    // 마케팅 교안과 같은 까닭으로 여기 둔다. 읽기는 로그인한 사람 모두에게
+    // 열어 두고, 어느 장을 보여 줄지는 cb_book 의 공개 여부가 가른다.
+    match /textbook/{allPaths=**} {
+      allow read: if request.auth != null;
+
+      // 한 장에 그림 여러 장을 실으므로 넉넉히 잡는다.
+      // 지울 때는 request.resource 가 없다.
+      allow write: if isProfessor()
+        && (request.resource == null || request.resource.size <= 40 * 1024 * 1024);
+    }
+
+    match /marketing/{allPaths=**} {
+      allow read: if request.auth != null;
+
+      // 가장 큰 교안(제5장 광고전략)이 28MB 다. 조금 여유를 두고 40MB 로 잡는다.
+      // 지울 때는 request.resource 가 없다.
+      allow write: if isProfessor()
+        && (request.resource == null || request.resource.size <= 40 * 1024 * 1024);
+    }
+
+    // 위에서 허용하지 않은 경로는 전부 막는다.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
