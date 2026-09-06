@@ -482,6 +482,9 @@ body.showing{overflow:hidden}
 }
 .btn-book:hover{background:#16305a}
 .btn-book.ghost{background:#fff;color:var(--navy)}
+/* 슬라이드는 강의 중에 가장 먼저 찾는 것이라 눈에 먼저 걸리게 둔다. */
+.btn-book.lime{background:var(--lime);border-color:var(--lime);color:var(--navy)}
+.btn-book.lime:hover{background:#b9e04f;border-color:#b9e04f}
 .btn-book.ghost:hover{background:#eef2f8}
 .btn-book:active{transform:scale(.95)}
 

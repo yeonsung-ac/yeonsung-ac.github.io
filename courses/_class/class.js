@@ -62,6 +62,8 @@ const LOGS = C.id + "_log";
 const FILMS_C = C.id + "_films";    // 강의 영상의 공개 여부. 교수만 고친다.
 const BOOK_C = C.id + "_book";      // 교재 각 장의 공개 여부. 교수만 고친다.
 const BOOK_DIR = "textbook";        // 저장소(Storage) 안의 교재 자리. textbook/02.html
+const DECK_C = C.id + "_deck";      // 강의 슬라이드의 공개 여부. 교수만 고친다.
+const DECK_DIR = "slides";          // 저장소 안의 슬라이드 자리. slides/02.html
 const INTROS = C.id + "_intros";
 const TASKS = C.id + "_tasks";      // 주간 과제. 교수가 낸다.
 const WORKS = C.id + "_works";      // 낸 과제. 사진 한 장과 글.
@@ -113,6 +115,7 @@ const state = {
   spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
   films: {},         // 강의 영상 공개 여부. 없으면 공개로 본다.
   book: {},          // 교재 각 장의 공개 여부. 없으면 비공개로 본다.
+  deck: {},          // 강의 슬라이드 공개 여부. 교재와 같이 없으면 비공개.
                      // 영상과 반대다. 아직 올리지 않은 장이 대부분이라,
                      // 기본을 공개로 두면 없는 파일을 여는 단추가 줄줄이 생긴다.
   roster: [],        // 수강생 명단 (이름·학번)
@@ -525,6 +528,7 @@ onAuthStateChanged(auth, async (user) => {
   watchScores();
   watchFilms();
   watchBook();
+  watchDeck();
   if (USE_ROSTER) watchRoster();
   if (state.isProfessor) watchLogs();
   render();
@@ -687,6 +691,22 @@ function watchRoster() {
 }
 
 let stopFilms = null;
+
+let stopDeck = null;
+
+function watchDeck() {
+  if (stopDeck) return;
+  stopDeck = onSnapshot(
+    collection(db, DECK_C),
+    (snap) => {
+      const got = {};
+      snap.docs.forEach((d) => { got[d.id] = d.data(); });
+      state.deck = got;
+      renderFilms();
+    },
+    () => { /* 못 읽어도 기본값(비공개)으로 보여 준다 */ }
+  );
+}
 
 let stopBook = null;
 
@@ -1160,6 +1180,7 @@ function whatFor(l, q) {
     case "work": return "과제 냄";
     case "film": return which + "영상 봄";
     case "book": return which + "교재 " + (l.how === "pdf" ? "PDF 받음" : "읽음");
+    case "deck": return which + "슬라이드 봄";
     case "submit": return q ? q.week + "주차 " + q.title : "문제 냄";
     default: return q ? q.week + "주차 " + q.title : "-";
   }
@@ -2092,6 +2113,7 @@ const filmId = (i) => String(i + 1).padStart(2, "0");
 const filmOpen = (i) => state.films[filmId(i)]?.open !== false;
 // 교재는 반대로, 켜 준 장만 보인다.
 const bookOpen = (i) => state.book[filmId(i)]?.open === true;
+const deckOpen = (i) => state.deck[filmId(i)]?.open === true;
 
 function renderFilms() {
   const box = $("films");
@@ -2131,9 +2153,10 @@ function renderFilms() {
           <span class="film-title">${esc(f.t)}</span>
         </span>
       ${ready ? "</a>" : "</span>"}
-      ${bookOpen(f.i) ? `<span class="film-book">
-        <button class="btn-book" type="button" data-book="${no}">교재 읽기</button>
-        <button class="btn-book ghost" type="button" data-bookpdf="${no}">PDF 받기</button>
+      ${bookOpen(f.i) || deckOpen(f.i) ? `<span class="film-book">
+        ${deckOpen(f.i) ? `<button class="btn-book lime" type="button" data-deck="${no}">슬라이드</button>` : ""}
+        ${bookOpen(f.i) ? `<button class="btn-book" type="button" data-book="${no}">교재 읽기</button>
+        <button class="btn-book ghost" type="button" data-bookpdf="${no}">PDF 받기</button>` : ""}
       </span>` : ""}
       ${prof ? `<span class="film-acts">
         <button class="film-eye${on ? " on" : ""}" type="button" data-film="${no}"
@@ -2144,6 +2167,11 @@ function renderFilms() {
                 aria-pressed="${bookOpen(f.i)}"
                 title="${bookOpen(f.i) ? "교재가 학생에게 보입니다" : "교재가 학생에게 감춰져 있습니다"}">
           교재 ${bookOpen(f.i) ? "공개" : "비공개"}
+        </button>
+        <button class="film-eye${deckOpen(f.i) ? " on" : ""}" type="button" data-deckeye="${no}"
+                aria-pressed="${deckOpen(f.i)}"
+                title="${deckOpen(f.i) ? "슬라이드가 학생에게 보입니다" : "슬라이드가 학생에게 감춰져 있습니다"}">
+          슬라이드 ${deckOpen(f.i) ? "공개" : "비공개"}
         </button>
       </span>` : ""}
     </li>`;
@@ -2164,6 +2192,9 @@ function renderFilms() {
   $("film-list").querySelectorAll("[data-bookpdf]").forEach((el) => {
     el.addEventListener("click", () => openBook(el.dataset.bookpdf, "pdf"));
   });
+  $("film-list").querySelectorAll("[data-deck]").forEach((el) => {
+    el.addEventListener("click", () => openDeck(el.dataset.deck));
+  });
 
   if (!prof) return;
   $("film-list").querySelectorAll("[data-film]").forEach((el) => {
@@ -2171,6 +2202,9 @@ function renderFilms() {
   });
   $("film-list").querySelectorAll("[data-bookeye]").forEach((el) => {
     el.addEventListener("click", () => flipBook(el.dataset.bookeye));
+  });
+  $("film-list").querySelectorAll("[data-deckeye]").forEach((el) => {
+    el.addEventListener("click", () => flipDeck(el.dataset.deckeye));
   });
 }
 
@@ -2202,6 +2236,49 @@ async function openBook(no, kind) {
       : code === "storage/unauthorized"
         ? "권한이 없습니다. Storage 규칙을 게시하셨는지 확인해 주세요."
         : "교재를 열지 못했습니다 (" + (code || e.message) + ")", true);
+  }
+}
+
+/* 강의 슬라이드를 새 창에 연다.
+
+   슬라이드는 그림 스물아홉 장을 한 파일에 실어 두었다. 따로 두면 주소를
+   하나씩 받아 와야 해서 여는 데 한 박자 걸린다. 여는 길은 교재와 같다. */
+async function openDeck(no) {
+  const win = window.open("", "_blank");
+  if (win) {
+    try { win.opener = null; } catch (e) { /* 브라우저가 막아도 그만이다 */ }
+    win.document.write("<title>강의 슬라이드</title><p style='font:16px system-ui;padding:24px'>슬라이드를 여는 중…</p>");
+  }
+  try {
+    const url = await getDownloadURL(storageRef(store, DECK_DIR + "/" + no + ".html"));
+    if (!state.me.prof) writeLog({ kind: "deck", no, name: state.me.name, sid: state.me.sid });
+    if (win) win.location.replace(url); else window.location.href = url;
+  } catch (e) {
+    if (win) win.close();
+    const code = e && e.code;
+    toast(code === "storage/object-not-found"
+      ? "아직 올리지 않은 슬라이드입니다"
+      : code === "storage/unauthorized"
+        ? "권한이 없습니다. Storage 규칙을 게시하셨는지 확인해 주세요."
+        : "슬라이드를 열지 못했습니다 (" + (code || e.message) + ")", true);
+  }
+}
+
+/* 슬라이드 공개 여부. */
+async function flipDeck(id) {
+  const was = state.deck[id];
+  const now = was?.open === true;
+
+  state.deck[id] = { ...(was || {}), open: !now };
+  renderFilms();
+
+  try {
+    await setDoc(doc(db, DECK_C, id), { open: !now, at: serverTimestamp() });
+    toast(now ? "슬라이드를 감췄습니다" : "슬라이드를 공개했습니다");
+  } catch (e) {
+    if (was === undefined) delete state.deck[id]; else state.deck[id] = was;
+    renderFilms();
+    toast("바꾸지 못했습니다 (" + (e.code || e.message) + ")", true);
   }
 }
 
