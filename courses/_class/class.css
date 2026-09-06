@@ -837,3 +837,19 @@ body.showing{overflow:hidden}
 .ros-del:focus-visible{opacity:1;outline:2px solid var(--navy);outline-offset:1px}
 /* 손가락으로 쓰는 화면에는 마우스를 얹는 일이 없다. 늘 보이게 둔다. */
 @media(hover:none){.ros-del{opacity:.55}}
+
+/* 기록 한 줄 지우기 · 답안 한 개 지우기.
+   명단 지우기와 같은 규칙을 따른다. 평소에는 흐리게 물러나 있다가
+   그 줄(또는 그 이름표)에 마우스를 얹으면 또렷해진다. 손가락 화면에서는
+   얹는 일이 없으므로 늘 옅게 보인다. */
+.log-del,.chip-del{
+  border:0;border-radius:7px;background:none;padding:0;
+  color:#b9c0b6;line-height:1;cursor:pointer;
+  opacity:0;transition:opacity .14s,background .14s,color .14s;
+}
+.log-del{width:26px;height:26px;font-size:1.05rem}
+.chip-del{width:18px;height:18px;margin-left:5px;font-size:.9rem;vertical-align:-1px}
+.logtable tr:hover .log-del,.name-chip:hover .chip-del{opacity:1}
+.log-del:hover,.chip-del:hover{background:#fdecea;color:#a2321f}
+.log-del:focus-visible,.chip-del:focus-visible{opacity:1;outline:2px solid var(--navy);outline-offset:1px}
+@media(hover:none){.log-del,.chip-del{opacity:.55}}

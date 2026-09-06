@@ -961,7 +961,11 @@ function renderProf() {
       return `<p class="count">문항 ${i + 1} · ${esc(qq.text.slice(0, 40))}</p><div class="tally">${bars}</div>`;
     }).join("");
 
-    const names = rows.map((r) => `<span class="name-chip">${esc(r.name)} ${esc(r.sid)}</span>`).join("");
+    // 이름표에 지우기를 달아 둔다. 시험 삼아 넣어 본 답이나 장난으로 찍고
+    // 나간 것이 통계를 흔들기 때문이다. 답 하나만 지우고 문제는 그대로 둔다.
+    const names = rows.map((r) => `<span class="name-chip">${esc(r.name)} ${esc(r.sid)}<button
+      class="chip-del" type="button" data-act="adel" data-aid="${esc(r.id)}"
+      title="이 답안 지우기">×</button></span>`).join("");
 
     return `<div class="pq" data-pq="${esc(q.id)}">
       <div class="pq-head">
@@ -995,6 +999,12 @@ $("prof-body").addEventListener("click", async (e) => {
     } else if (btn.dataset.act === "mode") {
       await updateDoc(doc(db, QUIZZES, id), { mode: q.mode === "live" ? "open" : "live" });
       toast(q.mode === "live" ? "상시로 바꿨습니다" : "실시간으로 바꿨습니다");
+    } else if (btn.dataset.act === "adel") {
+      const r = state.all.find((x) => x.id === btn.dataset.aid);
+      if (r && confirm(r.name + " (" + r.sid + ") 학생의 답안을 지웁니다.\n되돌릴 수 없습니다.")) {
+        await deleteDoc(doc(db, ANSWERS, btn.dataset.aid));
+        toast("지웠습니다");
+      }
     } else if (btn.dataset.act === "del") {
       if (confirm(`'${q.title}' 을 지울까요?\n제출된 답안은 남습니다.`)) {
         await deleteDoc(doc(db, QUIZZES, id));
@@ -1120,7 +1130,7 @@ function renderLog() {
   const byId = new Map(state.quizzes.map((q) => [q.id, q]));
   const table = rows.length
     ? `<div class="logwrap"><table class="logtable">
-        <thead><tr><th>시각</th><th>성명</th><th>학번</th><th>문제</th><th>IP</th><th>기기</th></tr></thead>
+        <thead><tr><th>시각</th><th>성명</th><th>학번</th><th>문제</th><th>IP</th><th>기기</th><th></th></tr></thead>
         <tbody>${rows.slice(0, 300).map((l) => {
           const when = l.t?.toDate ? l.t.toDate().toLocaleString("ko-KR", { hour12: false }) : "…";
           const q = byId.get(l.quizId);
@@ -1132,6 +1142,8 @@ function renderLog() {
             <td>${esc(q ? q.week + "주차 " + q.title : "-")}</td>
             <td class="n">${esc(l.ip || "알 수 없음")}</td>
             <td class="n dim">${esc(String(l.uid || "").slice(0, 8))}</td>
+            <td class="n"><button class="log-del" type="button" data-ldel="${esc(l.id)}"
+                                  title="이 기록 지우기">×</button></td>
           </tr>`;
         }).join("")}</tbody></table></div>
        <p class="count">모두 <b>${rows.length}</b>건${rows.length > 300 ? " (최근 300건만 표시)" : ""}</p>`
@@ -1149,6 +1161,29 @@ function renderLog() {
 
   $("log-back").onclick = () => { state.view = "room"; renderProf(); };
   $("log-csv").onclick = () => downloadLog();
+  host.querySelectorAll("[data-ldel]").forEach((el) => {
+    el.addEventListener("click", () => dropLog(el.dataset.ldel));
+  });
+}
+
+/* 제출 기록 한 줄 지우기.
+ *
+ * 이 기록은 대리 제출을 가려내려고 남기는 것이라 함부로 지울 것이 아니다.
+ * 그래도 시험 삼아 들어와 남긴 자취나 장난으로 찍고 나간 것이 쌓이면,
+ * 정작 봐야 할 것이 그 사이에 묻힌다. 그래서 지우는 길은 두되 한 줄씩만 둔다.
+ * 통째로 비우는 단추는 만들지 않는다 — 한 번 잘못 누르면 되돌릴 수 없다.
+ */
+async function dropLog(id) {
+  const r = (state.logs || []).find((x) => x.id === id);
+  if (!r) return;
+  const who = (r.name || "") + " " + (r.sid || "");
+  if (!confirm(who.trim() + " 의 제출 기록 한 줄을 지웁니다.\n되돌릴 수 없습니다.")) return;
+  try {
+    await deleteDoc(doc(db, LOGS, id));
+    toast("지웠습니다");
+  } catch (e) {
+    toast("지우지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
 }
 
 function downloadLog() {
