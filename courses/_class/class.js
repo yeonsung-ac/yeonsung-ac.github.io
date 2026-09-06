@@ -398,7 +398,22 @@ function enterRoom() {
   $("room").hidden = false;
   $("who-name").textContent = state.me.name;
   $("who-sid").textContent = state.me.sid;
+  noteEntry();
   render();
+}
+
+/* 들어온 것을 한 번만 남긴다.
+   문패를 한 번 지나면 다음부터는 그대로 들어오므로, 새로고침할 때마다 남기면
+   기록이 그것으로 뒤덮인다. 이 탭을 닫기 전까지 한 번만 적는다.
+   교수가 자기 화면을 여는 것은 남기지 않는다 — 볼 사람이 남길 필요가 없다. */
+function noteEntry() {
+  if (!state.me || state.me.prof) return;
+  try {
+    const mark = C.id + "-entered";
+    if (sessionStorage.getItem(mark)) return;
+    sessionStorage.setItem(mark, "1");
+  } catch { /* 사생활 모드면 그때마다 남는다. 그편이 안 남는 것보다 낫다 */ }
+  writeLog({ kind: "enter", name: state.me.name, sid: state.me.sid });
 }
 
 /* ── QR ───────────────────────────────────── */
@@ -1134,6 +1149,22 @@ async function saveQuiz() {
   $("m-save").disabled = false;
 }
 
+/* 그 줄이 무슨 일인지 한마디로.
+   예전에는 문제 이름만 적었다. 이제 입장, 영상, 교재까지 남으므로 무엇을 한
+   자취인지 먼저 보여야 한다. */
+function whatFor(l, q) {
+  const which = l.no ? "제" + Number(l.no) + UNIT + " " : "";
+  switch (l.kind) {
+    case "enter": return "입장";
+    case "intro": return "자기소개 냄";
+    case "work": return "과제 냄";
+    case "film": return which + "영상 봄";
+    case "book": return which + "교재 " + (l.how === "pdf" ? "PDF 받음" : "읽음");
+    case "submit": return q ? q.week + "주차 " + q.title : "문제 냄";
+    default: return q ? q.week + "주차 " + q.title : "-";
+  }
+}
+
 /* 기록 보기 — 교수만 */
 function renderLog() {
   const host = $("prof-body");
@@ -1152,7 +1183,7 @@ function renderLog() {
   const byId = new Map(state.quizzes.map((q) => [q.id, q]));
   const table = rows.length
     ? `<div class="logwrap"><table class="logtable">
-        <thead><tr><th>시각</th><th>성명</th><th>학번</th><th>문제</th><th>IP</th><th>기기</th><th></th></tr></thead>
+        <thead><tr><th>시각</th><th>성명</th><th>학번</th><th>한 일</th><th>IP</th><th>기기</th><th></th></tr></thead>
         <tbody>${rows.slice(0, 300).map((l) => {
           const when = l.t?.toDate ? l.t.toDate().toLocaleString("ko-KR", { hour12: false }) : "…";
           const q = byId.get(l.quizId);
@@ -1161,7 +1192,7 @@ function renderLog() {
             <td class="n">${esc(when)}</td>
             <td>${esc(l.name || "")}</td>
             <td class="n">${esc(l.sid || "")}</td>
-            <td>${esc(q ? q.week + "주차 " + q.title : "-")}</td>
+            <td>${esc(whatFor(l, q))}</td>
             <td class="n">${esc(l.ip || "알 수 없음")}</td>
             <td class="n dim">${esc(String(l.uid || "").slice(0, 8))}</td>
             <td class="n"><button class="log-del" type="button" data-ldel="${esc(l.id)}"
@@ -1211,11 +1242,12 @@ async function dropLog(id) {
 function downloadLog() {
   if (!state.logs.length) { toast("기록이 없습니다", true); return; }
   const byId = new Map(state.quizzes.map((q) => [q.id, q]));
-  const head = ["시각", "성명", "학번", "주차", "제목", "IP", "기기", "이 기기의 다른 학번", "브라우저"];
+  const head = ["시각", "성명", "학번", "한 일", "주차", "제목", "IP", "기기",
+                "이 기기의 다른 학번", "브라우저"];
   const rows = state.logs.map((l) => {
     const q = byId.get(l.quizId);
     const when = l.t?.toDate ? l.t.toDate().toLocaleString("ko-KR", { hour12: false }) : "";
-    return [when, l.name || "", l.sid || "", q?.week ?? "", q?.title ?? "",
+    return [when, l.name || "", l.sid || "", whatFor(l, q), q?.week ?? "", q?.title ?? "",
             l.ip || "", String(l.uid || "").slice(0, 12),
             (l.otherSids || []).join(" "), l.ua || ""];
   });
@@ -2086,7 +2118,7 @@ function renderFilms() {
       ? `<a class="film-go" href="https://youtu.be/${esc(f.v)}" target="_blank" rel="noopener noreferrer"
            aria-label="제${f.i + 1}${UNIT} ${esc(f.t)} 유튜브에서 보기">`
       : `<span class="film-go" aria-label="제${f.i + 1}${UNIT} ${esc(f.t)} 준비 중">`;
-    return `<li class="film${prof && !on ? " off" : ""}${ready ? "" : " soon"}">
+    return `<li class="film${prof && !on ? " off" : ""}${ready ? "" : " soon"}" data-no="${no}">
       ${head}
         <span class="film-shot">
           <img src="thumbs/${no}.jpg" alt="" loading="${f.i < 4 ? "eager" : "lazy"}"
@@ -2116,6 +2148,15 @@ function renderFilms() {
       </span>` : ""}
     </li>`;
   }).join("");
+
+  $("film-list").querySelectorAll("a.film-go").forEach((el) => {
+    el.addEventListener("click", () => {
+      const no = el.closest("[data-no]")?.dataset.no;
+      if (no && state.me && !state.me.prof) {
+        writeLog({ kind: "film", no, name: state.me.name, sid: state.me.sid });
+      }
+    });
+  });
 
   $("film-list").querySelectorAll("[data-book]").forEach((el) => {
     el.addEventListener("click", () => openBook(el.dataset.book, "html"));
@@ -2150,6 +2191,8 @@ async function openBook(no, kind) {
   }
   try {
     const url = await getDownloadURL(storageRef(store, BOOK_DIR + "/" + no + "." + kind));
+    if (!state.me.prof) writeLog({ kind: "book", no, how: kind,
+                                   name: state.me.name, sid: state.me.sid });
     if (win) win.location.replace(url); else window.location.href = url;
   } catch (e) {
     if (win) win.close();
