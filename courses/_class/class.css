@@ -546,12 +546,12 @@ body.showing{overflow:hidden}
 
 /* ── 스팀 수집기 단 (소비자행동론) ──────────────────────────────────
    수업 도구가 따로 있는 과목에서 그리로 가는 자리다. */
-.steam{margin:38px 0 34px;padding-top:32px;border-top:2px solid var(--card-line)}
-.steam-lede{margin:0 0 16px;color:var(--muted);font-size:.92rem;line-height:1.7}
-.steam-go{display:inline-block;min-height:50px;line-height:50px;padding:0 24px;margin:0 0 20px;
+.steam,.lab{margin:38px 0 34px;padding-top:32px;border-top:2px solid var(--card-line)}
+.steam-lede,.lab-lede{margin:0 0 16px;color:var(--muted);font-size:.92rem;line-height:1.7}
+.steam-go,.lab-go{display:inline-block;min-height:50px;line-height:50px;padding:0 24px;margin:0 0 20px;
   border:0;border-radius:10px;text-decoration:none;font-weight:700}
-.steam-steps{margin:0 0 18px;padding-left:20px;color:var(--muted);font-size:.9rem;line-height:1.9}
-.steam-steps b{color:inherit}
+.steam-steps,.lab-steps{margin:0 0 18px;padding-left:20px;color:var(--muted);font-size:.9rem;line-height:1.9}
+.steam-steps b,.lab-steps b{color:inherit}
 .steam-warn{display:grid;gap:5px;padding:14px 17px;border-radius:10px;
   border-left:4px solid #c98a15;background:#fff6e5;color:#7a5a10;font-size:.86rem;line-height:1.7}
 .steam-warn b{color:#5f4508}
