@@ -550,6 +550,14 @@ service cloud.firestore {
     // 경영학원론 발표 마침 표시. 교수만 읽고 쓴다.
     // 그동안 이 표시는 브라우저에만 남아 기기를 바꾸면 사라지고, 누가 언제
     // 발표했는지도 되짚을 수 없었다. 학기말 참여도의 근거가 되도록 서버에 둔다.
+    // 경영학원론 임시 출석부. 교수만 읽고 쓴다.
+    // 이 과목 학생은 아직 학교 전산의 정식 학번이 없어 전산 출석을 못 잡는다.
+    // 그래서 교수가 직접 부르며 찍고, 그 기록을 교학과로 넘긴다.
+    // 문서 이름은 '날짜_학번' 이라 한 사람이 한 날에 하나만 갖는다.
+    match /mgmt_attend/{markId} {
+      allow read, write: if isProfessor();
+    }
+
     match /mgmt_spoken/{markId} {
       allow read, write: if isProfessor();
     }

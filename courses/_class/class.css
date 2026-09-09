@@ -931,3 +931,49 @@ body.showing{overflow:hidden}
   background:#eef4ec;color:#33553a;font-size:.83rem;line-height:1.55}
 .lst-reply b{margin-right:6px;font-size:.72rem;letter-spacing:.06em}
 .lst-reply em{margin-left:6px;font-style:normal;opacity:.65;font-size:.74rem}
+
+/* ── 임시 출석부 (경영학원론) ────────────────────────
+   교수가 이름을 부르며 찍고, 출석부 화면을 캡처해 교학과로 넘긴다. */
+.att-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.att-day{display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:700}
+.att-day input{min-height:40px;padding:0 11px;border:1px solid var(--card-line);
+  border-radius:9px;background:#fff;color:inherit;font:inherit}
+.att-sum{font-size:.9rem}
+.att-sum b{font-size:1.05rem}
+.att-acts{margin-left:auto;display:flex;gap:8px}
+.att-new{margin:0 0 12px;padding:11px 14px;border-radius:10px;
+  border-left:4px solid #c98a15;background:#fff6e5;color:#7a5a10;font-size:.86rem;line-height:1.6}
+.att-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--card-line)}
+.att-row{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--card-line)}
+.att-no{flex:0 0 30px;color:var(--muted);font:600 .8rem/1 Arial,sans-serif;text-align:right}
+.att-who{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:9px}
+.att-who b{font-size:1rem}
+.att-who span{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.att-pick{display:flex;gap:6px}
+.att-btn{min-width:62px;min-height:38px;border:1px solid var(--card-line);border-radius:9px;
+  background:#fff;color:var(--muted);font:inherit;font-size:.86rem;font-weight:700;cursor:pointer}
+.att-btn:hover{border-color:var(--navy)}
+.att-btn.on.ok{background:#1f6b3a;border-color:#1f6b3a;color:#fff}
+.att-btn.on.no{background:#a33228;border-color:#a33228;color:#fff}
+.att-days{margin:14px 0 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.82rem}
+.att-daygo{padding:6px 11px;border:1px solid var(--card-line);border-radius:999px;
+  background:#fff;color:inherit;font:inherit;font-size:.8rem;cursor:pointer}
+.att-daygo.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
+/* 캡처용 출석부. 어두운 화면 위에 흰 종이를 얹는다. */
+.sheet-acts{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;
+  color:var(--muted);font-size:.84rem}
+.sheet{padding:26px 24px;border-radius:12px;background:#fff;color:#16202c;overflow-x:auto}
+.sheet-head{text-align:center;margin-bottom:18px}
+.sheet-head h3{margin:0 0 5px;font-size:1.35rem;letter-spacing:-.03em}
+.sheet-head p{margin:0;color:#5a6675;font-size:.86rem}
+.sheet-when{margin-top:4px!important;font-size:.78rem!important;color:#8894a2!important}
+.sheet-table{width:100%;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
+.sheet-table th,.sheet-table td{border:1px solid #cfd6de;padding:6px 8px;text-align:center;white-space:nowrap}
+.sheet-table thead th{background:#eef2f6;font-weight:700}
+.sheet-table thead small{display:block;color:#7b8794;font-weight:400;font-size:.72rem}
+.sheet-table td.nm{text-align:left;font-weight:700}
+.sheet-table td.mk{font-size:1rem}
+.sheet-table td.mk.ok{color:#1f6b3a}
+.sheet-table td.mk.no{color:#a33228;font-weight:700}
+.sheet-table tfoot td{background:#f6f8fa;font-weight:700}

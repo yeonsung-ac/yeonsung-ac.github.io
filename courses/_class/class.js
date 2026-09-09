@@ -113,6 +113,8 @@ const state = {
   introSort: "sid",  // sid | name | new
   introPage: 0,
   spoken: {},        // 발표를 마친 사람. 이 컴퓨터에만 남는다.
+  attend: {},        // 임시 출석부  '날짜_학번' -> { mark }
+  attendDay: "",     // 지금 보고 있는 수업 날짜
   films: {},         // 강의 영상 공개 여부. 없으면 공개로 본다.
   book: {},          // 교재 각 장의 공개 여부. 없으면 비공개로 본다.
   deck: {},          // 강의 슬라이드 공개 여부. 교재와 같이 없으면 비공개.
@@ -530,6 +532,7 @@ onAuthStateChanged(auth, async (user) => {
   watchBook();
   watchDeck();
   if (USE_ROSTER) watchRoster();
+  if ($("p-attend")) watchAttend();   // 출석부는 경영학원론만 쓴다
   if (state.isProfessor) watchLogs();
   render();
 });
@@ -1284,6 +1287,8 @@ function downloadLog() {
   toast(`${rows.length}건 내려받았습니다`);
 }
 
+$("p-attend")?.addEventListener("click", openAttend);
+
 $("p-log").addEventListener("click", () => {
   state.view = "log";
   state.making = false;
@@ -1925,6 +1930,177 @@ async function rosterFromSubmissions() {
   } catch (e) {
     toast("넣지 못했습니다. " + (e?.code || ""), true);
   }
+}
+
+/* ── 임시 출석부 ──────────────────────────────────
+   경영학원론만 쓴다. 이 과목 학생은 아직 학교 전산의 정식 학번이 없어
+   전산 출석을 못 잡는다. 그래서 교수가 부르며 찍고 그 화면을 캡처해 교학과로
+   넘긴다. 다른 과목은 전산으로 하므로 단추를 두지 않는다.
+
+   찍지 않은 칸은 결석으로 보지 않는다. 나중에 명단에 들어온 학생의 지난
+   날짜까지 결석이 되어 버리기 때문이다. 결석은 교수가 직접 찍은 것만이다. */
+const ATTEND = C.id + "_attend";
+let stopAttend = null;
+
+function watchAttend() {
+  if (!state.me?.prof) return;
+  if (stopAttend) stopAttend();
+  stopAttend = onSnapshot(collection(db, ATTEND), (snap) => {
+    state.attend = {};
+    snap.docs.forEach((d) => { state.attend[d.id] = d.data(); });
+    if (state.view === "attend") renderAttend();
+  }, () => { /* 아직 없을 수 있다 */ });
+}
+
+const 오늘 = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+const 요일 = (ymd) => "일월화수목금토"[new Date(ymd + "T00:00").getDay()] || "";
+
+/* 찍은 날들. 아무것도 없으면 오늘만 보여 준다. */
+function attendDays() {
+  const days = new Set(Object.values(state.attend || {}).map((r) => r.date).filter(Boolean));
+  days.add(state.attendDay || 오늘());
+  return [...days].sort();
+}
+
+async function putAttend(day, sid, name, mark) {
+  const id = `${day}_${sid}`;
+  try {
+    if (mark) {
+      await setDoc(doc(db, ATTEND, id), {
+        date: day, sid, name, mark,
+        at: serverTimestamp(), by: state.me?.email || "",
+      });
+    } else {
+      await deleteDoc(doc(db, ATTEND, id));
+    }
+  } catch (e) {
+    toast("찍지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+}
+
+/* 명단 전원을 그날 출석으로 채운다. 첫 수업처럼 다 온 날에 쓴다. */
+async function fillAttend(day) {
+  const 남 = state.roster.filter((r) => !state.attend[`${day}_${r.sid}`]);
+  if (!남.length) { toast("이미 다 찍혀 있습니다"); return; }
+  if (!confirm(`${day} · 아직 안 찍힌 ${남.length}명을 모두 출석으로 채웁니다.`)) return;
+  for (const r of 남) await putAttend(day, r.sid, r.name, "출석");
+  toast(`${남.length}명을 출석으로 채웠습니다`);
+}
+
+/* 명단에 없는 사람이 그날 다녀간 흔적. 새로 온 학생을 놓치지 않으려는 것이다. */
+function strangersOn(day) {
+  const 명단 = new Set(state.roster.map((r) => String(r.sid)));
+  const 본것 = new Map();
+  (state.logs || []).forEach((r) => {
+    const d = r.t?.toDate ? r.t.toDate() : null;
+    if (!d) return;
+    const ymd = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    if (ymd === day && r.sid && !명단.has(String(r.sid))) 본것.set(String(r.sid), r.name || "");
+  });
+  return [...본것].map(([sid, name]) => ({ sid, name }));
+}
+
+function openAttend() {
+  state.view = "attend";
+  state.attendDay = state.attendDay || 오늘();
+  renderAttend();
+}
+
+function renderAttend() {
+  const body = $("prof-body");
+  const day = state.attendDay;
+  const mark = (sid) => state.attend[`${day}_${sid}`]?.mark || "";
+  const 출 = state.roster.filter((r) => mark(r.sid) === "출석").length;
+  const 결 = state.roster.filter((r) => mark(r.sid) === "결석").length;
+  const 안 = state.roster.length - 출 - 결;
+  const days = attendDays();
+  const 낯선 = strangersOn(day);
+
+  body.innerHTML = `
+    <div class="att-top">
+      <label class="att-day">수업 날짜
+        <input type="date" id="att-date" value="${esc(day)}"></label>
+      <span class="att-sum">출석 <b>${출}</b> · 결석 <b>${결}</b>${안 ? ` · 아직 ${안}` : ""}</span>
+      <span class="att-acts">
+        <button class="btn-line" id="att-fill" type="button">전원 출석으로</button>
+        <button class="btn-go" id="att-sheet" type="button">출석부 보기</button>
+      </span>
+    </div>
+    ${낯선.length ? `<p class="att-new">명단에 없는데 이날 다녀간 사람:
+       ${낯선.map((x) => esc(`${x.name}(${x.sid})`)).join(", ")} — 새로 온 학생이면 명단에 넣으세요.</p>` : ""}
+    <ul class="att-list">${state.roster.map((r, i) => {
+      const m = mark(r.sid);
+      return `<li class="att-row">
+        <span class="att-no">${i + 1}</span>
+        <span class="att-who"><b>${esc(r.name)}</b><span>${esc(r.sid)}</span></span>
+        <span class="att-pick">
+          <button class="att-btn${m === "출석" ? " on ok" : ""}" type="button"
+                  data-att="${esc(r.sid)}" data-mark="출석">출석</button>
+          <button class="att-btn${m === "결석" ? " on no" : ""}" type="button"
+                  data-att="${esc(r.sid)}" data-mark="결석">결석</button>
+        </span>
+      </li>`;
+    }).join("")}</ul>
+    ${days.length > 1 ? `<p class="att-days">찍은 날: ${days.map((d) =>
+        `<button class="att-daygo${d === day ? " on" : ""}" type="button" data-day="${d}">${d.slice(5)}</button>`
+      ).join("")}</p>` : ""}`;
+
+  $("att-date").addEventListener("change", (e) => {
+    state.attendDay = e.target.value || 오늘();
+    renderAttend();
+  });
+  $("att-fill").addEventListener("click", () => fillAttend(day));
+  $("att-sheet").addEventListener("click", openAttendSheet);
+  body.querySelectorAll("[data-att]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const sid = el.dataset.att;
+      const 새 = mark(sid) === el.dataset.mark ? "" : el.dataset.mark;   // 같은 것을 다시 누르면 지운다
+      const r = state.roster.find((x) => String(x.sid) === sid);
+      putAttend(day, sid, r?.name || "", 새);
+    });
+  });
+  body.querySelectorAll("[data-day]").forEach((el) => {
+    el.addEventListener("click", () => { state.attendDay = el.dataset.day; renderAttend(); });
+  });
+}
+
+/* 교학과로 넘길 출석부. 캡처하기 좋게 흰 바탕에 표 하나로 둔다. */
+function openAttendSheet() {
+  state.view = "sheet";
+  const days = attendDays();
+  const cell = (sid, d) => (state.attend[`${d}_${sid}`]?.mark || "");
+  const 표 = (m) => m === "출석" ? "●" : m === "결석" ? "✕" : "―";
+
+  $("prof-body").innerHTML = `
+    <div class="sheet-acts">
+      <button class="btn-line" id="sheet-back" type="button">← 출석 부르기</button>
+      <span>이 화면을 캡처해 교학과로 보내시면 됩니다. ● 출석 · ✕ 결석 · ― 기록 없음</span>
+    </div>
+    <div class="sheet" id="sheet">
+      <div class="sheet-head">
+        <h3>${esc(C.name)} 출석부</h3>
+        <p>연성대학교 경영학과 · 담당 이현구 · 수강생 ${state.roster.length}명</p>
+        <p class="sheet-when">뽑은 날 ${오늘()}</p>
+      </div>
+      <table class="sheet-table"><thead><tr>
+        <th>번호</th><th>학번</th><th>성명</th>
+        ${days.map((d) => `<th>${d.slice(5).replace("-", "/")}<small>${요일(d)}</small></th>`).join("")}
+        <th>출석</th><th>결석</th></tr></thead><tbody>
+        ${state.roster.map((r, i) => {
+          const ms = days.map((d) => cell(r.sid, d));
+          return `<tr><td>${i + 1}</td><td>${esc(r.sid)}</td><td class="nm">${esc(r.name)}</td>
+            ${ms.map((m) => `<td class="mk ${m === "출석" ? "ok" : m === "결석" ? "no" : ""}">${표(m)}</td>`).join("")}
+            <td>${ms.filter((m) => m === "출석").length}</td>
+            <td>${ms.filter((m) => m === "결석").length}</td></tr>`;
+        }).join("")}
+      </tbody><tfoot><tr><td colspan="3">출석 인원</td>
+        ${days.map((d) => `<td>${state.roster.filter((r) => cell(r.sid, d) === "출석").length}</td>`).join("")}
+        <td colspan="2"></td></tr></tfoot></table>
+    </div>`;
+  $("sheet-back").addEventListener("click", openAttend);
 }
 
 /* 명단에서 한 사람 빼기.
