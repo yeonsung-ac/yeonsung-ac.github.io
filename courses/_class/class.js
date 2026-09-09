@@ -61,9 +61,14 @@ const ANSWERS = C.id + "_answers";
 const LOGS = C.id + "_log";
 const FILMS_C = C.id + "_films";    // 강의 영상의 공개 여부. 교수만 고친다.
 const BOOK_C = C.id + "_book";      // 교재 각 장의 공개 여부. 교수만 고친다.
-const BOOK_DIR = "textbook";        // 저장소(Storage) 안의 교재 자리. textbook/02.html
+const BOOK_DIR = "textbook/" + C.id; // 저장소(Storage) 안의 교재 자리. textbook/cb/02.html
 const DECK_C = C.id + "_deck";      // 강의 슬라이드의 공개 여부. 교수만 고친다.
-const DECK_DIR = "slides";          // 저장소 안의 슬라이드 자리. slides/02.html
+const DECK_DIR = "slides/" + C.id;  // 저장소 안의 슬라이드 자리. slides/cb/02.html
+/* 예전에는 과목 구분 없이 textbook/02.html 하나를 세 과목이 같이 썼다.
+   그대로 두면 광고학개론 2장을 올리는 순간 소비자행동론 2장을 덮는다.
+   이제 과목별로 칸을 나눈다. 다만 이미 올려 둔 소비자행동론 것은 아직 옛 자리에
+   있으므로, 새 칸에서 못 찾으면 옛 자리를 한 번 더 본다. 옥기고 나면 지울 다리다. */
+const OLD_DIR = C.id === "cb";
 const INTROS = C.id + "_intros";
 const TASKS = C.id + "_tasks";      // 주간 과제. 교수가 낸다.
 const WORKS = C.id + "_works";      // 낸 과제. 사진 한 장과 글.
@@ -2473,6 +2478,20 @@ function renderFilms() {
   });
 }
 
+/* 저장소에서 파일 주소를 받아 온다.
+
+   먼저 과목 칸(textbook/cb/02.html)을 보고, 거기 없으면 옛 자리(textbook/02.html)를
+   한 번 더 본다. 소비자행동론 교재가 아직 옛 자리에 있어서다. 그쪽을 옥기고 나면
+   이 두 줄은 지우면 된다. 다른 과목은 옥길 것이 없으므로 옥 자리를 보지 않는다. */
+async function grab(dir, oldDir, file) {
+  try {
+    return await getDownloadURL(storageRef(store, dir + "/" + file));
+  } catch (e) {
+    if (!OLD_DIR || (e && e.code) !== "storage/object-not-found") throw e;
+    return await getDownloadURL(storageRef(store, oldDir + "/" + file));
+  }
+}
+
 /* 교재 한 장을 새 창에 연다.
 
    교재는 저장소(Storage)에 둔다. 깃 저장소가 공개라 거기 두면 주소만 알면
@@ -2489,7 +2508,7 @@ async function openBook(no, kind) {
     win.document.write("<title>교재</title><p style='font:16px system-ui;padding:24px'>교재를 여는 중…</p>");
   }
   try {
-    const url = await getDownloadURL(storageRef(store, BOOK_DIR + "/" + no + "." + kind));
+    const url = await grab(BOOK_DIR, "textbook", no + "." + kind);
     if (!state.me.prof) writeLog({ kind: "book", no, how: kind,
                                    name: state.me.name, sid: state.me.sid });
     if (win) win.location.replace(url); else window.location.href = url;
@@ -2515,7 +2534,7 @@ async function openDeck(no) {
     win.document.write("<title>강의 슬라이드</title><p style='font:16px system-ui;padding:24px'>슬라이드를 여는 중…</p>");
   }
   try {
-    const url = await getDownloadURL(storageRef(store, DECK_DIR + "/" + no + ".html"));
+    const url = await grab(DECK_DIR, "slides", no + ".html");
     if (!state.me.prof) writeLog({ kind: "deck", no, name: state.me.name, sid: state.me.sid });
     if (win) win.location.replace(url); else window.location.href = url;
   } catch (e) {
