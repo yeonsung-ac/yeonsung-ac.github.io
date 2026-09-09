@@ -2152,8 +2152,41 @@ function openAttendSheet() {
         <td colspan="2"></td></tr></tfoot></table>
     </div>`;
   $("asheet-back").addEventListener("click", openAttend);
-  // 인쇄 창에서 '대상'을 PDF 로 고르면 파일로도 남는다. 종이와 파일이 같은 길이다.
-  $("asheet-print").addEventListener("click", () => window.print());
+  $("asheet-print").addEventListener("click", printAttendSheet);
+}
+
+/* 출석부 인쇄.
+ *
+ * 그냥 window.print() 를 부르면 강의실 페이지 전체가 종이에 오른다. 숨기는 것만으로는
+ * 부족하다. 숨은 것도 키는 차지하여 뒤에 빈 족이가 따라 나온다.
+ *
+ * 그래서 출석부를 복사해 따로 만든 그릇에 담아 몸(body) 바로 아래에 놓고,
+ * 인쇄하는 동안에만 나머지를 통째로 지운다. 복사본이므로 화면의 것은 그대로 남는다.
+ * 인쇄 창에서 대상을 PDF 로 고르면 그대로 파일이 된다.
+ */
+function printAttendSheet() {
+  const sheet = $("asheet");
+  if (!sheet) return;
+
+  const holder = document.createElement("div");
+  holder.id = "print-holder";
+  holder.appendChild(sheet.cloneNode(true));
+  document.body.appendChild(holder);
+  document.body.classList.add("printing");
+
+  // 인쇄 창을 닫으면 치운다. 그 신호를 못 주는 브라우저를 위해 시간으로도 한 번 더 치운다.
+  let cleaned = false;
+  const clean = () => {
+    if (cleaned) return;
+    cleaned = true;
+    document.body.classList.remove("printing");
+    holder.remove();
+    window.removeEventListener("afterprint", clean);
+  };
+  window.addEventListener("afterprint", clean);
+  setTimeout(clean, 60000);
+
+  window.print();
 }
 
 /* 명단에서 한 사람 빼기.
