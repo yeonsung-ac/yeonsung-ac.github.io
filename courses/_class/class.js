@@ -1983,7 +1983,7 @@ async function putAttend(day, sid, name, mark) {
 
 /* 명단 전원을 그날 출석으로 채운다. 첫 수업처럼 다 온 날에 쓴다. */
 async function fillAttend(day) {
-  const 남 = state.roster.filter((r) => !state.attend[`${day}_${r.sid}`]);
+  const 남 = byStudentNo().filter((r) => !state.attend[`${day}_${r.sid}`]);
   if (!남.length) { toast("이미 다 찍혀 있습니다"); return; }
   if (!confirm(`${day} · 아직 안 찍힌 ${남.length}명을 모두 출석으로 채웁니다.`)) return;
   for (const r of 남) await putAttend(day, r.sid, r.name, "출석");
@@ -2009,13 +2009,18 @@ function openAttend() {
   renderAttend();
 }
 
+/* 출석은 학번순으로 부른다. 교학과에 넘기는 표도 학번순이다. */
+const byStudentNo = () =>
+  [...state.roster].sort((a, b) => String(a.sid).localeCompare(String(b.sid), "en", { numeric: true }));
+
 function renderAttend() {
   const body = $("prof-body");
   const day = state.attendDay;
+  const 명단 = byStudentNo();
   const mark = (sid) => state.attend[`${day}_${sid}`]?.mark || "";
-  const 출 = state.roster.filter((r) => mark(r.sid) === "출석").length;
-  const 결 = state.roster.filter((r) => mark(r.sid) === "결석").length;
-  const 안 = state.roster.length - 출 - 결;
+  const 출 = 명단.filter((r) => mark(r.sid) === "출석").length;
+  const 결 = 명단.filter((r) => mark(r.sid) === "결석").length;
+  const 안 = 명단.length - 출 - 결;
   const days = attendDays();
   const 낯선 = strangersOn(day);
 
@@ -2031,7 +2036,7 @@ function renderAttend() {
     </div>
     ${낯선.length ? `<p class="att-new">명단에 없는데 이날 다녀간 사람:
        ${낯선.map((x) => esc(`${x.name}(${x.sid})`)).join(", ")} — 새로 온 학생이면 명단에 넣으세요.</p>` : ""}
-    <ul class="att-list">${state.roster.map((r, i) => {
+    <ul class="att-list">${명단.map((r, i) => {
       const m = mark(r.sid);
       return `<li class="att-row">
         <span class="att-no">${i + 1}</span>
@@ -2071,6 +2076,7 @@ function renderAttend() {
 function openAttendSheet() {
   state.view = "sheet";
   const days = attendDays();
+  const 명단 = byStudentNo();
   const cell = (sid, d) => (state.attend[`${d}_${sid}`]?.mark || "");
   const 표 = (m) => m === "출석" ? "●" : m === "결석" ? "✕" : "―";
 
@@ -2082,14 +2088,14 @@ function openAttendSheet() {
     <div class="sheet" id="sheet">
       <div class="sheet-head">
         <h3>${esc(C.name)} 출석부</h3>
-        <p>연성대학교 경영학과 · 담당 이현구 · 수강생 ${state.roster.length}명</p>
+        <p>연성대학교 경영학과 · 담당 이현구 · 수강생 ${명단.length}명</p>
         <p class="sheet-when">뽑은 날 ${오늘()}</p>
       </div>
       <table class="sheet-table"><thead><tr>
         <th>번호</th><th>학번</th><th>성명</th>
         ${days.map((d) => `<th>${d.slice(5).replace("-", "/")}<small>${요일(d)}</small></th>`).join("")}
         <th>출석</th><th>결석</th></tr></thead><tbody>
-        ${state.roster.map((r, i) => {
+        ${명단.map((r, i) => {
           const ms = days.map((d) => cell(r.sid, d));
           return `<tr><td>${i + 1}</td><td>${esc(r.sid)}</td><td class="nm">${esc(r.name)}</td>
             ${ms.map((m) => `<td class="mk ${m === "출석" ? "ok" : m === "결석" ? "no" : ""}">${표(m)}</td>`).join("")}
@@ -2097,7 +2103,7 @@ function openAttendSheet() {
             <td>${ms.filter((m) => m === "결석").length}</td></tr>`;
         }).join("")}
       </tbody><tfoot><tr><td colspan="3">출석 인원</td>
-        ${days.map((d) => `<td>${state.roster.filter((r) => cell(r.sid, d) === "출석").length}</td>`).join("")}
+        ${days.map((d) => `<td>${명단.filter((r) => cell(r.sid, d) === "출석").length}</td>`).join("")}
         <td colspan="2"></td></tr></tfoot></table>
     </div>`;
   $("sheet-back").addEventListener("click", openAttend);
