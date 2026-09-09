@@ -417,6 +417,7 @@ function noteEntry() {
     sessionStorage.setItem(mark, "1");
   } catch { /* 사생활 모드면 그때마다 남는다. 그편이 안 남는 것보다 낫다 */ }
   writeLog({ kind: "enter", name: state.me.name, sid: state.me.sid });
+  try { watchSpoken(); } catch { /* 교수만 붙는다 */ }
 }
 
 /* ── QR ───────────────────────────────────── */
@@ -1629,7 +1630,7 @@ const SPOKEN = C.id + "_spoken";      // 새 자리. 서버.
 let stopSpoken = null;
 
 function watchSpoken() {
-  if (!state.me.prof) return;         // 학생은 읽을 수 없다. 규칙이 막는다.
+  if (!state.me?.prof) return;        // 문패를 지나기 전에는 state.me 가 없다.
   if (stopSpoken) stopSpoken();
   stopSpoken = onSnapshot(collection(db, SPOKEN), (snap) => {
     state.spoken = {};
@@ -1642,7 +1643,7 @@ function watchSpoken() {
 /* 브라우저에만 있던 옛 표시를 서버로 옮긴다. 한 번만 하면 된다. */
 let movedSpoken = false;
 async function moveOldSpoken() {
-  if (movedSpoken || !state.me.prof) return;
+  if (movedSpoken || !state.me?.prof) return;
   let old = {};
   try { old = JSON.parse(localStorage.getItem(SPOKE)) || {}; } catch { return; }
   const ids = Object.keys(old).filter((id) => !state.spoken[id]);
@@ -1662,7 +1663,7 @@ async function putSpoken(id, on, quiet) {
     if (on) {
       await setDoc(doc(db, SPOKEN, id), {
         sid: r.sid || "", name: r.name || "",
-        at: serverTimestamp(), by: state.me.email || "",
+        at: serverTimestamp(), by: state.me?.email || "",
       });
     } else {
       await deleteDoc(doc(db, SPOKEN, id));
@@ -2271,7 +2272,7 @@ async function openBook(no, kind) {
   }
   try {
     const url = await getDownloadURL(storageRef(store, BOOK_DIR + "/" + no + "." + kind));
-    if (!state.me.prof) writeLog({ kind: "book", no, how: kind,
+    if (state.me && !state.me.prof) writeLog({ kind: "book", no, how: kind,
                                    name: state.me.name, sid: state.me.sid });
     if (win) win.location.replace(url); else window.location.href = url;
   } catch (e) {
@@ -2297,7 +2298,7 @@ async function openDeck(no) {
   }
   try {
     const url = await getDownloadURL(storageRef(store, DECK_DIR + "/" + no + ".html"));
-    if (!state.me.prof) writeLog({ kind: "deck", no, name: state.me.name, sid: state.me.sid });
+    if (state.me && !state.me.prof) writeLog({ kind: "deck", no, name: state.me.name, sid: state.me.sid });
     if (win) win.location.replace(url); else window.location.href = url;
   } catch (e) {
     if (win) win.close();
