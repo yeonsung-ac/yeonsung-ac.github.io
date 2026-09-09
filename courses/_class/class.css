@@ -968,13 +968,13 @@ body.showing{overflow:hidden}
 .sheet-head h3{margin:0 0 5px;font-size:1.35rem;letter-spacing:-.03em}
 .sheet-head p{margin:0;color:#5a6675;font-size:.86rem}
 .sheet-when{margin-top:4px!important;font-size:.78rem!important;color:#8894a2!important}
-.sheet-table{width:100%;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
-.sheet-table th,.sheet-table td{border:1px solid #cfd6de;padding:3px 6px;text-align:center;white-space:nowrap}
-/* 성명 칸이 남는 자리를 다 먹게 두면 나머지가 제 글자 폭까지 좁아진다.
-   날짜가 늘어도 표가 옆으로 벌어지지 않는다. */
-.sheet-table td.nm,.sheet-table th:nth-child(3){width:100%}
-.sheet-table th:first-child,.sheet-table td:first-child{width:1%;padding:3px 5px}
-.sheet-table td.mk,.sheet-table thead th:nth-child(n+4){width:1%}
+/* 표를 화면 폭에 맞춰 늘이지 않는다. 늘이면 칸이 다 벌어져 캡처했을 때
+   글자 사이가 허옇게 뜬다. 내용 크기에 맞춰 세우고 가운데 놓는다. */
+.sheet-table{width:auto;margin:0 auto;border-collapse:collapse;
+  font-size:.84rem;font-variant-numeric:tabular-nums}
+.sheet-table th,.sheet-table td{border:1px solid #cfd6de;padding:3px 7px;text-align:center;white-space:nowrap}
+.sheet-table th:first-child,.sheet-table td:first-child{padding:3px 5px}   /* 번호 */
+.sheet-table td.nm{padding-right:14px}                                     /* 성명 뒤만 조금 띄운다 */
 .sheet-table thead th{background:#eef2f6;font-weight:700}
 .sheet-table thead small{display:block;color:#7b8794;font-weight:400;font-size:.72rem}
 .sheet-table td.nm{text-align:left;font-weight:700}
