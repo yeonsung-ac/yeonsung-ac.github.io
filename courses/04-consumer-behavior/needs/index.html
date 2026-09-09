@@ -23,7 +23,7 @@
 </style>
 </head>
 <body><main class="page">
-<header class="top"><span class="brand"><span class="mark">N</span>소비자행동 실험실</span><span class="tools"><button class="back" id="back" type="button" hidden>← 돌아가기</button><a class="back" href="/" title="이 사이트의 홈으로">⌂ 홈</a><a href="#learn">개념과 계산 원리 ↗</a><a class="dl" id="dl" href="index.html" download="니즈-탐색기.html" title="이 페이지를 파일 하나로 내려받습니다">HTML 파일 다운로드 ↓</a></span></header>
+<header class="top"><span class="brand"><span class="mark">N</span>소비자행동 실험실</span><span class="tools"><button class="back" id="back" type="button" hidden>← 돌아가기</button><a class="back" id="home" href="/" title="이 사이트의 홈으로">⌂ 홈</a><a href="#learn">개념과 계산 원리 ↗</a><a class="dl" id="dl" href="index.html" download="니즈-탐색기.html" title="이 페이지를 파일 하나로 내려받습니다">HTML 파일 다운로드 ↓</a></span></header>
 <section class="hero"><p class="eyebrow">EXPERIMENT 01 · 구매 동기</p><h1>나는 왜 이 제품을 살까?</h1><p>구매 이유를 바꿔보며, 세 가지 니즈가 함께 작용하는 모습을 탐색하세요.</p></section>
 <section class="first">
 <div class="card"><div class="head"><h2><span class="num">01</span>구매 장면 정하기</h2><button class="ghost" id="reset">응답 초기화 ↺</button></div><div class="fields"><label>제품·서비스<input id="product" value="운동화"></label><label>구매 상황<input id="situation" value="매일 학교에 다닐 때 신을 운동화를 고른다."></label></div><div class="presetline"><p>예시로 시작하기 · 선택하거나 수정하세요</p><button class="ghost" id="restore">기본 예시 복원</button></div><div class="presets" id="presets"></div></div>
@@ -49,6 +49,19 @@
   // 파일 이름을 바꿔 올린 사본에서 없는 파일을 찾는다.
   var dl = document.getElementById("dl");
   if (dl) dl.href = location.href.split("#")[0];
+
+  // 홈 — 기본은 / 이지만 깃허브 페이지는 두 모양이 있다.
+  //   아이디.github.io/          사용자 사이트  → / 가 홈이다
+  //   아이디.github.io/저장소/   프로젝트 사이트 → / 는 없는 곳이라 404 가 뜬다
+  // 주소만 보고는 둘을 못 가른다. 생김새가 같기 때문이다.
+  // 그래서 조용히 가 보고 없으면 한 칸 위(../)로 돌린다. 학생이 어느 모양으로
+  // 올리든 제 홈을 찾아가게 하려는 것이다.
+  var home = document.getElementById("home");
+  if (home && location.protocol.indexOf("http") === 0 && location.pathname !== "/") {
+    fetch("/", { method: "HEAD" })
+      .then(function (r) { if (!r.ok) home.href = "../"; })
+      .catch(function () { home.href = "../"; });
+  }
 })();
 </script>
 <script>
