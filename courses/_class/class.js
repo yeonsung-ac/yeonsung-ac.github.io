@@ -1604,6 +1604,9 @@ $("intro-form").addEventListener("submit", async (e) => {
     toast(C.intro.title + "를 냈습니다");
     renderIntro();
   } catch (ex) {
+    // 실패도 남긴다. 성공만 기록하면 학생이 못 냈다고 할 때 짚을 자리가 없다.
+    writeLog({ kind: "intro_fail", sid: state.me.sid, name: state.me.name,
+               why: String(ex.code || ex.message).slice(0, 120) });
     fail("보내지 못했습니다. 연결을 확인하고 다시 눌러 주세요. (" + (ex.code || ex.message) + ")");
   } finally {
     btn.disabled = false;
@@ -2558,6 +2561,20 @@ $("tv-file").addEventListener("change", async (e) => {
   }
 });
 
+$("tv-nophoto")?.addEventListener("change", (e) => {
+  // 체크하면 사진 칸을 아예 감춘다. 흐리게만 두면 눌러 보게 되고, 눌리면 또 헷갈린다.
+  const off = e.target.checked;
+  $("tv-pick").hidden = off;
+  if (off) {
+    state.taskPhoto = null;
+    const pv = $("tv-preview");
+    if (pv.dataset.blob) { URL.revokeObjectURL(pv.src); pv.dataset.blob = ""; }
+    pv.hidden = true;
+    $("tv-pick-say").hidden = false;
+    $("tv-file").value = "";
+  }
+});
+
 $("tv-send").addEventListener("click", async () => {
   const t = state.taskNow;
   const err = $("tv-error");
@@ -2568,7 +2585,9 @@ $("tv-send").addEventListener("click", async () => {
 
   const mine = state.works[t.id];
   if (!state.uid) return fail("아직 연결 중입니다. 잠시 뒤에 다시 눌러 주세요.");
-  if (!state.taskPhoto && !mine?.photoUrl) return fail("사진을 한 장 골라 주세요.");
+  const noPhoto = $("tv-nophoto")?.checked;
+  if (!noPhoto && !state.taskPhoto && !mine?.photoUrl)
+    return fail("사진을 한 장 골라 주세요. 사진 없이 내려면 아래 '사진 없이 냅니다'를 체크하세요.");
   if (text.length < 10) return fail("글을 열 글자 이상 적어 주세요.");
 
   btn.disabled = true;
@@ -2593,6 +2612,9 @@ $("tv-send").addEventListener("click", async () => {
     state.taskPhoto = null;
     toast("과제를 냈습니다");
   } catch (ex) {
+    // 실패도 남긴다. 성공만 기록하면 학생이 못 냈다고 할 때 짚을 자리가 없다.
+    writeLog({ kind: "work_fail", taskId: t.id, sid: state.me.sid, name: state.me.name,
+               why: String(ex.code || ex.message).slice(0, 120) });
     fail("보내지 못했습니다. 연결을 확인하고 다시 눌러 주세요. (" + (ex.code || ex.message) + ")");
   } finally {
     btn.disabled = false;

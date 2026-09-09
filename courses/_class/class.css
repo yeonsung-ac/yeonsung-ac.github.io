@@ -880,3 +880,11 @@ body.showing{overflow:hidden}
 .log-del:hover,.chip-del:hover{background:#fdecea;color:#a2321f}
 .log-del:focus-visible,.chip-del:focus-visible{opacity:1;outline:2px solid var(--navy);outline-offset:1px}
 @media(hover:none){.log-del,.chip-del{opacity:.55}}
+
+/* 사진 없이 내기. 주소나 글만 내는 과제가 있어 사진을 강요하지 않는다. */
+.tv-nophoto{display:flex;align-items:flex-start;gap:11px;margin:12px 0 0;padding:14px 16px;
+  border:1px solid var(--card-line);border-radius:11px;background:#fff;cursor:pointer}
+.tv-nophoto:hover{border-color:var(--navy)}
+.tv-nophoto input{flex:none;margin:2px 0 0;width:19px;height:19px;accent-color:var(--navy)}
+.tv-nophoto span{font-size:.94rem;font-weight:700}
+.tv-nophoto em{display:block;margin-top:3px;color:var(--muted);font-size:.82rem;font-weight:400;font-style:normal;line-height:1.6}
