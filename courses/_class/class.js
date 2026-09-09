@@ -2520,7 +2520,7 @@ function openTask(id) {
   $("tv-score-memo").hidden = !hasMemo;
 
   // 한마디가 있으면 회신칸을 연다. 열어 본 것으로 치고 알림에서 지운다.
-  const mine = state.works[t.id];
+  // mine 은 이 함수 위에서 이미 잡아 두었다. 다시 선언하면 모듈 전체가 죽는다.
   $("tv-reply").hidden = !hasMemo;
   if (hasMemo) {
     $("tv-reply-text").value = mine?.reply || "";
