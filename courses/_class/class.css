@@ -908,3 +908,26 @@ body.showing{overflow:hidden}
 .wk-memo:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
 .wk-memo::placeholder{color:#9aa4ae}
 @media(max-width:760px){ .wk-memo{flex-basis:100%;min-width:0} }
+
+/* ── 교수가 남긴 한마디 알림 ────────────────────────────
+   들어오자마자 눈에 띄어야 하지만, 본 뒤에는 사라져야 한다. */
+.room-notice{margin:0 0 20px;padding:16px 18px;border-radius:12px;
+  border:1px solid #d9c48a;background:#fdf7e6;color:#6b5312}
+.room-notice>b{display:block;margin-bottom:9px;font-size:.95rem}
+.room-notice-go{display:block;width:100%;margin-top:7px;padding:11px 13px;text-align:left;
+  border:1px solid #e3d3a6;border-radius:9px;background:#fff;color:inherit;font:inherit;cursor:pointer}
+.room-notice-go:hover{border-color:#c9a94e;background:#fffdf5}
+.rn-task{display:block;font-weight:700;font-size:.88rem}
+.rn-memo{display:block;margin-top:3px;color:#8a7434;font-size:.84rem;line-height:1.55}
+
+/* 교수님께 회신 */
+.tv-reply{margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.28)}
+.tv-reply label{display:block;margin-bottom:6px;font-size:.84rem;font-weight:700}
+.tv-reply textarea{width:100%;padding:11px 13px;border:1px solid var(--card-line);
+  border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:.92rem;resize:vertical}
+.tv-reply-sent{margin:7px 0 0;font-size:.8rem;opacity:.8}
+.tv-reply .btn-line{margin-top:9px}
+.lst-reply{display:block;margin-top:5px;padding:7px 10px;border-radius:8px;
+  background:#eef4ec;color:#33553a;font-size:.83rem;line-height:1.55}
+.lst-reply b{margin-right:6px;font-size:.72rem;letter-spacing:.06em}
+.lst-reply em{margin-left:6px;font-style:normal;opacity:.65;font-size:.74rem}

@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://yeonsung-ac.github.io/assets/social-thumbnail.png">
   <link rel="canonical" href="https://yeonsung-ac.github.io/courses/03-advertising/">
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../_class/class.css?v=20260909-2050">
+  <link rel="stylesheet" href="../_class/class.css?v=20260909-2120">
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 바로가기</a>
@@ -90,6 +90,9 @@
           <button class="who-out" id="who-out" type="button">나가기</button>
         </div>
       </div>
+
+      <!-- 교수가 한마디를 남기면 들어올 때 여기에 뜬다. 본 뒤에는 사라진다. -->
+      <div class="room-notice" id="room-notice" hidden></div>
 
       <!-- QR — 강의실 화면에 띄워 두는 자리 -->
       <div class="qr-band" id="qr-band">
@@ -237,6 +240,13 @@
         <p class="tv-score-tag">점수</p>
         <p class="tv-score-n" id="tv-score-n"></p>
         <p class="tv-score-memo" id="tv-score-memo" hidden></p>
+        <div class="tv-reply" id="tv-reply" hidden>
+          <label for="tv-reply-text">교수님께 회신</label>
+          <textarea id="tv-reply-text" maxlength="500" rows="3"
+                    placeholder="고친 내용이나 하고 싶은 말을 적어 주세요."></textarea>
+          <p class="tv-reply-sent" id="tv-reply-sent" hidden></p>
+          <button class="btn-line" id="tv-reply-send" type="button">회신 보내기</button>
+        </div>
       </div>
 
       <button class="intro-pick" id="tv-pick" type="button">
@@ -346,6 +356,6 @@
   </footer>
 
   <script src="course.js"></script>
-  <script type="module" src="../_class/class.js?v=20260909-2050"></script>
+  <script type="module" src="../_class/class.js?v=20260909-2120"></script>
 </body>
 </html>

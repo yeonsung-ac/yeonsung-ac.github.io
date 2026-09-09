@@ -2378,6 +2378,8 @@ const dueText = (t) => {
 };
 
 function renderTasks() {
+  // 과제·낸것·점수 어느 쪽이 바뀌어도 여기를 지난다. 알림도 여기서 함께 그린다.
+  try { renderNotice(); } catch { /* 아직 화면이 없을 수 있다 */ }
   const box = $("tasks");
   if (!box || !state.me) return;
   const prof = state.isProfessor;
@@ -2516,8 +2518,45 @@ function openTask(id) {
   $("tv-score-n").hidden = !hasScore;
   $("tv-score-memo").textContent = hasMemo ? sc.memo : "";
   $("tv-score-memo").hidden = !hasMemo;
+
+  // 한마디가 있으면 회신칸을 연다. 열어 본 것으로 치고 알림에서 지운다.
+  const mine = state.works[t.id];
+  $("tv-reply").hidden = !hasMemo;
+  if (hasMemo) {
+    $("tv-reply-text").value = mine?.reply || "";
+    const sent = mine?.replyAt ? stamp(when(mine.replyAt)) : "";
+    $("tv-reply-sent").textContent = sent ? `${sent} 에 보냈습니다` : "";
+    $("tv-reply-sent").hidden = !sent;
+    markMemoSeen(t.id);
+    renderNotice();
+  }
   window.scrollTo({ top: 0 });
 }
+
+$("tv-reply-send")?.addEventListener("click", async () => {
+  const t = state.taskNow;
+  const btn = $("tv-reply-send");
+  const w = state.works[t.id];
+  if (!w) return;
+  const reply = $("tv-reply-text").value.trim().slice(0, 500);
+  if (!reply) { toast("회신할 말을 적어 주세요", true); return; }
+  btn.disabled = true;
+  try {
+    // 회신은 학생이 제 과제 문서에 담는다. 그래서 규칙을 손대지 않아도 된다.
+    await setDoc(doc(db, WORKS, `${t.id}_${state.uid}`),
+                 { ...w, reply, replyAt: serverTimestamp(), memoSeenAt: serverTimestamp() });
+    w.reply = reply;
+    w.replyAt = new Date();
+    $("tv-reply-sent").textContent = "방금 보냈습니다";
+    $("tv-reply-sent").hidden = false;
+    toast("교수님께 회신했습니다");
+    renderNotice();
+  } catch (e) {
+    toast("보내지 못했습니다 (" + (e.code || e.message) + ")", true);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 $("tv-back").addEventListener("click", () => {
   state.view = "room";
@@ -2713,6 +2752,50 @@ const sc = (workId) => state.scores[workId] || {};
 /* 점수를 매긴다. 빈칸으로 두면 점수를 지운다. */
 /* 과제에 남기는 교수의 한마디. 점수와 같은 문서에 두되 서로 지우지 않는다.
    학생 화면에서는 점수 아래에 그대로 보인다. */
+/* 교수가 남긴 한마디 가운데 학생이 아직 못 본 것.
+   '본 때' 는 학생이 제 과제 문서에 적는다. 점수 문서는 교수만 쓸 수 있기 때문이다.
+   교수가 한마디를 고치면 at 이 갱신되므로 다시 안 본 것이 된다. */
+function unseenMemos() {
+  if (!state.uid) return [];
+  const out = [];
+  for (const t of state.tasks) {
+    const w = state.works[t.id];
+    if (!w) continue;
+    const sc = state.scores[`${t.id}_${state.uid}`];
+    if (!sc || !sc.memo) continue;
+    const said = when(sc.at) || 0;
+    const seen = when(w.memoSeenAt) || 0;
+    if (said > seen) out.push({ task: t, memo: sc.memo });
+  }
+  return out;
+}
+
+function renderNotice() {
+  const box = $("room-notice");
+  if (!box) return;
+  const rows = unseenMemos();
+  box.hidden = rows.length === 0;
+  if (!rows.length) return;
+  box.innerHTML = `<b>교수님이 한마디를 남겼습니다</b>`
+    + rows.map((r) => `<button class="room-notice-go" type="button" data-notice="${esc(r.task.id)}">
+         <span class="rn-task">${esc(r.task.week)}주차 · ${esc(r.task.title)}</span>
+         <span class="rn-memo">${esc(r.memo)}</span></button>`).join("");
+  box.querySelectorAll("[data-notice]").forEach((el) => {
+    el.addEventListener("click", () => openTask(el.dataset.notice));
+  });
+}
+
+/* 한마디를 봤다고 표시한다. 실패해도 학생을 붙잡지 않는다. */
+async function markMemoSeen(taskId) {
+  const w = state.works[taskId];
+  if (!w) return;
+  try {
+    await setDoc(doc(db, WORKS, `${taskId}_${state.uid}`),
+                 { ...w, memoSeenAt: serverTimestamp() });
+    w.memoSeenAt = new Date();
+  } catch { /* 다음에 다시 표시된다 */ }
+}
+
 async function putMemo(workId, raw) {
   const w = state.allWorks.find((x) => x.id === workId);
   if (!w) return;
@@ -2801,8 +2884,12 @@ function renderWorksAll() {
           <span class="lst-body"><span class="lst-who">
             <b>${esc(r.name)}</b><span class="lst-sid">${esc(r.sid)}</span>
             ${edited ? `<span class="tag">고침</span>` : ""}
-            ${late ? `<span class="tag warn">${esc(lateText(state.taskPick, fixed))}</span>` : ""}</span>
-            <span class="lst-text">${esc(r.text)}</span></span>
+            ${late ? `<span class="tag warn">${esc(lateText(state.taskPick, fixed))}</span>` : ""}
+            ${r.reply ? `<span class="tag ok">회신</span>` : ""}
+            ${sc(r.id).memo && !r.memoSeenAt ? `<span class="tag">안 읽음</span>` : ""}</span>
+            <span class="lst-text">${esc(r.text)}</span>
+            ${r.reply ? `<span class="lst-reply"><b>회신</b> ${esc(r.reply)}
+              <em>${r.replyAt ? stamp(when(r.replyAt)) : ""}</em></span>` : ""}</span>
           <span class="lst-when">${stamp(fixed)}${edited ? `<br><small>처음 ${stamp(made)}</small>` : ""}</span>
         </button>
         <span class="lst-acts">
