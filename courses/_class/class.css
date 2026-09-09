@@ -900,3 +900,11 @@ body.showing{overflow:hidden}
 
 .show-link{color:#9fd2ff;text-decoration:underline;text-underline-offset:.18em;word-break:break-all}
 .show-link:hover,.show-link:focus-visible{color:#fff}
+
+/* 과제에 남기는 교수의 한마디. 점수 칸 옆에 둔다. */
+.wk-memo{min-width:150px;flex:1 1 170px;min-height:38px;padding:0 11px;
+  border:1px solid var(--card-line);border-radius:9px;background:#fff;
+  color:inherit;font:inherit;font-size:.86rem}
+.wk-memo:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+.wk-memo::placeholder{color:#9aa4ae}
+@media(max-width:760px){ .wk-memo{flex-basis:100%;min-width:0} }

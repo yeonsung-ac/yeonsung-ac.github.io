@@ -2505,16 +2505,17 @@ function openTask(id) {
   $("tv-n").textContent = String(($("tv-text").value || "").length);
   $("tv-error").hidden = true;
 
-  // 점수가 매겨졌으면 보여 준다. 남의 점수는 서버가 막아 읽히지 않는다.
+  // 점수나 한마디가 있으면 보여 준다. 남의 것은 서버가 막아 읽히지 않는다.
+  // 점수 없이 한마디만 남길 수도 있으므로 둘을 따로 따진다.
   const sc = state.scores[`${t.id}_${state.uid}`];
   const box = $("tv-score");
-  const has = sc && sc.score !== "" && sc.score != null;
-  box.hidden = !has;
-  if (has) {
-    $("tv-score-n").textContent = String(sc.score);
-    $("tv-score-memo").textContent = sc.memo || "";
-    $("tv-score-memo").hidden = !sc.memo;
-  }
+  const hasScore = sc && sc.score !== "" && sc.score != null;
+  const hasMemo = Boolean(sc && sc.memo);
+  box.hidden = !(hasScore || hasMemo);
+  $("tv-score-n").textContent = hasScore ? String(sc.score) : "";
+  $("tv-score-n").hidden = !hasScore;
+  $("tv-score-memo").textContent = hasMemo ? sc.memo : "";
+  $("tv-score-memo").hidden = !hasMemo;
   window.scrollTo({ top: 0 });
 }
 
@@ -2710,13 +2711,45 @@ function workRows() {
 const sc = (workId) => state.scores[workId] || {};
 
 /* 점수를 매긴다. 빈칸으로 두면 점수를 지운다. */
+/* 과제에 남기는 교수의 한마디. 점수와 같은 문서에 두되 서로 지우지 않는다.
+   학생 화면에서는 점수 아래에 그대로 보인다. */
+async function putMemo(workId, raw) {
+  const w = state.allWorks.find((x) => x.id === workId);
+  if (!w) return;
+  const memo = String(raw).trim().slice(0, 300);
+  const now = sc(workId);
+  try {
+    if (!memo && now.score === undefined) {
+      await deleteDoc(doc(db, SCORES, workId));
+      toast("한마디를 지웠습니다");
+      return;
+    }
+    await setDoc(doc(db, SCORES, workId), {
+      uid: w.uid, taskId: w.taskId, sid: w.sid, name: w.name,
+      score: now.score ?? null, memo, at: serverTimestamp(),
+    });
+    toast(memo ? `${w.name} 한마디를 남겼습니다` : `${w.name} 한마디를 지웠습니다`);
+  } catch (e) {
+    toast("남기지 못했습니다 (" + (e.code || e.message) + ")", true);
+  }
+}
+
 async function putScore(workId, raw) {
   const w = state.allWorks.find((x) => x.id === workId);
   if (!w) return;
   const v = String(raw).trim();
   try {
     if (v === "") {
-      await deleteDoc(doc(db, SCORES, workId));
+      const memo = sc(workId).memo || "";
+      if (memo) {
+        // 한마디가 남아 있으면 점수만 비운다. 문서를 지우면 한마디까지 사라진다.
+        await setDoc(doc(db, SCORES, workId), {
+          uid: w.uid, taskId: w.taskId, sid: w.sid, name: w.name,
+          score: null, memo, at: serverTimestamp(),
+        });
+      } else {
+        await deleteDoc(doc(db, SCORES, workId));
+      }
       toast("점수를 지웠습니다");
       return;
     }
@@ -2776,6 +2809,9 @@ function renderWorksAll() {
           <input class="wk-score" type="number" min="0" max="100" inputmode="numeric"
                  data-score="${esc(r.id)}" value="${esc(String(sc(r.id).score ?? ""))}"
                  placeholder="점수" title="점수를 넣고 화면 밖을 누르면 저장됩니다">
+          <input class="wk-memo" type="text" maxlength="300"
+                 data-memo="${esc(r.id)}" value="${esc(sc(r.id).memo || "")}"
+                 placeholder="한마디" title="학생에게 보일 한마디입니다. 적고 화면 밖을 누르면 저장됩니다">
           <button class="lst-del" type="button" data-wdel="${esc(r.id)}" title="지우기">×</button>
         </span>
       </li>`;
@@ -2783,6 +2819,9 @@ function renderWorksAll() {
 
   body.querySelectorAll("[data-score]").forEach((el) => {
     el.addEventListener("change", () => putScore(el.dataset.score, el.value));
+  });
+  body.querySelectorAll("[data-memo]").forEach((el) => {
+    el.addEventListener("change", () => putMemo(el.dataset.memo, el.value));
   });
   body.querySelectorAll("[data-wdel]").forEach((el) => {
     el.addEventListener("click", () => dropWork(el.dataset.wdel));
