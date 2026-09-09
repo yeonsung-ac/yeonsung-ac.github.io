@@ -982,3 +982,33 @@ body.showing{overflow:hidden}
 .sheet-table td.mk.ok{color:#1f6b3a}
 .sheet-table td.mk.no{color:#a33228;font-weight:700}
 .sheet-table tfoot td{background:#f6f8fa;font-weight:700}
+
+/* ── 출석부 인쇄 ────────────────────────────────────
+   교학과에 종이로 내거나 PDF 로 만들어 보낸다. A4 세로 한 장에 담는 것이 목적이다.
+   화면의 다른 것은 다 감추고 출석부만 종이 왼쪽 위에서부터 앉힌다. */
+@media print {
+  @page { size: A4 portrait; margin: 14mm; }
+
+  body { background: #fff !important; }
+  /* 자리는 남기고 보이지만 않게 한다. display:none 으로 지우면 표 안의
+     칸 너비 계산이 흐트러져 눈금이 어긋난다. */
+  body * { visibility: hidden !important; }
+  #sheet, #sheet * { visibility: visible !important; }
+
+  #sheet {
+    position: absolute; left: 0; top: 0; width: 100%;
+    padding: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+    background: #fff !important; color: #000 !important;
+  }
+  .sheet-head h3 { font-size: 15pt; }
+  .sheet-head p { font-size: 9pt; }
+  .sheet-table { font-size: 9pt; }
+  .sheet-table th, .sheet-table td { padding: 2px 5px; border-color: #666 !important; }
+  .sheet-table thead th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet-table tfoot td { background: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet-table td.mk.ok, .sheet-table td.mk.no { color: #000 !important; }
+
+  /* 한 사람이 두 쪽에 걸쳐 잘리지 않게 한다. */
+  .sheet-table tr { page-break-inside: avoid; }
+  .sheet-table thead { display: table-header-group; }   /* 쪽이 넘어가면 머리글을 다시 찍는다 */
+}

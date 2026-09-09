@@ -2127,7 +2127,8 @@ function openAttendSheet() {
   $("prof-body").innerHTML = `
     <div class="sheet-acts">
       <button class="btn-line" id="sheet-back" type="button">← 출석 부르기</button>
-      <span>이 화면을 캡처해 교학과로 보내시면 됩니다. ● 출석 · ✕ 결석 · ― 기록 없음</span>
+      <button class="btn-go" id="sheet-print" type="button">인쇄 · PDF로 저장</button>
+      <span>● 출석 · ✕ 결석 · ― 기록 없음 · A4 세로로 나옵니다</span>
     </div>
     <div class="sheet" id="sheet">
       <div class="sheet-head">
@@ -2151,6 +2152,8 @@ function openAttendSheet() {
         <td colspan="2"></td></tr></tfoot></table>
     </div>`;
   $("sheet-back").addEventListener("click", openAttend);
+  // 인쇄 창에서 '대상'을 PDF 로 고르면 파일로도 남는다. 종이와 파일이 같은 길이다.
+  $("sheet-print").addEventListener("click", () => window.print());
 }
 
 /* 명단에서 한 사람 빼기.
