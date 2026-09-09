@@ -2125,18 +2125,18 @@ function openAttendSheet() {
   const 표 = (m) => m === "출석" ? "●" : m === "결석" ? "✕" : "―";
 
   $("prof-body").innerHTML = `
-    <div class="sheet-acts">
-      <button class="btn-line" id="sheet-back" type="button">← 출석 부르기</button>
-      <button class="btn-go" id="sheet-print" type="button">인쇄 · PDF로 저장</button>
+    <div class="asheet-acts">
+      <button class="btn-line" id="asheet-back" type="button">← 출석 부르기</button>
+      <button class="btn-go" id="asheet-print" type="button">인쇄 · PDF로 저장</button>
       <span>● 출석 · ✕ 결석 · ― 기록 없음 · A4 세로로 나옵니다</span>
     </div>
-    <div class="sheet" id="sheet">
-      <div class="sheet-head">
+    <div class="asheet" id="asheet">
+      <div class="asheet-head">
         <h3>${esc(C.name)} 출석부</h3>
         <p>연성대학교 경영학과 · 담당 이현구 · 수강생 ${명단.length}명</p>
-        <p class="sheet-when">뽑은 날 ${오늘()}</p>
+        <p class="asheet-when">뽑은 날 ${오늘()}</p>
       </div>
-      <table class="sheet-table"><thead><tr>
+      <table class="asheet-table"><thead><tr>
         <th>번호</th><th>학번</th><th>성명</th>
         ${days.map((d) => `<th>${d.slice(5).replace("-", "/")}<small>${요일(d)}</small></th>`).join("")}
         <th>출석</th><th>결석</th></tr></thead><tbody>
@@ -2151,9 +2151,9 @@ function openAttendSheet() {
         ${days.map((d) => `<td>${명단.filter((r) => cell(r.sid, d) === "출석").length}</td>`).join("")}
         <td colspan="2"></td></tr></tfoot></table>
     </div>`;
-  $("sheet-back").addEventListener("click", openAttend);
+  $("asheet-back").addEventListener("click", openAttend);
   // 인쇄 창에서 '대상'을 PDF 로 고르면 파일로도 남는다. 종이와 파일이 같은 길이다.
-  $("sheet-print").addEventListener("click", () => window.print());
+  $("asheet-print").addEventListener("click", () => window.print());
 }
 
 /* 명단에서 한 사람 빼기.
@@ -2575,6 +2575,27 @@ async function flipAll(open) {
 
 $("films-all").addEventListener("click", () => flipAll(true));
 $("films-none").addEventListener("click", () => flipAll(false));
+
+
+/* 강의 영상 접기·펼치기.
+ *
+ * 영상은 한 편당 큰 그림을 쓴다. 열네다섯 편이 줄지어 서면 그 아래의 과제와
+ * 교수 화면까지 한참 내려가야 닿는다. 매번 보는 것도 아니니 접어 두고 볼 때만 펜다.
+ *
+ * 새로 고치면 다시 접힌다. 접힌 것이 이 쪽의 기본 모습이다.
+ */
+function foldFilms(open) {
+  const body = $("films-body");
+  const btn = $("films-fold");
+  if (!body || !btn) return;
+  body.hidden = !open;
+  btn.classList.toggle("on", open);
+  btn.setAttribute("aria-expanded", String(open));
+  const say = btn.querySelector(".films-fold-say");
+  if (say) say.textContent = open ? "접기" : "펼치기";
+}
+
+$("films-fold").addEventListener("click", () => foldFilms($("films-body").hidden));
 
 
 /* ── 주간 과제 ────────────────────────────────

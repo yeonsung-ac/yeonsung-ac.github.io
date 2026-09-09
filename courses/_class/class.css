@@ -434,6 +434,15 @@ body.showing{overflow:hidden}
 .films{margin:38px 0 34px;padding-top:32px;border-top:2px solid var(--card-line)}
 .films-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 16px}
 .films-head .block-title{margin:0}
+/* 강의 영상 접기·펼치기. 목록이 길어 아래 것들이 한참 밀린다.
+   제목을 누르면 열리고, 처음에는 접혀 있다. */
+.films-fold{display:inline-flex;align-items:center;gap:9px;padding:0;
+  border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;cursor:pointer}
+.films-fold-mark{color:var(--muted);font-size:.78em;transition:transform .16s ease}
+.films-fold.on .films-fold-mark{transform:rotate(90deg)}
+.films-fold-say{padding:3px 10px;border:1px solid var(--card-line);border-radius:999px;
+  color:var(--muted);font-weight:600;font-size:.7rem;letter-spacing:0}
+.films-fold:hover .films-fold-say{border-color:var(--navy);color:var(--navy)}
 .films-sub{margin:0;color:var(--muted);font-size:.85rem}
 .films-tools{display:flex;gap:7px;margin-left:auto}
 .films-tools .btn-line{min-height:38px;padding:0 13px;font-size:.82rem}
@@ -961,27 +970,27 @@ body.showing{overflow:hidden}
 .att-daygo.on{background:var(--navy);border-color:var(--navy);color:#fff}
 
 /* 캡처용 출석부. 어두운 화면 위에 흰 종이를 얹는다. */
-.sheet-acts{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;
+.asheet-acts{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;
   color:var(--muted);font-size:.84rem}
-.sheet{padding:22px 20px;border-radius:12px;background:#fff;color:#16202c;overflow-x:auto}
-.sheet-head{text-align:center;margin-bottom:18px}
-.sheet-head h3{margin:0 0 5px;font-size:1.35rem;letter-spacing:-.03em}
-.sheet-head p{margin:0;color:#5a6675;font-size:.86rem}
-.sheet-when{margin-top:4px!important;font-size:.78rem!important;color:#8894a2!important}
+.asheet{padding:22px 20px;border-radius:12px;background:#fff;color:#16202c;overflow-x:auto}
+.asheet-head{text-align:center;margin-bottom:18px}
+.asheet-head h3{margin:0 0 5px;font-size:1.35rem;letter-spacing:-.03em}
+.asheet-head p{margin:0;color:#5a6675;font-size:.86rem}
+.asheet-when{margin-top:4px!important;font-size:.78rem!important;color:#8894a2!important}
 /* 표를 화면 폭에 맞춰 늘이지 않는다. 늘이면 칸이 다 벌어져 캡처했을 때
    글자 사이가 허옇게 뜬다. 내용 크기에 맞춰 세우고 가운데 놓는다. */
-.sheet-table{width:auto;margin:0 auto;border-collapse:collapse;
+.asheet-table{width:auto;margin:0 auto;border-collapse:collapse;
   font-size:.84rem;font-variant-numeric:tabular-nums}
-.sheet-table th,.sheet-table td{border:1px solid #cfd6de;padding:3px 7px;text-align:center;white-space:nowrap}
-.sheet-table th:first-child,.sheet-table td:first-child{padding:3px 5px}   /* 번호 */
-.sheet-table td.nm{padding-right:14px}                                     /* 성명 뒤만 조금 띄운다 */
-.sheet-table thead th{background:#eef2f6;font-weight:700}
-.sheet-table thead small{display:block;color:#7b8794;font-weight:400;font-size:.72rem}
-.sheet-table td.nm{text-align:left;font-weight:700}
-.sheet-table td.mk{font-size:1rem}
-.sheet-table td.mk.ok{color:#1f6b3a}
-.sheet-table td.mk.no{color:#a33228;font-weight:700}
-.sheet-table tfoot td{background:#f6f8fa;font-weight:700}
+.asheet-table th,.asheet-table td{border:1px solid #cfd6de;padding:3px 7px;text-align:center;white-space:nowrap}
+.asheet-table th:first-child,.asheet-table td:first-child{padding:3px 5px}   /* 번호 */
+.asheet-table td.nm{padding-right:14px}                                     /* 성명 뒤만 조금 띄운다 */
+.asheet-table thead th{background:#eef2f6;font-weight:700}
+.asheet-table thead small{display:block;color:#7b8794;font-weight:400;font-size:.72rem}
+.asheet-table td.nm{text-align:left;font-weight:700}
+.asheet-table td.mk{font-size:1rem}
+.asheet-table td.mk.ok{color:#1f6b3a}
+.asheet-table td.mk.no{color:#a33228;font-weight:700}
+.asheet-table tfoot td{background:#f6f8fa;font-weight:700}
 
 /* ── 출석부 인쇄 ────────────────────────────────────
    교학과에 종이로 내거나 PDF 로 만들어 보낸다. A4 세로 한 장에 담는 것이 목적이다.
@@ -993,22 +1002,22 @@ body.showing{overflow:hidden}
   /* 자리는 남기고 보이지만 않게 한다. display:none 으로 지우면 표 안의
      칸 너비 계산이 흐트러져 눈금이 어긋난다. */
   body * { visibility: hidden !important; }
-  #sheet, #sheet * { visibility: visible !important; }
+  #asheet, #asheet * { visibility: visible !important; }
 
-  #sheet {
+  #asheet {
     position: absolute; left: 0; top: 0; width: 100%;
     padding: 0 !important; border-radius: 0 !important; box-shadow: none !important;
     background: #fff !important; color: #000 !important;
   }
-  .sheet-head h3 { font-size: 15pt; }
-  .sheet-head p { font-size: 9pt; }
-  .sheet-table { font-size: 9pt; }
-  .sheet-table th, .sheet-table td { padding: 2px 5px; border-color: #666 !important; }
-  .sheet-table thead th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .sheet-table tfoot td { background: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .sheet-table td.mk.ok, .sheet-table td.mk.no { color: #000 !important; }
+  .asheet-head h3 { font-size: 15pt; }
+  .asheet-head p { font-size: 9pt; }
+  .asheet-table { font-size: 9pt; }
+  .asheet-table th, .asheet-table td { padding: 2px 5px; border-color: #666 !important; }
+  .asheet-table thead th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .asheet-table tfoot td { background: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .asheet-table td.mk.ok, .asheet-table td.mk.no { color: #000 !important; }
 
   /* 한 사람이 두 쪽에 걸쳐 잘리지 않게 한다. */
-  .sheet-table tr { page-break-inside: avoid; }
-  .sheet-table thead { display: table-header-group; }   /* 쪽이 넘어가면 머리글을 다시 찍는다 */
+  .asheet-table tr { page-break-inside: avoid; }
+  .asheet-table thead { display: table-header-group; }   /* 쪽이 넘어가면 머리글을 다시 찍는다 */
 }

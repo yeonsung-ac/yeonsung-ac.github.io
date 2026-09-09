@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://yeonsung-ac.github.io/assets/social-thumbnail.png">
   <link rel="canonical" href="https://yeonsung-ac.github.io/courses/03-advertising/">
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../_class/class.css?v=20260910-0245">
+  <link rel="stylesheet" href="../_class/class.css?v=20260910-0820">
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 바로가기</a>
@@ -182,14 +182,21 @@
            공개 여부를 서버에서 읽어 와야 해서 화면을 JS 가 그린다. -->
       <section class="films" id="films" hidden>
         <div class="films-head">
-          <h2 class="block-title">강의 영상</h2>
+          <h2 class="block-title">
+            <button class="films-fold" id="films-fold" type="button"
+                    aria-expanded="false" aria-controls="films-body">
+              <span class="films-fold-mark" aria-hidden="true">▸</span>강의 영상<span class="films-fold-say">펼치기</span>
+            </button>
+          </h2>
           <p class="films-sub" id="films-sub"></p>
           <div class="films-tools" id="films-tools" hidden>
             <button class="btn-line" id="films-all" type="button">모두 공개</button>
             <button class="btn-line" id="films-none" type="button">모두 비공개</button>
           </div>
         </div>
-        <ol class="film-list" id="film-list"></ol>
+        <div class="films-body" id="films-body" hidden>
+          <ol class="film-list" id="film-list"></ol>
+        </div>
       </section>
 
       <!-- 교수 화면 -->
@@ -356,6 +363,6 @@
   </footer>
 
   <script src="course.js"></script>
-  <script type="module" src="../_class/class.js?v=20260910-0245"></script>
+  <script type="module" src="../_class/class.js?v=20260910-0820"></script>
 </body>
 </html>

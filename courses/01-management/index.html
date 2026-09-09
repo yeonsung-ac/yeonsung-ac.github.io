@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://yeonsung-ac.github.io/assets/social-thumbnail.png">
   <link rel="canonical" href="https://yeonsung-ac.github.io/courses/01-management/">
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../_class/class.css?v=20260910-0245">
+  <link rel="stylesheet" href="../_class/class.css?v=20260910-0820">
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 바로가기</a>
@@ -182,19 +182,26 @@
            공개 여부를 서버에서 읽어 와야 해서 화면을 JS 가 그린다. -->
       <section class="films" id="films" hidden>
         <div class="films-head">
-          <h2 class="block-title">강의 영상</h2>
+          <h2 class="block-title">
+            <button class="films-fold" id="films-fold" type="button"
+                    aria-expanded="false" aria-controls="films-body">
+              <span class="films-fold-mark" aria-hidden="true">▸</span>강의 영상<span class="films-fold-say">펼치기</span>
+            </button>
+          </h2>
           <p class="films-sub" id="films-sub"></p>
           <div class="films-tools" id="films-tools" hidden>
             <button class="btn-line" id="films-all" type="button">모두 공개</button>
             <button class="btn-line" id="films-none" type="button">모두 비공개</button>
           </div>
         </div>
-        <aside class="films-warn">
-          <p class="films-warn-tag">출석 안내</p>
-          <p>아래 유튜브 영상 시청은 <b>온라인 출석에 반영되지 않습니다.</b><br>
-            출석은 연성대학교 <b>E-CLASS</b>에서 시청하시기 바랍니다.</p>
-        </aside>
-        <ol class="film-list" id="film-list"></ol>
+        <div class="films-body" id="films-body" hidden>
+          <aside class="films-warn">
+            <p class="films-warn-tag">출석 안내</p>
+            <p>아래 유튜브 영상 시청은 <b>온라인 출석에 반영되지 않습니다.</b><br>
+              출석은 연성대학교 <b>E-CLASS</b>에서 시청하시기 바랍니다.</p>
+          </aside>
+          <ol class="film-list" id="film-list"></ol>
+        </div>
       </section>
 
       <!-- 교수 화면 -->
@@ -362,6 +369,6 @@
   </footer>
 
   <script src="course.js"></script>
-  <script type="module" src="../_class/class.js?v=20260910-0245"></script>
+  <script type="module" src="../_class/class.js?v=20260910-0820"></script>
 </body>
 </html>
