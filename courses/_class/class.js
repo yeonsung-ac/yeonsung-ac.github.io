@@ -2852,7 +2852,7 @@ function paintWork() {
   img.alt = r.name + " 학생이 낸 사진";
   $("show-name").textContent = r.name;
   $("show-sid").textContent = r.sid;
-  $("show-text").textContent = r.text || "";
+  $("show-text").innerHTML = linkify(r.text);
   fitShow(r.text);
   $("show-n").textContent = `${workAt + 1} / ${rows.length}`;
   $("show-prev").disabled = workAt === 0;
@@ -2877,9 +2877,17 @@ function openShow(i) {
 /* 글 길이에 따라 발표 화면 배치를 바꾼다.
    짧은 소개는 사진을 크게 놓고 밑에 한 줄 받치는 것이 좋지만, 3천자짜리 글은
    그 자리에 들어가지 않는다. 길면 사진을 왼쪽으로 물리고 글을 옆에 세운다. */
+function linkify(text) {
+  return esc(String(text || "")).replace(
+    /https?:\/\/[^\s<]+/g,
+    (u) => `<a class="show-link" href="${u}" target="_blank" rel="noopener">${u}</a>`);
+}
+
 function fitShow(text) {
   const n = String(text || "").length;
   const el = $("show");
+  // 사진이 없으면 글이 화면을 채워야 한다. 안 그러면 발표 화면이 텅 빈다.
+  el.classList.toggle("nophoto", $("show-photo").hidden);
   el.classList.toggle("long", n > 300);
   el.classList.toggle("verylong", n > 900);
 

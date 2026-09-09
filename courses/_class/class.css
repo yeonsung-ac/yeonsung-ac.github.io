@@ -888,3 +888,15 @@ body.showing{overflow:hidden}
 .tv-nophoto input{flex:none;margin:2px 0 0;width:19px;height:19px;accent-color:var(--navy)}
 .tv-nophoto span{font-size:.94rem;font-weight:700}
 .tv-nophoto em{display:block;margin-top:3px;color:var(--muted);font-size:.82rem;font-weight:400;font-style:normal;line-height:1.6}
+
+/* ── 사진 없이 낸 것을 발표 화면에 띄울 때 ──────────────────
+   사진 자리가 비면 글만 작게 남아 화면이 텅 빈다. 글이 그 자리를 채우게 한다.
+   주소만 적어 내는 과제가 있어 링크는 눌러서 열 수 있게 둔다. */
+.show.nophoto .show-stage{grid-template-columns:minmax(0,1fr)}
+.show.nophoto .show-stage figcaption{max-width:min(1400px,94vw)}
+.show.nophoto .show-text{font-size:clamp(1.5rem,4.4vw,4rem);line-height:1.45}
+.show.nophoto.long .show-text{font-size:clamp(1.1rem,2.2vw,2rem);line-height:1.6}
+.show.nophoto.verylong .show-text{font-size:clamp(1rem,1.5vw,1.4rem);line-height:1.7}
+
+.show-link{color:#9fd2ff;text-decoration:underline;text-underline-offset:.18em;word-break:break-all}
+.show-link:hover,.show-link:focus-visible{color:#fff}
