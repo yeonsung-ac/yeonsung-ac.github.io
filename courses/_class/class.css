@@ -997,7 +997,7 @@ body.showing{overflow:hidden}
 
    누를 때 출석부를 본떘 자리에서 복사해 종이 그릇(#print-holder)으로 옮기고,
    나머지는 display:none 으로 지운다. 예전에는 visibility 로 숨길만 했는데
-   그러면 보이지않을 뿐 키는 그대로 남아, 뒤에 빈 족이가 두 장 따라 나왔다. */
+   그러면 보이지만 않을 뿐 키는 그대로 남아, 뒤에 빈 종이가 두 장 따라 나왔다. */
 #print-holder { display: none; }
 
 @media print {
@@ -1006,7 +1006,15 @@ body.showing{overflow:hidden}
 
   body { background: #fff !important; }
   body.printing > *:not(#print-holder) { display: none !important; }
-  body.printing #print-holder { display: block; }
+  /* 종이 가운데에 앉힌다. 열여섯 줄짜리 표를 위쪽에만 붙여 두면
+     아래가 통째로 비어 한쪽으로 기울어 보인다.
+     표 자리에 table-cell 을 쓰는 까닭은, 명단이 늘어 한 장을 넘어갈 때
+     가운데 맞춤이 저절로 풀리고 위에서부터 차례로 흘러서다.
+     flex 나 grid 로 가운데를 맞추면 넘치는 순간 위쪽이 잘려 나간다. */
+  body.printing #print-holder { display: table; width: 100%; height: 250mm; }
+  /* 250mm 는 A4 본문 높이(297 − 22 − 15 = 260mm)에서 조금 덜어 낸 것이다.
+     260mm 를 그대로 주면 반올림 한 점에 넘쳐 빈 종이가 한 장 더 나온다. */
+  body.printing #print-holder > .asheet { display: table-cell; vertical-align: middle; }
 
   .asheet {
     padding: 0 !important; border-radius: 0 !important; box-shadow: none !important;
