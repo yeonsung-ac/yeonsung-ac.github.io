@@ -547,6 +547,13 @@ service cloud.firestore {
 
     // 경영학원론 과제 점수. 교수만 매긴다. 당사자와 교수만 읽는다.
     // 낸 과제 문서 안에 두면 학생이 자기 점수를 고칠 수 있어 따로 둔다.
+    // 경영학원론 발표 마침 표시. 교수만 읽고 쓴다.
+    // 그동안 이 표시는 브라우저에만 남아 기기를 바꾸면 사라지고, 누가 언제
+    // 발표했는지도 되짚을 수 없었다. 학기말 참여도의 근거가 되도록 서버에 둔다.
+    match /mgmt_spoken/{markId} {
+      allow read, write: if isProfessor();
+    }
+
     match /mgmt_scores/{workId} {
       allow read: if request.auth != null
         && (resource.data.uid == request.auth.uid || isProfessor());
@@ -556,6 +563,13 @@ service cloud.firestore {
 
     // 소비자행동론 과제 점수. 교수만 매긴다. 당사자와 교수만 읽는다.
     // 낸 과제 문서 안에 두면 학생이 자기 점수를 고칠 수 있어 따로 둔다.
+    // 소비자행동론 발표 마침 표시. 교수만 읽고 쓴다.
+    // 그동안 이 표시는 브라우저에만 남아 기기를 바꾸면 사라지고, 누가 언제
+    // 발표했는지도 되짚을 수 없었다. 학기말 참여도의 근거가 되도록 서버에 둔다.
+    match /cb_spoken/{markId} {
+      allow read, write: if isProfessor();
+    }
+
     match /cb_scores/{workId} {
       allow read: if request.auth != null
         && (resource.data.uid == request.auth.uid || isProfessor());
@@ -565,6 +579,13 @@ service cloud.firestore {
 
     // 광고학개론 과제 점수. 교수만 매긴다. 당사자와 교수만 읽는다.
     // 낸 과제 문서 안에 두면 학생이 자기 점수를 고칠 수 있어 따로 둔다.
+    // 광고학개론 발표 마침 표시. 교수만 읽고 쓴다.
+    // 그동안 이 표시는 브라우저에만 남아 기기를 바꾸면 사라지고, 누가 언제
+    // 발표했는지도 되짚을 수 없었다. 학기말 참여도의 근거가 되도록 서버에 둔다.
+    match /ad_spoken/{markId} {
+      allow read, write: if isProfessor();
+    }
+
     match /ad_scores/{workId} {
       allow read: if request.auth != null
         && (resource.data.uid == request.auth.uid || isProfessor());
