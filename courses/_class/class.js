@@ -417,7 +417,6 @@ function noteEntry() {
     sessionStorage.setItem(mark, "1");
   } catch { /* 사생활 모드면 그때마다 남는다. 그편이 안 남는 것보다 낫다 */ }
   writeLog({ kind: "enter", name: state.me.name, sid: state.me.sid });
-  try { watchSpoken(); } catch { /* 교수만 붙는다 */ }
 }
 
 /* ── QR ───────────────────────────────────── */
@@ -503,8 +502,7 @@ onAuthStateChanged(auth, async (user) => {
   // 교수는 문패를 지나지 않고 바로 들어온다. 강의실 컴퓨터에 이름이 남지
   // 않도록 이 이름표는 localStorage 에 저장하지 않는다.
   if (state.isProfessor && !state.me) {
-    state.me = { name: user.displayName || "교수", sid: "담당", prof: true,
-                 email: user.email || "" };
+    state.me = { name: user.displayName || "교수", sid: "담당", prof: true };
     enterRoom();
   }
 
@@ -528,7 +526,6 @@ onAuthStateChanged(auth, async (user) => {
   watchTasks();
   watchWorks();
   watchScores();
-  watchSpoken();
   watchFilms();
   watchBook();
   watchDeck();
@@ -1621,58 +1618,15 @@ $("intro-form").addEventListener("submit", async (e) => {
    여기서 한 명을 누르면 발표 화면이 열린다. 수업에서는 이 화면을 강의실
    스크린에 띄워 놓고 학생이 발표하는 동안 그 사진을 크게 보여 준다. */
 const PER = 30;                       // 한 판에 서른 줄
-/* 발표를 마친 표시.
-   예전에는 이 브라우저에만 남겨서, 기기를 바꾸면 사라지고 누가 언제 발표했는지
-   되짚을 수도 없었다. 이제 서버에 둔다. 교수만 읽고 쓴다.
-   옛 표시는 처음 들어올 때 한 번 서버로 밀어 올린다. */
-const SPOKE = C.id + "-spoken";       // 옛 자리. 옮기고 나면 지운다.
-const SPOKEN = C.id + "_spoken";      // 새 자리. 서버.
-let stopSpoken = null;
+const SPOKE = C.id + "-spoken";       // 발표를 마친 사람. 이 컴퓨터에만 남는다.
 
-function watchSpoken() {
-  if (!state.me?.prof) return;        // 문패를 지나기 전에는 state.me 가 없다.
-  if (stopSpoken) stopSpoken();
-  stopSpoken = onSnapshot(collection(db, SPOKEN), (snap) => {
-    state.spoken = {};
-    snap.docs.forEach((d) => { state.spoken[d.id] = d.data(); });
-    moveOldSpoken();
-    if (state.view === "intros") renderIntroAll();
-  }, () => { /* 아직 없을 수 있다 */ });
+function loadSpoken() {
+  try { state.spoken = JSON.parse(localStorage.getItem(SPOKE)) || {}; } catch { state.spoken = {}; }
 }
-
-/* 브라우저에만 있던 옛 표시를 서버로 옮긴다. 한 번만 하면 된다. */
-let movedSpoken = false;
-async function moveOldSpoken() {
-  if (movedSpoken || !state.me?.prof) return;
-  let old = {};
-  try { old = JSON.parse(localStorage.getItem(SPOKE)) || {}; } catch { return; }
-  const ids = Object.keys(old).filter((id) => !state.spoken[id]);
-  if (!ids.length) { movedSpoken = true; return; }
-  movedSpoken = true;
-  try {
-    for (const id of ids) await putSpoken(id, true, true);
-    localStorage.removeItem(SPOKE);
-    toast(`발표 표시 ${ids.length}개를 서버로 옮겼습니다`);
-  } catch { movedSpoken = false; }
+function saveSpoken() {
+  try { localStorage.setItem(SPOKE, JSON.stringify(state.spoken)); } catch { /* 그만 */ }
 }
-
-/* 표시를 켜고 끈다. 켤 때는 누가 언제 했는지 함께 남긴다. */
-async function putSpoken(id, on, quiet) {
-  const r = (state.intros || []).find((x) => x.id === id) || {};
-  try {
-    if (on) {
-      await setDoc(doc(db, SPOKEN, id), {
-        sid: r.sid || "", name: r.name || "",
-        at: serverTimestamp(), by: state.me?.email || "",
-      });
-    } else {
-      await deleteDoc(doc(db, SPOKEN, id));
-    }
-  } catch (e) {
-    if (!quiet) toast("표시하지 못했습니다 (" + (e.code || e.message) + ")", true);
-    throw e;
-  }
-}
+loadSpoken();
 
 const when = (v) => (v && v.toDate ? v.toDate() : null);
 const pad = (n) => String(n).padStart(2, "0");
@@ -1816,7 +1770,9 @@ function renderIntroAll() {
   body.querySelectorAll("[data-mark]").forEach((el) => {
     el.addEventListener("click", () => {
       const id = el.dataset.mark;
-      putSpoken(id, !state.spoken[id]).catch(() => {});
+      if (state.spoken[id]) delete state.spoken[id]; else state.spoken[id] = 1;
+      saveSpoken();
+      renderIntroAll();
     });
   });
   body.querySelectorAll("[data-del]").forEach((el) => {
@@ -2093,7 +2049,8 @@ async function dropIntro(id) {
       catch { /* 사진이 이미 없어도 장부는 지운다 */ }
     }
     await deleteDoc(doc(db, INTROS, id));
-    await deleteDoc(doc(db, SPOKEN, id)).catch(() => {});
+    delete state.spoken[id];
+    saveSpoken();
     toast("지웠습니다");
   } catch (e) {
     toast("지우지 못했습니다 (" + (e.code || e.message) + ")", true);
@@ -2129,14 +2086,13 @@ async function dropWork(id) {
 function introCsv() {
   const rows = introRows();
   if (!rows.length) { toast("내려받을 것이 없습니다", true); return; }
-  const head = ["번호", "성명", "학번", "제출", "수정", "발표함", "발표 시각"]
+  const head = ["번호", "성명", "학번", "제출", "수정", "발표함"]
     .concat(ASKS.map((f) => f.label)).concat(["사진 주소"]);
   const body = rows.map((r, i) => [
     i + 1, r.name, r.sid,
     (when(r.createdAt) || "") && when(r.createdAt).toLocaleString("ko-KR"),
     (when(r.updatedAt) || "") && when(r.updatedAt).toLocaleString("ko-KR"),
     state.spoken[r.id] ? "O" : "",
-    when(state.spoken[r.id]?.at) ? when(state.spoken[r.id].at).toLocaleString("ko-KR") : "",
   ].concat(ASKS.map((f, k) => partsOf(r)[k] || "")).concat([r.photoUrl || ""]));
   const csv = [head, ...body]
     .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(","))
@@ -2272,7 +2228,7 @@ async function openBook(no, kind) {
   }
   try {
     const url = await getDownloadURL(storageRef(store, BOOK_DIR + "/" + no + "." + kind));
-    if (state.me && !state.me.prof) writeLog({ kind: "book", no, how: kind,
+    if (!state.me.prof) writeLog({ kind: "book", no, how: kind,
                                    name: state.me.name, sid: state.me.sid });
     if (win) win.location.replace(url); else window.location.href = url;
   } catch (e) {
@@ -2298,7 +2254,7 @@ async function openDeck(no) {
   }
   try {
     const url = await getDownloadURL(storageRef(store, DECK_DIR + "/" + no + ".html"));
-    if (state.me && !state.me.prof) writeLog({ kind: "deck", no, name: state.me.name, sid: state.me.sid });
+    if (!state.me.prof) writeLog({ kind: "deck", no, name: state.me.name, sid: state.me.sid });
     if (win) win.location.replace(url); else window.location.href = url;
   } catch (e) {
     if (win) win.close();
