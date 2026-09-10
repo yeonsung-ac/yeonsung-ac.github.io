@@ -616,6 +616,9 @@ body.showing{overflow:hidden}
 .task-title{font-weight:700;font-size:1rem;letter-spacing:-.02em}
 .task-due{color:var(--muted);font-size:.8rem}
 .task-acts{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:0 12px 0 4px}
+/* 과제 설명 영상. 강의 영상 카드와 같은 모양을 쓰고, 목록 위에 한 장 따로 앉힌다. */
+.task-film{margin:0 0 12px;border:1px solid var(--card-line);border-radius:12px;background:#fff}
+.task-film-sub{color:var(--muted);font-size:.8rem}
 .pill.score{background:var(--navy);color:#fff}
 
 /* 과제 내는 화면 */

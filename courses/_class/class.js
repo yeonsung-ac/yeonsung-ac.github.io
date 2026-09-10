@@ -1189,6 +1189,7 @@ function whatFor(l, q) {
     case "intro": return "자기소개 냄";
     case "work": return "과제 냄";
     case "film": return which + "영상 봄";
+    case "taskfilm": return "과제 설명 영상 봄";
     case "book": return which + "교재 " + (l.how === "pdf" ? "PDF 받음" : "읽음");
     case "deck": return which + "슬라이드 봄";
     case "submit": return q ? q.week + "주차 " + q.title : "문제 냄";
@@ -1449,7 +1450,8 @@ function renderIntro() {
   if (!box) return;
 
   // 교수는 낼 것이 없다. 모아보기로 본다.
-  if (!state.me || state.isProfessor) { box.hidden = true; return; }
+  // 과목 설정에서 끈(on: false) 과목은 학생에게도 감춘다. 낸 것은 모아보기에 남는다.
+  if (!state.me || state.isProfessor || C.intro.on === false) { box.hidden = true; return; }
   box.hidden = false;
 
   const got = state.intro;
@@ -2693,6 +2695,8 @@ function renderTasks() {
     ? `모두 ${state.tasks.length}개 · 학생에게 열린 것 ${state.tasks.filter((t) => t.open !== false).length}개`
     : `${seen.length}개`;
 
+  drawTaskFilm();
+
   if (!seen.length) {
     $("task-list").innerHTML = `<p class="empty">아직 낸 과제가 없습니다.</p>`;
     return;
@@ -2750,6 +2754,47 @@ function renderTasks() {
       catch (e) { toast("지우지 못했습니다 (" + (e.code || e.message) + ")", true); }
     });
   });
+}
+
+/* 과제 설명 영상.
+
+   과제 목록 바로 위에 한 장 붙인다. 과제를 하러 온 학생이 가장 먼저 보는
+   자리라서다. 강의 영상 목록에 끼우지 않은 까닭은, 그쪽은 장 번호와 장별
+   썸네일로 짜여 있어 하나를 끼우면 번호가 어긋나기 때문이다.
+
+   과목 설정(course.js)의 taskFilm 이 있는 과목에만 나온다. 썸네일은 유튜브가
+   주는 것을 그대로 쓴다. 영상이 바뀌면 주소 한 줄만 고치면 그림도 따라온다. */
+function drawTaskFilm() {
+  const f = C.taskFilm;
+  const list = $("task-list");
+  let card = $("task-film");
+  if (!f || !f.v || !list) { if (card) card.remove(); return; }
+
+  if (!card) {
+    card = document.createElement("a");
+    card.id = "task-film";
+    card.className = "task-film film-go";
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+    card.addEventListener("click", () => {
+      if (state.me && !state.me.prof) {
+        writeLog({ kind: "taskfilm", name: state.me.name, sid: state.me.sid });
+      }
+    });
+    list.before(card);
+  }
+  card.href = `https://youtu.be/${f.v}`;
+  card.setAttribute("aria-label", `${f.t || "과제 설명 영상"} 유튜브에서 보기`);
+  card.innerHTML = `
+    <span class="film-shot">
+      <img src="https://i.ytimg.com/vi/${esc(f.v)}/mqdefault.jpg" alt="" width="320" height="180">
+      <span class="film-play" aria-hidden="true">▶</span>
+    </span>
+    <span class="film-copy">
+      <span class="film-no">VIDEO</span>
+      <span class="film-title">${esc(f.t || "과제 설명 영상")}</span>
+      ${f.sub ? `<span class="task-film-sub">${esc(f.sub)} ↗</span>` : ""}
+    </span>`;
 }
 
 /* 학생이 과제를 내는 화면 */
