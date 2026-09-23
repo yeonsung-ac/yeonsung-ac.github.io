@@ -41,7 +41,7 @@ window.COURSE = {
     { v: "xoZi1UOUUHY", t: "인트로 오버뷰" },
     { v: "df24v8YttNE", t: "1장·2장 광고의 역사와 이해" },
     { v: "q9lNV3iViLo", t: "3장·4장 광고산업과 마케팅 1" },
-    { v: "", t: "" },
+    { v: "KlmH6ITMPxk", t: "제4강" },
     { v: "", t: "" },
     { v: "", t: "" },
     { v: "", t: "" },
