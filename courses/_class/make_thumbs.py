@@ -27,7 +27,8 @@ def read_course(folder: Path):
     """course.js 에서 과목 이름과 강의 제목을 뽑는다."""
     src = (folder / "course.js").read_text(encoding="utf-8")
     name = re.search(r'name:\s*"([^"]+)"', src).group(1)
-    titles = re.findall(r'\bt:\s*"([^"]*)"', src)   # 아직 제목이 없는 강도 자리를 잡는다
+    films = re.search(r'films:\s*\[(.*?)\]\s*,', src, re.DOTALL).group(1)
+    titles = re.findall(r'\bt:\s*"([^"]*)"', films)  # 아직 제목이 없는 강도 자리를 잡는다
     return name, titles
 
 
