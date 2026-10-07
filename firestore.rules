@@ -433,6 +433,54 @@ service cloud.firestore {
       allow delete: if isProfessor();
     }
 
+    // ad_book · ad_deck - 광고학개론 교재와 슬라이드의 공개 여부.
+    // 문서 이름은 "02" 처럼 장 번호다. cb_book·cb_deck 과 같은 조건이다.
+    //
+    // 파일은 저장소의 textbook/ad/ 와 slides/ad/ 아래에 둔다. 과목마다 칸을
+    // 나눠 두지 않으면 같은 번호끼리 서로 덮어쓴다.
+    //
+    // 영상(ad_films)은 없으면 공개로 보지만 교재와 슬라이드는 없으면 비공개로
+    // 본다. 아직 쓰지 않은 장이 대부분이라, 기본을 공개로 두면 없는 파일을 여는
+    // 단추가 줄줄이 생긴다.
+    match /ad_book/{chapterId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if isProfessor()
+        && request.resource.data.open is bool;
+
+      allow delete: if isProfessor();
+    }
+
+    match /ad_deck/{chapterId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if isProfessor()
+        && request.resource.data.open is bool;
+
+      allow delete: if isProfessor();
+    }
+
+    // mgmt_book · mgmt_deck - 경영학원론 몫. 아직 올린 교재는 없지만, 자리가
+    // 없으면 단추를 눌렀을 때 permission-denied 로 막힌다. 광고학개론에서
+    // 그렇게 한 번 막혔다. 조건은 다른 과목과 같다.
+    match /mgmt_book/{chapterId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if isProfessor()
+        && request.resource.data.open is bool;
+
+      allow delete: if isProfessor();
+    }
+
+    match /mgmt_deck/{chapterId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if isProfessor()
+        && request.resource.data.open is bool;
+
+      allow delete: if isProfessor();
+    }
+
     match /ad_log/{logId} {
       // 제출 자취. 대리 제출을 가려내려고 남긴다. 교수만 읽는다.
       // 학생 화면에서 IP 를 수집한다는 사실을 문패에 밝혀 두었다.
