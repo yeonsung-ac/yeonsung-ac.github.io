@@ -32,6 +32,7 @@ import {
   deleteDoc,
   onSnapshot,
   query,
+  where,
   orderBy,
   serverTimestamp,
   getDocs,
@@ -55,6 +56,7 @@ const store = getStorage(app);
 
 /* 과목 설정. index.html 이 course.js 를 먼저 읽어 window.COURSE 에 담아 둔다. */
 const C = window.COURSE;
+const OWN_SUBMISSIONS = ["mgmt", "ad", "cb"].includes(C.id);
 
 const QUIZZES = C.id + "_quizzes";
 const ANSWERS = C.id + "_answers";
@@ -562,9 +564,11 @@ function watchQuizzes() {
 
 function watchAnswers() {
   if (stopAnswers) stopAnswers();
-  // 학생은 규칙상 자기 답만 읽힌다. 교수는 전부 읽힌다. 질의는 같다.
+  state.all = [];
+  state.mine = {};
+  // Firestore rules reject an unfiltered student query; they do not filter results.
   stopAnswers = onSnapshot(
-    collection(db, ANSWERS),
+    ownRecords(ANSWERS),
     (snap) => {
       const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       state.all = rows;
@@ -572,8 +576,15 @@ function watchAnswers() {
       rows.forEach((r) => { if (r.uid === state.uid) state.mine[r.quizId] = r; });
       render();
     },
-    () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
+    () => { if (OWN_SUBMISSIONS) setNet("err", "내 답안을 불러오지 못했습니다. 새로고침해 주세요."); }
   );
+}
+
+function ownRecords(name) {
+  const records = collection(db, name);
+  return OWN_SUBMISSIONS && !state.isProfessor
+    ? query(records, where("uid", "==", state.uid))
+    : records;
 }
 
 /* 자기소개.
@@ -625,18 +636,23 @@ function watchTasks() {
 
 function watchWorks() {
   if (stopWorks) stopWorks();
-  // 학생은 규칙상 자기 것만 읽힌다. 교수는 전부 읽힌다. 질의는 같다.
+  state.allWorks = [];
+  state.works = {};
+  state.worksStatus = "loading";
+  renderTasks();
+  // Students request only their own records; professors retain the full list.
   stopWorks = onSnapshot(
-    collection(db, WORKS),
+    ownRecords(WORKS),
     (snap) => {
       const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       state.allWorks = rows;
       state.works = {};
       rows.forEach((r) => { if (r.uid === state.uid) state.works[r.taskId] = r; });
+      state.worksStatus = "ready";
       renderTasks();
       if (state.view === "works") renderWorksAll();
     },
-    () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
+    () => { state.worksStatus = "error"; renderTasks(); }
   );
 }
 
@@ -647,15 +663,16 @@ let stopScores = null;
 
 function watchScores() {
   if (stopScores) stopScores();
+  state.scores = {};
   stopScores = onSnapshot(
-    collection(db, SCORES),
+    ownRecords(SCORES),
     (snap) => {
       state.scores = {};
       snap.docs.forEach((d) => { state.scores[d.id] = d.data(); });
       renderTasks();
       if (state.view === "works") renderWorksAll();
     },
-    () => { /* 학생이 전체를 못 읽는 것은 정상이다 */ }
+    () => { if (OWN_SUBMISSIONS) setNet("err", "점수와 피드백을 불러오지 못했습니다. 새로고침해 주세요."); }
   );
 }
 
@@ -1686,7 +1703,7 @@ async function putSpoken(id, on, quiet) {
   }
 }
 
-const when = (v) => (v && v.toDate ? v.toDate() : null);
+const when = (v) => (v instanceof Date ? v : v && v.toDate ? v.toDate() : null);
 const pad = (n) => String(n).padStart(2, "0");
 const stamp = (d) => (d
   ? pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes())
@@ -2682,6 +2699,7 @@ const dueText = (t) => {
 };
 
 function renderTasks() {
+  renderMySubmissions();
   // 과제·낸것·점수 어느 쪽이 바뀌어도 여기를 지난다. 알림도 여기서 함께 그린다.
   try { renderNotice(); } catch { /* 아직 화면이 없을 수 있다 */ }
   const box = $("tasks");
@@ -2718,7 +2736,7 @@ function renderTasks() {
         <span class="task-body">
           <span class="task-head"><b>${esc(t.week)}주차</b>
             <span class="task-title">${esc(t.title)}</span></span>
-          <span class="task-due">${esc(dueText(t))}${mine ? " · 눌러서 고칠 수 있습니다" : ""}</span>
+          <span class="task-due">${esc(dueText(t))}${mine ? " · 제출 내용 보기" : ""}</span>
         </span>
         ${pill}
       </button>
@@ -2797,9 +2815,79 @@ function drawTaskFilm() {
     </span>`;
 }
 
+function renderMySubmissions() {
+  if (!OWN_SUBMISSIONS || !$("tasks")) return;
+  let box = $("my-submissions");
+  if (!box) {
+    box = document.createElement("section");
+    box.id = "my-submissions";
+    box.className = "tasks";
+    box.setAttribute("aria-live", "polite");
+    $("tasks").before(box);
+  }
+  box.hidden = !state.me || state.isProfessor;
+  if (box.hidden) return;
+  const rows = Object.values(state.works);
+  box.innerHTML = '<h2 class="block-title">내 제출 내역</h2>'
+    + (state.worksStatus === "error"
+      ? '<p role="alert">제출 내역을 불러오지 못했습니다. 미제출 상태가 아닙니다.</p><button class="btn-line" id="my-retry" type="button">다시 불러오기</button>'
+      : state.worksStatus !== "ready" ? '<p>제출 내역을 불러오는 중입니다.</p>'
+      : !rows.length ? '<p class="empty">아직 제출한 과제가 없습니다.</p>'
+      : '<ul class="task-list">' + rows.sort((a, b) => (when(b.updatedAt)?.getTime() || 0) - (when(a.updatedAt)?.getTime() || 0)).map((w) => {
+        const t = state.tasks.find((x) => x.id === w.taskId);
+        const made = stamp(when(w.createdAt));
+        const fixed = stamp(when(w.updatedAt));
+        return `<li class="task"><button class="task-go" type="button" data-my-task="${esc(w.taskId)}">
+          <span class="task-body"><span class="task-head"><span class="task-title">${esc(t ? `${t.week}주차 · ${t.title}` : "제출한 과제")}</span></span>
+          <span class="task-due">최초 제출 ${esc(made || "확인 중")} · 마지막 저장 ${esc(fixed || "확인 중")}</span></span>
+          <span class="pill done">제출 완료</span></button></li>`;
+      }).join("") + '</ul>');
+  $("my-retry")?.addEventListener("click", watchWorks);
+  box.querySelectorAll("[data-my-task]").forEach((el) => {
+    el.addEventListener("click", () => openTask(el.dataset.myTask));
+  });
+}
+
+function setTaskEditing(editing) {
+  let edit = $("tv-edit");
+  if (!edit) {
+    edit = document.createElement("button");
+    edit.id = "tv-edit";
+    edit.type = "button";
+    edit.className = "btn-line";
+    edit.textContent = "제출 내용 수정";
+    $("tv-send").before(edit);
+    edit.addEventListener("click", () => setTaskEditing(true));
+  }
+  let cancel = $("tv-edit-cancel");
+  if (!cancel) {
+    cancel = document.createElement("button");
+    cancel.id = "tv-edit-cancel";
+    cancel.type = "button";
+    cancel.className = "btn-line";
+    cancel.textContent = "수정 취소";
+    $("tv-send").after(cancel);
+    cancel.addEventListener("click", () => openTask(state.taskNow.id));
+  }
+  const archived = state.taskNow.archived || state.taskNow.open === false;
+  const mine = state.works[state.taskNow.id];
+  $("tv-text").readOnly = !editing;
+  $("tv-pick").disabled = !editing;
+  $("tv-file").disabled = !editing;
+  if ($("tv-nophoto")) $("tv-nophoto").disabled = !editing;
+  $("tv-send").hidden = !editing || archived;
+  edit.hidden = editing || archived;
+  cancel.hidden = !editing || !mine;
+}
+
 /* 학생이 과제를 내는 화면 */
 function openTask(id) {
-  const t = state.tasks.find((x) => x.id === id);
+  if (OWN_SUBMISSIONS && !state.isProfessor && state.worksStatus !== "ready") {
+    toast("제출 내역을 먼저 확인해야 합니다. 잠시 후 다시 시도해 주세요.", true);
+    return;
+  }
+  const t = state.tasks.find((x) => x.id === id)
+    || (OWN_SUBMISSIONS && state.works[id] ? { id, week: "이전", title: "제출한 과제", archived: true } : null);
   if (!t) return;
   state.taskNow = t;
   state.taskPhoto = null;
@@ -2853,6 +2941,12 @@ function openTask(id) {
   $("tv-text").value = mine?.text || "";
   $("tv-n").textContent = String(($("tv-text").value || "").length);
   $("tv-error").hidden = true;
+
+  if (OWN_SUBMISSIONS) {
+    if ($("tv-nophoto")) $("tv-nophoto").checked = Boolean(mine && !mine.photoUrl);
+    $("tv-pick").hidden = Boolean(mine && !mine.photoUrl);
+    setTaskEditing(!mine && !t.archived && t.open !== false);
+  }
 
   // 점수나 한마디가 있으면 보여 준다. 남의 것은 서버가 막아 읽히지 않는다.
   // 점수 없이 한마디만 남길 수도 있으므로 둘을 따로 따진다.
@@ -2972,6 +3066,8 @@ $("tv-send").addEventListener("click", async () => {
 
   const mine = state.works[t.id];
   if (!state.uid) return fail("아직 연결 중입니다. 잠시 뒤에 다시 눌러 주세요.");
+  if (OWN_SUBMISSIONS && (state.worksStatus !== "ready" || t.archived || t.open === false))
+    return fail("현재 제출할 수 없는 과제입니다. 목록에서 다시 확인해 주세요.");
   const noPhoto = $("tv-nophoto")?.checked;
   if (!noPhoto && !state.taskPhoto && !mine?.photoUrl)
     return fail("사진을 한 장 골라 주세요. 사진 없이 내려면 아래 '사진 없이 냅니다'를 체크하세요.");
@@ -2988,16 +3084,23 @@ $("tv-send").addEventListener("click", async () => {
       await uploadBytes(r, state.taskPhoto, { contentType: "image/jpeg" });
       url = await getDownloadURL(r);
     }
-    await setDoc(doc(db, WORKS, `${t.id}_${state.uid}`), {
+    const payload = {
       taskId: t.id, uid: state.uid,
       name: state.me.name, sid: state.me.sid,
-      text, photoUrl: url, photoPath: path,
+      text, photoUrl: noPhoto ? "" : url, photoPath: noPhoto ? "" : path,
       createdAt: mine?.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    };
+    await setDoc(doc(db, WORKS, `${t.id}_${state.uid}`), payload, { merge: true });
+    if (OWN_SUBMISSIONS) {
+      state.works[t.id] = { ...mine, ...payload, id: `${t.id}_${state.uid}`,
+        createdAt: mine?.createdAt || new Date(), updatedAt: new Date() };
+    }
     writeLog({ kind: "work", taskId: t.id, sid: state.me.sid, name: state.me.name });
     state.taskPhoto = null;
     toast("과제를 냈습니다");
+    renderTasks();
+    openTask(t.id);
   } catch (ex) {
     // 실패도 남긴다. 성공만 기록하면 학생이 못 냈다고 할 때 짚을 자리가 없다.
     writeLog({ kind: "work_fail", taskId: t.id, sid: state.me.sid, name: state.me.name,
@@ -3005,7 +3108,7 @@ $("tv-send").addEventListener("click", async () => {
     fail("보내지 못했습니다. 연결을 확인하고 다시 눌러 주세요. (" + (ex.code || ex.message) + ")");
   } finally {
     btn.disabled = false;
-    openTask(t.id);        // 낸 뒤 화면을 '고치는 중' 으로 되돌린다
+    btn.textContent = state.works[t.id] ? "고쳐서 다시 내기" : "제출하기";
   }
 });
 
