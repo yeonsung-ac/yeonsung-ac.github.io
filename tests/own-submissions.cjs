@@ -25,7 +25,7 @@ for (const course of ['mgmt', 'ad', 'cb']) {
     collection: (_, name) => ({ name }), where: (field, op, value) => ({ field, op, value }),
     query: (records, filter) => ({ ...records, filter }),
     onSnapshot: (q, ok, error) => { subscriptions.push({ q, ok, error }); return () => {}; },
-    render: () => {}, renderTasks: () => {}, renderWorksAll: () => {}, setNet: () => {},
+    render: () => {}, renderTasks: () => {}, renderWorksAll: () => {}, refreshStudentInbox: () => {}, setNet: () => {},
     $: id => elements.get(id), document: { createElement: () => element('') },
     when: value => value?.toDate ? value.toDate() : value instanceof Date ? value : null,
     stamp: value => value ? value.toISOString() : '', esc: value => String(value ?? '').replaceAll('<', '&lt;').replaceAll('>', '&gt;'),

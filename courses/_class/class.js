@@ -566,6 +566,7 @@ function watchAnswers() {
   if (stopAnswers) stopAnswers();
   state.all = [];
   state.mine = {};
+  state.answersStatus = "loading";
   // Firestore rules reject an unfiltered student query; they do not filter results.
   stopAnswers = onSnapshot(
     ownRecords(ANSWERS),
@@ -574,9 +575,14 @@ function watchAnswers() {
       state.all = rows;
       state.mine = {};
       rows.forEach((r) => { if (r.uid === state.uid) state.mine[r.quizId] = r; });
+      state.answersStatus = "ready";
       render();
     },
-    () => { if (OWN_SUBMISSIONS) setNet("err", "내 답안을 불러오지 못했습니다. 새로고침해 주세요."); }
+    () => {
+      state.answersStatus = "error";
+      if (OWN_SUBMISSIONS) setNet("err", "답안을 불러오지 못했습니다. 새로고침해 주세요.");
+      refreshStudentInbox();
+    }
   );
 }
 
@@ -595,13 +601,17 @@ let stopIntros = null;
 function watchIntros() {
   if (stopIntros) stopIntros();
   if (state.isProfessor) {
+    state.intros = [];
+    state.introsStatus = "loading";
     stopIntros = onSnapshot(
       collection(db, INTROS),
       (snap) => {
         state.intros = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        state.introsStatus = "ready";
         if (state.view === "intro") renderIntroAll();
+        refreshStudentInbox();
       },
-      () => { /* 그만 */ }
+      () => { state.introsStatus = "error"; refreshStudentInbox(); }
     );
     return;
   }
@@ -629,6 +639,7 @@ function watchTasks() {
     (snap) => {
       state.tasks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       renderTasks();
+      refreshStudentInbox();
     },
     () => { /* 아직 없을 수 있다 */ }
   );
@@ -651,8 +662,9 @@ function watchWorks() {
       state.worksStatus = "ready";
       renderTasks();
       if (state.view === "works") renderWorksAll();
+      refreshStudentInbox();
     },
-    () => { state.worksStatus = "error"; renderTasks(); }
+    () => { state.worksStatus = "error"; renderTasks(); refreshStudentInbox(); }
   );
 }
 
@@ -664,15 +676,22 @@ let stopScores = null;
 function watchScores() {
   if (stopScores) stopScores();
   state.scores = {};
+  state.scoresStatus = "loading";
   stopScores = onSnapshot(
     ownRecords(SCORES),
     (snap) => {
       state.scores = {};
       snap.docs.forEach((d) => { state.scores[d.id] = d.data(); });
+      state.scoresStatus = "ready";
       renderTasks();
       if (state.view === "works") renderWorksAll();
+      refreshStudentInbox();
     },
-    () => { if (OWN_SUBMISSIONS) setNet("err", "점수와 피드백을 불러오지 못했습니다. 새로고침해 주세요."); }
+    () => {
+      state.scoresStatus = "error";
+      if (OWN_SUBMISSIONS) setNet("err", "점수와 피드백을 불러오지 못했습니다. 새로고침해 주세요.");
+      refreshStudentInbox();
+    }
   );
 }
 
@@ -1017,8 +1036,11 @@ $("solve-form").addEventListener("submit", async (e) => {
 
 /* ── 교수 화면 ────────────────────────────── */
 function renderProf() {
+  if (!state.isProfessor) return;
+  installStudentInbox();
   const host = $("prof-body");
   if (state.making) return;                     // 만드는 중이면 건드리지 않는다
+  if (state.view === "student-inbox") { renderStudentInbox(); return; }
   if (state.view === "log") { renderLog(); return; }
 
   host.innerHTML = state.quizzes.map((q) => {
@@ -2846,6 +2868,98 @@ function renderMySubmissions() {
   box.querySelectorAll("[data-my-task]").forEach((el) => {
     el.addEventListener("click", () => openTask(el.dataset.myTask));
   });
+}
+
+function installStudentInbox() {
+  if (!OWN_SUBMISSIONS || !state.isProfessor || $("p-student-inbox")) return;
+  const button = document.createElement("button");
+  button.id = "p-student-inbox";
+  button.type = "button";
+  button.className = "btn-line";
+  button.textContent = "학생별 제출함";
+  $("p-works").after(button);
+  button.addEventListener("click", () => {
+    state.making = false;
+    state.view = "student-inbox";
+    renderStudentInbox();
+    $("prof-body").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function refreshStudentInbox() {
+  if (state.isProfessor && state.view === "student-inbox") renderStudentInbox();
+}
+
+function inboxStudents() {
+  const students = new Map();
+  for (const r of [...state.roster, ...state.allWorks, ...state.intros, ...state.all]) {
+    const sid = String(r.sid || "").trim();
+    if (sid && !students.has(sid)) students.set(sid, { sid, name: r.name || "" });
+  }
+  return [...students.values()].sort((a, b) => a.sid.localeCompare(b.sid, "ko", { numeric: true }));
+}
+
+function inboxRows(rows, sid) {
+  return rows.filter((r) => String(r.sid || "").trim() === sid)
+    .sort((a, b) => (when(b.updatedAt || b.submittedAt)?.getTime() || 0)
+      - (when(a.updatedAt || a.submittedAt)?.getTime() || 0));
+}
+
+function inboxStatus(status, content) {
+  if (status === "error") return '<p role="alert">불러오지 못했습니다. 새로고침해 주세요.</p>';
+  if (status !== "ready") return '<p>불러오는 중입니다.</p>';
+  return content;
+}
+
+function renderStudentInbox() {
+  if (!OWN_SUBMISSIONS || !state.isProfessor) return;
+  const body = $("prof-body");
+  const students = inboxStudents();
+  const sid = state.inboxSid || "";
+  const student = students.find((r) => r.sid === sid);
+  const works = inboxRows(state.allWorks, sid);
+  const intros = inboxRows(state.intros, sid);
+  const answers = inboxRows(state.all, sid);
+  body.innerHTML = `<section class="student-inbox">
+    <div class="lst-bar"><h3>학생별 제출함</h3><button class="btn-line" id="inbox-back" type="button">교수 화면</button></div>
+    <label for="inbox-student">학생</label>
+    <select class="lst-sort" id="inbox-student"><option value="">학생 선택</option>${students.map((r) =>
+      `<option value="${esc(r.sid)}"${r.sid === sid ? " selected" : ""}>${esc(r.name)} · ${esc(r.sid)}</option>`).join("")}</select>
+    ${student ? `<h3>${esc(student.name)} · ${esc(student.sid)} <span class="tag">읽기 전용</span></h3>
+      <h4>과제 · ${works.length}건</h4>${inboxStatus(state.worksStatus, works.length ? works.map((w) => {
+        const t = state.tasks.find((r) => r.id === w.taskId);
+        const score = state.scores[w.id];
+        return `<article class="inbox-entry"><h4>${esc(t ? `${t.week}주차 · ${t.title}` : "이전 과제")}</h4>
+          <p class="films-sub">최초 제출 ${esc(stamp(when(w.createdAt)) || "기록 없음")} · 마지막 저장 ${esc(stamp(when(w.updatedAt)) || "기록 없음")}</p>
+          ${w.photoUrl ? `<img class="inbox-photo" src="${esc(w.photoUrl)}" alt="제출한 사진" loading="lazy">` : ""}
+          <p class="inbox-text">${esc(w.text)}</p>
+          ${score && score.score !== "" && score.score != null ? `<p><b>점수</b> ${esc(score.score)}점</p>` : ""}
+          ${score?.memo ? `<p class="inbox-text"><b>교수 피드백</b> ${esc(score.memo)}</p>` : ""}
+          ${w.reply ? `<p class="inbox-text"><b>학생 회신</b> ${esc(w.reply)}</p>` : ""}</article>`;
+      }).join("") : '<p class="empty">제출한 과제가 없습니다.</p>')}
+      ${state.scoresStatus === "error" ? '<p role="alert">점수와 피드백을 불러오지 못했습니다.</p>' : ""}
+      <h4>${esc(C.intro.title)} · ${intros.length}건</h4>${inboxStatus(state.introsStatus, intros.length ? intros.map((r) =>
+        `<article class="inbox-entry"><p class="films-sub">${esc(stamp(when(r.updatedAt)) || "기록 없음")}</p>
+          ${r.photoUrl ? `<img class="inbox-photo" src="${esc(r.photoUrl)}" alt="제출한 사진" loading="lazy">` : ""}
+          ${saidHtml(r)}</article>`).join("") : '<p class="empty">제출 내역이 없습니다.</p>')}
+      <h4>퀴즈 · ${answers.length}건</h4>${inboxStatus(state.answersStatus, answers.length ? answers.map((a) => {
+        const q = state.quizzes.find((r) => r.id === a.quizId);
+        return `<article class="inbox-entry"><h4>${esc(q?.title || "이전 퀴즈")}</h4>
+          <p class="films-sub">${esc(stamp(when(a.submittedAt)) || "기록 없음")}</p>
+          ${a.gradable ? `<p>${esc(a.right ?? 0)} / ${esc(a.gradable)}</p>` : ""}
+          ${(a.picks || []).map((pick, i) => {
+            const question = q?.questions?.[i];
+            const answer = question?.type === "choice" ? question.options?.[Number(pick)] ?? pick : pick;
+            return `<p class="inbox-text"><b>${esc(question?.text || `문항 ${i + 1}`)}</b><br>${esc(answer)}</p>`;
+          }).join("")}</article>`;
+      }).join("") : '<p class="empty">제출한 퀴즈가 없습니다.</p>')}`
+      : '<p class="empty">학생을 선택하세요.</p>'}
+    </section>`;
+  $("inbox-student").addEventListener("change", (e) => {
+    state.inboxSid = e.target.value;
+    renderStudentInbox();
+  });
+  $("inbox-back").addEventListener("click", () => { state.view = "room"; renderProf(); });
 }
 
 function setTaskEditing(editing) {

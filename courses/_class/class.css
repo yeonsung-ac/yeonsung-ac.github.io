@@ -598,6 +598,13 @@ body.showing{overflow:hidden}
 /* ── 주간 과제 ────────────────────────────────
    한 줄에 하나. 눌러서 내러 들어간다. 교수는 오른쪽에서 열고 닫는다. */
 .tasks{margin:38px 0 34px;padding-top:32px;border-top:2px solid var(--card-line)}
+.student-inbox #inbox-student{display:block;width:100%;max-width:480px;margin:8px 0 24px}
+.student-inbox h3,.student-inbox h4{overflow-wrap:anywhere}
+.student-inbox>h4{margin:28px 0 12px}
+.inbox-entry{padding:16px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.inbox-entry h4{margin:0 0 8px}
+.inbox-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.inbox-photo{display:block;max-width:100%;width:auto;max-height:480px;object-fit:contain;margin:12px 0}
 .task-list{list-style:none;margin:0;padding:0;
   border:1px solid var(--card-line);border-radius:12px;overflow:hidden;background:#fff}
 .task{display:flex;align-items:stretch;border-bottom:1px solid var(--line)}
