@@ -51,5 +51,5 @@ window.COURSE = {
     { v: "Tqu6ItGMO_k", t: "제11장 광고 매체의 특성" },
     { v: "pN3LzeXQ-gI", t: "제12장 광고 조사" },
     { v: "9emR_DCQxEQ", t: "제13장 광고규제" },
-    { v: "", t: "제14장 광고의 미래" },
+    { v: "8qboj7WOH8Y", t: "제14장 광고의 미래" },
   ],};
