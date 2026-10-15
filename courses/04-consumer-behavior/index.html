@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="../../styles.css">
   <link rel="stylesheet" href="../_class/class.css?v=20261008-student-inbox">
   <link rel="stylesheet" href="map/flow.css">
+  <link rel="stylesheet" href="practice.css?v=20261015">
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 바로가기</a>
@@ -127,6 +128,14 @@
            문제가 저 멀리 밀려난다. 읽을 것은 낱장으로 건너가서 본다. -->
       <div class="flow" id="flow"></div>
 
+      <!-- 장별 연습문제: 정적 HTML 자료. 제출형 퀴즈와 별도로 운영한다. -->
+      <section class="practice" id="practice" aria-labelledby="practice-heading">
+        <div class="practice-head"><div><p class="practice-kicker">개념을 확인하고 예시로 이해하기</p><h2 class="block-title" id="practice-heading">장별 연습문제</h2></div><span class="practice-available">7·8·9장 이용 가능</span></div>
+        <p class="practice-lede">장을 고른 뒤 개념 해설과 예시를 펼쳐 보세요. 마지막에는 중요한 개념을 그림으로 정리했습니다.</p>
+        <ol class="practice-list" start="7"><li class="practice-row practice-row-ready"><span class="practice-num">07</span><span class="practice-title">문제 인식과 정보 탐색</span><a class="practice-open" href="practice/consumer-behavior-ch7.html" target="_blank" rel="noopener noreferrer" aria-label="제7장 문제 인식과 정보 탐색 연습문제 새 창으로 열기">연습문제 열기 ↗</a></li><li class="practice-row practice-row-ready"><span class="practice-num">08</span><span class="practice-title">고노력에 근거한 판단과 의사 결정</span><a class="practice-open" href="practice/consumer-behavior-ch8.html" target="_blank" rel="noopener noreferrer" aria-label="제8장 고노력에 근거한 판단과 의사 결정 연습문제 새 창으로 열기">연습문제 열기 ↗</a></li><li class="practice-row practice-row-ready"><span class="practice-num">09</span><span class="practice-title">저노력에 근거한 판단과 의사 결정</span><a class="practice-open" href="practice/consumer-behavior-ch9.html" target="_blank" rel="noopener noreferrer" aria-label="제9장 저노력에 근거한 판단과 의사 결정 연습문제 새 창으로 열기">연습문제 열기 ↗</a></li></ol>
+      </section>
+
+
       <!-- 오늘의 주제 — 강의실 스크린에 띄우는 발표 화면 -->
       <section class="today">
         <a class="today-go" href="topic/" target="_blank" rel="noopener noreferrer">
@@ -183,7 +192,7 @@
       </section>
 
       <!-- 문제 목록 -->
-      <h2 class="block-title">문제</h2>
+      <h2 class="block-title">수업 퀴즈</h2>
       <div class="quiz-list" id="quiz-list"></div>
       <p class="empty" id="quiz-empty" hidden>아직 열린 문제가 없습니다.</p>
 

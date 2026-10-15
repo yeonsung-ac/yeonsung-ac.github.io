@@ -1,0 +1,18 @@
+/* 장별 연습문제 전용. 공통 수업·퀴즈 스타일을 변경하지 않는다. */
+.practice{margin:36px 0 46px;padding:28px;border:1px solid var(--card-line,#dfe3dc);border-radius:18px;background:#fff}
+.practice-head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+.practice-kicker{margin:0 0 5px;color:var(--muted,#68717d);font-size:.78rem;font-weight:700}
+.practice .block-title{margin:0;font-size:1.55rem;letter-spacing:-.04em}
+.practice-available{padding:7px 12px;border-radius:999px;background:var(--lime,#c8ef64);color:var(--navy,#101b2d);font-size:.78rem;font-weight:700;white-space:nowrap}
+.practice-lede{margin:14px 0 23px;color:var(--muted,#68717d);font-size:.92rem;line-height:1.8}
+.practice-details{border-top:1px solid var(--line,#d8dcd8)}
+.practice-details summary{padding:17px 0;cursor:pointer;font-size:.9rem;font-weight:700;color:var(--navy,#101b2d)}
+.practice-list{list-style:none;padding:0;margin:0 0 16px}
+.practice-row{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px 12px;border-radius:10px;min-height:64px;border-bottom:1px solid #edf0eb}
+.practice-row-ready{background:#f4f8ec;border-color:#e0e9d0}
+.practice-num{font-size:.9rem;font-weight:800;color:#7c8a76;font-variant-numeric:tabular-nums}
+.practice-title{font-size:.94rem;line-height:1.5;overflow-wrap:anywhere}
+.practice-open{display:inline-block;padding:9px 13px;background:var(--navy,#101b2d);color:#fff;font-size:.8rem;font-weight:700;text-decoration:none;border-radius:8px;white-space:nowrap}
+.practice-open:hover{background:#243b5b}.practice-open:focus-visible,.practice-details summary:focus-visible{outline:3px solid #1488ad;outline-offset:3px}
+.practice-wait{color:#8a9289;font-size:.78rem;white-space:nowrap}
+@media(max-width:580px){.practice{padding:20px 16px}.practice-row{grid-template-columns:28px minmax(0,1fr);gap:10px;padding:15px 8px}.practice-open,.practice-wait{grid-column:2;justify-self:start}.practice-title{font-size:.9rem}.practice .block-title{font-size:1.4rem}}
