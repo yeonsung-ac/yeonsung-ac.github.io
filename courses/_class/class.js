@@ -46,6 +46,8 @@ import {
   deleteObject,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
 
+import { studentSiteRows, studentSitesMarkup } from "./student-sites.js?v=20261108";
+
 import { firebaseConfig } from "./firebase-config.js";
 import { isProfessorUser } from "../../professor.js";
 
@@ -133,6 +135,8 @@ const state = {
   pick: null,        // 문패에서 고른 사람
   tasks: [],         // 주간 과제
   works: {},         // 내가 낸 과제  taskId -> 자료
+  sitesTask: "",
+  sitesSearch: "",
   allWorks: [],      // 교수만 채운다
   taskNow: null,     // 지금 내고 있는 과제
   taskPhoto: null,   // 아직 안 올린 과제 사진
@@ -662,9 +666,10 @@ function watchWorks() {
       state.worksStatus = "ready";
       renderTasks();
       if (state.view === "works") renderWorksAll();
+      if (state.isProfessor && state.view === "student-sites") renderStudentSites();
       refreshStudentInbox();
     },
-    () => { state.worksStatus = "error"; renderTasks(); refreshStudentInbox(); }
+    () => { state.worksStatus = "error"; renderTasks(); refreshStudentInbox(); if (state.isProfessor && state.view === "student-sites") renderStudentSites(); }
   );
 }
 
@@ -1040,6 +1045,7 @@ function renderProf() {
   installStudentInbox();
   const host = $("prof-body");
   if (state.making) return;                     // 만드는 중이면 건드리지 않는다
+  if (state.view === "student-sites") { renderStudentSites(); return; }
   if (state.view === "student-inbox") { renderStudentInbox(); return; }
   if (state.view === "log") { renderLog(); return; }
 
@@ -3670,3 +3676,31 @@ document.addEventListener("keydown", (e) => {
 state.me = loadWho();
 if (state.me) enterRoom(); else showGate();
 setNet("", "연결 중…");
+
+/* 교수 전용: 제출한 과제에서 학생 홈페이지를 모은다. 서버의 기존 교수 권한으로만 읽는다. */
+function renderStudentSites() {
+  if (!state.isProfessor || C.id !== 'cb') return;
+  const host = $("prof-body");
+  host.innerHTML = `<section class="student-sites" aria-labelledby="student-sites-title"><div class="student-sites-head"><div><h3 id="student-sites-title">학생 홈페이지 모아보기</h3><p>학생별 최신 제출 글의 GitHub Pages 주소를 모았습니다.</p></div><button class="btn-line" id="sites-back" type="button">← 교수 화면</button></div><div class="student-sites-tools"><label>과제<select id="sites-task"><option value="">모든 과제 · 학생별 최신</option>${state.tasks.map(t => `<option value="${esc(t.id)}">${esc(t.week)}주차 · ${esc(t.title)}</option>`).join('')}</select></label><label>학생 찾기<input id="sites-search" type="search" placeholder="이름·학번·사이트 주소" value="${esc(state.sitesSearch)}"></label><p id="sites-count" role="status"></p></div><p class="student-sites-help">미리보기를 누르면 홈페이지가 새 창으로 열립니다. 빈 화면이 나오면 아래 링크로 직접 열어 주세요.</p><div id="student-sites-results"></div></section>`;
+  $("sites-task").value = state.sitesTask;
+  function draw() {
+    const area = $("student-sites-results");
+    if (state.worksStatus !== 'ready') {
+      area.innerHTML = `<p class="empty">${state.worksStatus === 'error' ? '제출 자료를 불러오지 못했습니다. 연결을 확인한 뒤 다시 로그인해 주세요.' : '제출한 홈페이지를 불러오는 중…'}</p>`;
+      $("sites-count").textContent = '';
+      return;
+    }
+    const rows = studentSiteRows(state.allWorks, state.sitesTask, state.sitesSearch);
+    $("sites-count").textContent = `${rows.length}명`;
+    area.innerHTML = studentSitesMarkup(rows, state.tasks);
+  }
+  $("sites-task").addEventListener('change', event => { state.sitesTask = event.target.value; draw(); });
+  $("sites-search").addEventListener('input', event => { state.sitesSearch = event.target.value; draw(); });
+  $("sites-back").addEventListener('click', () => { state.view = 'room'; renderProf(); });
+  draw();
+}
+$("p-student-sites")?.addEventListener('click', () => {
+  if (!state.isProfessor || C.id !== 'cb') return;
+  state.view = 'student-sites';
+  renderStudentSites();
+});
