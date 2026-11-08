@@ -9,7 +9,8 @@ export function githubPagesUrls(text) {
       const url = new URL(/^https?:/.test(candidate) ? candidate : 'https://' + candidate);
       if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.github\.io$/i.test(url.hostname) || url.username || url.password || url.port) continue;
       url.protocol = 'https:';
-      if (!urls.includes(url.href)) urls.push(url.href);
+      const domain = url.origin + "/";
+      if (!urls.includes(domain)) urls.push(domain);
     } catch {}
   }
   return urls;
@@ -27,8 +28,10 @@ export function studentSiteRows(works, taskId = '', search = '') {
   for (const work of ordered) {
     const urls = githubPagesUrls([work.url, work.text].filter(Boolean).join(' '));
     if (!urls.length) continue;
-    const key = String(work.sid || work.uid || work.id);
-    if (!latest.has(key)) latest.set(key, { ...work, sites: urls });
+    for (const domain of urls) {
+      const key = JSON.stringify([String(work.sid || work.uid || work.id), domain]);
+      if (!latest.has(key)) latest.set(key, { ...work, sites: [domain] });
+    }
   }
   return [...latest.values()].filter(w => `${w.name || ''} ${w.sid || ''} ${w.sites.join(' ')}`.toLowerCase().includes(query))
     .sort((a,b) => String(a.sid || '').localeCompare(String(b.sid || ''), 'ko', {numeric:true}));
@@ -41,4 +44,9 @@ export function studentSitesMarkup(rows, tasks) {
     const url = row.sites[0];
     return `<article class="student-site"><a class="student-site-preview" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(row.name)} 홈페이지 새 창으로 열기"><iframe src="${escapeHtml(url)}" title="${escapeHtml(row.name)} 홈페이지 미리보기" loading="lazy" sandbox="allow-scripts" referrerpolicy="no-referrer" credentialless tabindex="-1" aria-hidden="true"></iframe></a><div class="student-site-body"><h4>${escapeHtml(row.name || '학생')} <span>${escapeHtml(row.sid)}</span></h4><p class="student-site-task">${escapeHtml(task ? `${task.week}주차 · ${task.title}` : '제출한 과제')}</p>${row.sites.map((site,i) => `<a class="student-site-link" href="${escapeHtml(site)}" target="_blank" rel="noopener noreferrer">${i ? '추가 홈페이지' : '홈페이지 열기'} ↗<small>${escapeHtml(site)}</small></a>`).join('')}</div></article>`;
   }).join('')}</div>`;
+}
+
+export function studentSitesCsv(rows) {
+  const cell = value => '"' + String(value ?? '').replace(/^[=+@-]/, "'$&").replaceAll('"', '""') + '"';
+  return '\uFEFF' + [['학번', '이름', 'GitHub Pages 도메인'], ...rows.map(row => [row.sid, row.name, row.sites[0]])].map(row => row.map(cell).join(',')).join('\r\n');
 }

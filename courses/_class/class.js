@@ -46,7 +46,7 @@ import {
   deleteObject,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
 
-import { studentSiteRows, studentSitesMarkup } from "./student-sites.js?v=20261108";
+import { studentSiteRows, studentSitesMarkup, studentSitesCsv } from "./student-sites.js?v=20261108-domains";
 
 import { firebaseConfig } from "./firebase-config.js";
 import { isProfessorUser } from "../../professor.js";
@@ -3681,7 +3681,7 @@ setNet("", "연결 중…");
 function renderStudentSites() {
   if (!state.isProfessor || C.id !== 'cb') return;
   const host = $("prof-body");
-  host.innerHTML = `<section class="student-sites" aria-labelledby="student-sites-title"><div class="student-sites-head"><div><h3 id="student-sites-title">학생 홈페이지 모아보기</h3><p>학생별 최신 제출 글의 GitHub Pages 주소를 모았습니다.</p></div><button class="btn-line" id="sites-back" type="button">← 교수 화면</button></div><div class="student-sites-tools"><label>과제<select id="sites-task"><option value="">모든 과제 · 학생별 최신</option>${state.tasks.map(t => `<option value="${esc(t.id)}">${esc(t.week)}주차 · ${esc(t.title)}</option>`).join('')}</select></label><label>학생 찾기<input id="sites-search" type="search" placeholder="이름·학번·사이트 주소" value="${esc(state.sitesSearch)}"></label><p id="sites-count" role="status"></p></div><p class="student-sites-help">미리보기를 누르면 홈페이지가 새 창으로 열립니다. 빈 화면이 나오면 아래 링크로 직접 열어 주세요.</p><div id="student-sites-results"></div></section>`;
+  host.innerHTML = `<section class="student-sites" aria-labelledby="student-sites-title"><div class="student-sites-head"><div><h3 id="student-sites-title">학생 홈페이지 모아보기</h3><p>제출 글의 GitHub Pages 최상단 도메인을 학번별로 중복 없이 모았습니다.</p></div><button class="btn-line" id="sites-back" type="button">← 교수 화면</button></div><div class="student-sites-tools"><label>과제<select id="sites-task"><option value="">모든 과제 · 도메인 중복 제거</option>${state.tasks.map(t => `<option value="${esc(t.id)}">${esc(t.week)}주차 · ${esc(t.title)}</option>`).join('')}</select></label><label>학생 찾기<input id="sites-search" type="search" placeholder="이름·학번·사이트 주소" value="${esc(state.sitesSearch)}"></label><p id="sites-count" role="status"></p><button class="btn-line" id="sites-csv" type="button">학번·도메인 CSV</button></div><p class="student-sites-help">미리보기를 누르면 홈페이지가 새 창으로 열립니다. 빈 화면이 나오면 아래 링크로 직접 열어 주세요.</p><div id="student-sites-results"></div></section>`;
   $("sites-task").value = state.sitesTask;
   function draw() {
     const area = $("student-sites-results");
@@ -3691,11 +3691,20 @@ function renderStudentSites() {
       return;
     }
     const rows = studentSiteRows(state.allWorks, state.sitesTask, state.sitesSearch);
-    $("sites-count").textContent = `${rows.length}명`;
+    $("sites-count").textContent = `${new Set(rows.map(row => row.sid || row.uid || row.id)).size}명 · ${rows.length}개 도메인`;
     area.innerHTML = studentSitesMarkup(rows, state.tasks);
   }
   $("sites-task").addEventListener('change', event => { state.sitesTask = event.target.value; draw(); });
   $("sites-search").addEventListener('input', event => { state.sitesSearch = event.target.value; draw(); });
+  $("sites-csv").addEventListener('click', () => {
+    if (!state.isProfessor || state.worksStatus !== 'ready') return;
+    const rows = studentSiteRows(state.allWorks, state.sitesTask, state.sitesSearch);
+    if (!rows.length) { toast('추출된 도메인이 없습니다', true); return; }
+    const url = URL.createObjectURL(new Blob([studentSitesCsv(rows)], {type:'text/csv;charset=utf-8'}));
+    const link = document.createElement('a');
+    link.href = url; link.download = '소비자행동_학생_GitHubPages_도메인.csv'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
   $("sites-back").addEventListener('click', () => { state.view = 'room'; renderProf(); });
   draw();
 }
