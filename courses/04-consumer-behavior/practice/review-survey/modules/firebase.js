@@ -13,7 +13,7 @@ export async function connect(role='admin'){
  connections[role]=(async()=>{
   const [appSDK,A,F]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);
   // 학생·관리자·기존 수업 로그인의 인증 저장 영역을 서로 분리합니다.
-  const app=appSDK.initializeApp(configuration(),`review-survey-${role}`); const auth=A.getAuth(app),db=F.getFirestore(app);
+  const app=role==='student'?appSDK.initializeApp(configuration(),'review-survey-student'):appSDK.initializeApp(configuration()); const auth=A.getAuth(app),db=F.getFirestore(app);
   await auth.authStateReady();
   return {A,F,auth,db};
  })();return connections[role];

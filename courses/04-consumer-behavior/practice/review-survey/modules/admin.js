@@ -36,7 +36,7 @@ function render(){
  renderCharts();
 }
 function time(t){return t?.toMillis?t.toMillis():typeof t==='number'?t:0;}
-const valueLabel={id:'valueLabel',afterDatasetsDraw(chart){if(chart.config.type!=='bar')return;const ctx=chart.ctx;ctx.save();ctx.font='12px "Malgun Gothic", sans-serif';ctx.fillStyle=colors.navy;chart.data.datasets.forEach((ds,j)=>{chart.getDatasetMeta(j).data.forEach((bar,i)=>{const value=ds.data[i];if(value===null)return;let text=chart.canvas.id==='chart-c'?`${value}명 (${fmt(a.frequencies[i].percent,1)}%)`:fmt(value);if(chart.options.indexAxis==='y'){ctx.textAlign='left';ctx.fillText(text,bar.x+7,bar.y+4);}else{ctx.textAlign='center';ctx.fillText(text,bar.x,bar.y-9);}});});ctx.restore();}};
+const valueLabel={id:'valueLabel',afterDatasetsDraw(chart){if(chart.config.type!=='bar')return;const ctx=chart.ctx;ctx.save();ctx.font='12px "Malgun Gothic", sans-serif';ctx.fillStyle=colors.navy;chart.data.datasets.forEach((ds,j)=>{chart.getDatasetMeta(j).data.forEach((bar,i)=>{const value=ds.data[i];if(value===null)return;let text=chart.canvas.id==='chart-c'?`${value}명`:fmt(value);if(chart.options.indexAxis==='y'){ctx.textAlign='left';ctx.fillText(text,bar.x+7,bar.y+4);}else{ctx.textAlign='center';ctx.fillText(text,bar.x,bar.y-9);}});});ctx.restore();}};
 const whiteBackground={id:'whiteBackground',beforeDraw(chart){const ctx=chart.ctx;ctx.save();ctx.globalCompositeOperation='destination-over';ctx.fillStyle='white';ctx.fillRect(0,0,chart.width,chart.height);ctx.restore();}};
 function renderCharts(){
  if(!window.Chart){$('live-status').textContent='통계는 표시 중입니다. 그래프 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.';return;}
