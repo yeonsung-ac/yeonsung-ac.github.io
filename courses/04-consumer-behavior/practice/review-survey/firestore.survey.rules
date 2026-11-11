@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signed() { return request.auth != null; }
+  function reviewProfessor() { return request.auth != null && request.auth.token.get('email_verified', false) == true && request.auth.token.get('email', '') in ['dasahee@yeonsung.ac.kr']; }
+  function admin() { return signed() && (reviewProfessor() || exists(/databases/$(database)/documents/reviewSurveyAdmins/$(request.auth.uid))); }
+  function survey() { return get(/databases/$(database)/documents/reviewSurveys/online-reviews).data; }
+  function answer(v) { return v is int && v >= 1 && v <= 7; }
+  function answers(a) {
+   return a is map && a.keys().hasAll(['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11','q12'])
+    && a.keys().hasOnly(['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11','q12'])
+    && answer(a.q1) && answer(a.q2) && answer(a.q3) && answer(a.q4)
+    && answer(a.q5) && answer(a.q6) && answer(a.q7) && answer(a.q8)
+    && answer(a.q9) && answer(a.q10) && answer(a.q11) && answer(a.q12);
+  }
+  match /reviewSurveyAdmins/{uid} {
+   allow get: if signed() && request.auth.uid == uid;
+   allow list, create, update, delete: if false;
+  }
+  match /reviewSurveys/online-reviews {
+   allow get: if signed();
+   allow list: if false;
+   allow create, update: if admin()
+    && request.resource.data.keys().hasOnly(['isOpen','target','activeRound','updatedAt','issued','codeRequired'])
+    && request.resource.data.isOpen is bool
+    && request.resource.data.codeRequired is bool
+    && request.resource.data.target is int && request.resource.data.target >= 1 && request.resource.data.target <= 100
+    && request.resource.data.issued is int && request.resource.data.issued >= 0 && request.resource.data.issued <= 100
+    && request.resource.data.activeRound is string && request.resource.data.activeRound.size() >= 8
+    && request.resource.data.updatedAt == request.time;
+   allow delete: if false;
+   match /codes/{id} {
+    allow list: if admin();
+    allow get: if admin() || (signed() && (!resource.data.used || resource.data.usedBy == request.auth.uid));
+    allow create: if admin() && id.matches('^[a-f0-9]{64}$')
+     && request.resource.data.keys().hasOnly(['used','usedBy','usedAt','participantNo','round','kind'])
+     && request.resource.data.used is bool
+     && request.resource.data.kind in ['live','test']
+     && request.resource.data.participantNo is string && request.resource.data.round is string;
+    allow delete: if admin();
+    allow update: if (admin() && request.resource.data.kind == 'test') || redeem(id);
+    function redeem(id) {
+     let next = request.resource.data;
+     let after = getAfter(/databases/$(database)/documents/reviewSurveys/online-reviews/responses/$(id)).data;
+     return signed() && survey().isOpen && survey().codeRequired && resource.data.round == survey().activeRound
+      && resource.data.used == false
+      && next.diff(resource.data).affectedKeys().hasOnly(['used','usedBy','usedAt'])
+      && next.used == true && next.usedBy == request.auth.uid && next.usedAt == request.time
+      && after.uid == request.auth.uid && after.submissionKey == id
+      && after.kind == resource.data.kind && after.round == resource.data.round
+      && after.participantNo == resource.data.participantNo && after.createdAt == request.time;
+    }
+   }
+   match /codeSecrets/{id} { allow read, write: if admin(); }
+   match /receipts/{id} {
+    allow get: if admin() || (signed() && id == survey().activeRound + '_' + request.auth.uid);
+    allow list, delete: if admin();
+    allow update: if false;
+    allow create: if anonymousReceipt(id);
+    function anonymousReceipt(id) {
+     let d = request.resource.data;
+     let after = getAfter(/databases/$(database)/documents/reviewSurveys/online-reviews/responses/$(id)).data;
+     return signed() && survey().isOpen && !survey().codeRequired
+      && id == survey().activeRound + '_' + request.auth.uid
+      && d.keys().hasAll(['uid','round','participantNo','createdAt'])
+      && d.keys().hasOnly(['uid','round','participantNo','createdAt'])
+      && d.uid == request.auth.uid && d.round == survey().activeRound
+      && d.participantNo is string && d.participantNo.size() <= 50 && d.createdAt == request.time
+      && after.uid == request.auth.uid && after.round == d.round && after.kind == 'live'
+      && after.participantNo == d.participantNo && after.createdAt == request.time;
+    }
+   }
+   match /responses/{id} {
+    allow read: if admin();
+    allow update: if false;
+    allow delete: if admin();
+    allow create: if valid(id) && ((admin() && request.resource.data.kind == 'test') || submit(id) || submitAnonymous(id));
+    function valid(id) {
+     let d = request.resource.data;
+     return signed()
+      && d.keys().hasAll(['answers','otherText','participantNo','submissionKey','round','kind','uid','createdAt'])
+      && d.keys().hasOnly(['answers','otherText','participantNo','submissionKey','round','kind','uid','createdAt'])
+      && answers(d.answers) && d.otherText is string && d.otherText.size() <= 300
+      && d.participantNo is string && d.submissionKey == id && d.round is string
+      && d.kind in ['live','test'] && d.uid == request.auth.uid && d.createdAt == request.time;
+    }
+    function submit(id) {
+     let d = request.resource.data;
+     let before = get(/databases/$(database)/documents/reviewSurveys/online-reviews/codes/$(id)).data;
+     let after = getAfter(/databases/$(database)/documents/reviewSurveys/online-reviews/codes/$(id)).data;
+     return survey().isOpen && survey().codeRequired && id.matches('^[a-f0-9]{64}$') && d.round == survey().activeRound
+      && before.used == false && before.round == d.round
+      && before.kind == d.kind && before.participantNo == d.participantNo
+      && after.used == true && after.usedBy == request.auth.uid && after.usedAt == request.time;
+    }
+    function submitAnonymous(id) {
+     let d = request.resource.data;
+     let after = getAfter(/databases/$(database)/documents/reviewSurveys/online-reviews/receipts/$(id)).data;
+     return survey().isOpen && !survey().codeRequired
+      && id == survey().activeRound + '_' + request.auth.uid
+      && !exists(/databases/$(database)/documents/reviewSurveys/online-reviews/receipts/$(id))
+      && d.round == survey().activeRound && d.kind == 'live'
+      && after.uid == request.auth.uid && after.round == d.round
+      && after.participantNo == d.participantNo && after.createdAt == request.time;
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,6 @@
+const url=new URL('index.html',location.href);url.search='';url.hash='';document.getElementById('qr-url').textContent=url.href;document.getElementById('local-qr-warning').hidden=!['localhost','127.0.0.1'].includes(url.hostname);
+let image='';
+if(window.qrcode){const q=qrcode(0,'M');q.addData(url.href);q.make();const count=q.getModuleCount(),scale=14,margin=4,canvas=document.createElement('canvas');canvas.width=canvas.height=(count+margin*2)*scale;const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='black';for(let y=0;y<count;y++)for(let x=0;x<count;x++)if(q.isDark(y,x))ctx.fillRect((x+margin)*scale,(y+margin)*scale,scale,scale);image=canvas.toDataURL('image/png');document.getElementById('qr').src=image;}else{document.getElementById('qr-url').textContent='QR 라이브러리를 불러오지 못했습니다. 주소로 직접 접속하세요: '+url.href;}
+document.getElementById('full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{}};
+document.getElementById('print').onclick=()=>window.print();
+document.getElementById('png').onclick=()=>{if(!image)return;const a=document.createElement('a');a.href=image;a.download='소비자행동론_리뷰설문_QR.png';a.click();};
