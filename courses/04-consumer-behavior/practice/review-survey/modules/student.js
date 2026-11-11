@@ -4,7 +4,7 @@ import {demoConfig} from './demo.js';
 const $=id=>document.getElementById(id), demo=new URLSearchParams(location.search).get('demo')==='1';
 if(new URLSearchParams(location.search).get('embedded')==='1'){
  document.querySelector('.site-head').hidden=true;document.querySelector('.page-foot').hidden=true;
- const resize=()=>parent.postMessage({type:'review-survey-resize',height:document.documentElement.scrollHeight},location.origin);
+ const resize=()=>parent.postMessage({type:'review-survey-resize',height:Math.ceil(document.body.getBoundingClientRect().height + 60)},location.origin);
  new ResizeObserver(resize).observe(document.body);window.addEventListener('load',resize);
 }
 let c,cfg=null,verified=null,busy=false,done=false,payload;
@@ -32,7 +32,7 @@ function applyConfig(){
  document.querySelector('.code-panel').hidden=!cfg?.codeRequired||done;
  document.querySelector('.privacy').textContent=cfg?.codeRequired?'이름·학번을 묻지 않는 익명 조사입니다. 배부받은 참여코드로 한 번만 응답할 수 있습니다. 다른 학생의 응답은 공개되지 않습니다.':'이름·학번·참여코드 없이 응답합니다. 설문 전용 익명 ID를 사용하며 수업 로그인 정보와 연결하지 않습니다. 다른 기기나 시크릿 창을 통한 재참여는 삼가 주세요. 자유입력에는 개인정보를 적지 마세요.';
  if(!cfg?.codeRequired&&!done)verified={participantNo:demo?'시연-P01':`익명-${c.auth.currentUser.uid.slice(0,8)}`,kind:'live',round:cfg.activeRound,hash:demo?'demo':`${cfg.activeRound}_${c.auth.currentUser.uid}`,anonymous:true};
- $('target-label').textContent=`대학생 ${cfg?.target??15}명`;$('survey-state').textContent=cfg?.isOpen?'응답 접수 중':'응답 접수 종료';$('survey-state').classList.toggle('open',Boolean(cfg?.isOpen));progress();
+ $('survey-state').textContent=cfg?.isOpen?'응답 접수 중':'응답 접수 종료';$('survey-state').classList.toggle('open',Boolean(cfg?.isOpen));progress();
 }
 function storageKey(){return `review-survey-done:${c?.db?.app?.options?.projectId||'demo'}:${cfg?.activeRound||''}`;}
 function finish(no){done=true;$('survey-form').hidden=true;document.querySelector('.code-panel').hidden=true;$('success').hidden=false;$('success-id').textContent=`익명 참여번호: ${no}`;$('success').focus();}
